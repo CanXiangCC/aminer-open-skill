@@ -41,6 +41,30 @@
         "输出包含 org_id 字段",
         "输出包含 scholars 或 papers 字段"
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "帮我查一下 Andrew Ng 的论文趋势",
+      "expected_output": "先检查到用户未提供 token，立即停止后续 API 调用，并引导用户去 AMiner 控制台获取 token",
+      "files": [],
+      "expectations": [
+        "明确告知当前缺少 token，无法继续调用 AMiner API",
+        "没有执行任何 API 调用",
+        "提供控制台链接 https://open.aminer.cn/open/board?tab=control",
+        "提示用户拿到 token 后再继续"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "帮我在 AMiner 上查斯坦福大学李飞飞的发文，给我引用量最高的5篇和最新5篇。我的 token 是 <YOUR_TOKEN>",
+      "expected_output": "优先使用 paper_qa_search 并结合 author_id/org_id 过滤。先返回引用量最高5篇（force_citation_sort），再返回最新5篇（force_year_sort）",
+      "files": [],
+      "expectations": [
+        "调用了学者搜索 API（person_search）用于确认 Fei-Fei Li 的 author_id",
+        "调用 paper_qa_search 时使用了 author_id 和 org_id 过滤",
+        "分别执行了按引用量排序和按年份排序两次查询",
+        "每组结果返回最多 5 篇论文标题与论文 ID"
+      ]
     }
   ]
 }

@@ -17,15 +17,20 @@ AMiner 是全球领先的学术数据平台，提供学者、论文、机构、�
 
 ---
 
-## 第一步：获取 Token
+## 第一步：先检查用户是否已提供 Token（必须）
 
-所有 API 调用需要在请求头中携带 `Authorization: <your_token>`。
+在执行任何 API 调用前，必须先检查用户是否已经提供可用 token（请求头格式：`Authorization: <your_token>`）。
 
-**获取方式：**
-1. 前往 [AMiner 控制台](https://open.aminer.cn/open/board?tab=control) 登录并生成 API Token
-2. 若不了解如何操作，请参阅 [开放平台文档](https://open.aminer.cn/open/doc)
+- **若已提供 token**：继续执行后续查询流程。
+- **若未提供 token**：立即停止，不要继续调用任何 API，也不要进入后续工作流；先引导用户获取 token。
 
-> Token 请前往 [控制台](https://open.aminer.cn/open/board?tab=control) 登录后生成，有效期内可重复使用。
+**无 token 时的引导话术要求：**
+1. 明确告知“当前缺少 token，无法继续调用 AMiner API”
+2. 引导前往 [AMiner 控制台](https://open.aminer.cn/open/board?tab=control) 登录并生成 API Token
+3. 如需帮助，可参考 [开放平台文档](https://open.aminer.cn/open/doc)
+4. 提示用户拿到 token 后再继续，并可直接回复：`这是我的 token: <TOKEN>`
+
+> token 可在控制台生成并在有效期内复用。未拿到 token 前，不执行任何数据查询步骤。
 
 ---
 
@@ -222,7 +227,10 @@ python scripts/aminer_client.py --token <TOKEN> --action venue_papers --venue "N
 - `topic_high/middle/low`：精细控制关键词权重（嵌套数组 OR/AND 逻辑）
 - `sci_flag`：只看 SCI 论文
 - `force_citation_sort`：按引用量排序
-- `author_terms / org_terms`：限定作者或机构
+- `force_year_sort`：按年份排序
+- `author_terms / org_terms`：按作者名或机构名过滤
+- `author_id / org_id`：按作者 ID 或机构 ID 过滤（推荐用于同名消歧）
+- `venue_ids`：按会议/期刊 ID 过滤
 
 **命令：**
 ```bash

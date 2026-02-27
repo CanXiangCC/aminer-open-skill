@@ -115,6 +115,9 @@ curl -X GET \
 | force_year_sort | boolean | 否 | 完全按照年份排序 |
 | author_terms | []string | 否 | 作者名查询，数组内为 OR 关系，建议多写变体 |
 | org_terms | []string | 否 | 机构名查询，数组内为 OR 关系 |
+| author_id | []string | 否 | 作者实体 ID 过滤条件；可传单个 ID 或 ID 列表。与 author_terms 同时使用时为 OR 关系 |
+| org_id | []string | 否 | 机构实体 ID 过滤条件；可传单个 ID 或 ID 列表。与 org_terms 同时使用时为 OR 关系 |
+| venue_ids | []string | 否 | 会议/期刊 ID 列表过滤条件 |
 | query | string | 否 | 自然语言原始问题（较慢），系统自动拆解关键词。与 topic_high 同时传时以此参数为准 |
 
 **响应字段：**

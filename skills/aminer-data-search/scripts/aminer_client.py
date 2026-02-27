@@ -173,6 +173,7 @@ def paper_qa_search(token: str, query: str = None,
                     sci_flag: bool = False, n_citation_flag: bool = False,
                     force_citation_sort: bool = False, force_year_sort: bool = False,
                     author_terms: list = None, org_terms: list = None,
+                    author_id: list = None, org_id: list = None, venue_ids: list = None,
                     size: int = 10, offset: int = 0) -> Any:
     """论文问答搜索（¥0.05/次）：AI 智能问答，支持自然语言和结构化关键词。"""
     body: dict = {"use_topic": use_topic, "size": size, "offset": offset}
@@ -202,6 +203,12 @@ def paper_qa_search(token: str, query: str = None,
         body["author_terms"] = author_terms
     if org_terms:
         body["org_terms"] = org_terms
+    if author_id:
+        body["author_id"] = author_id
+    if org_id:
+        body["org_id"] = org_id
+    if venue_ids:
+        body["venue_ids"] = venue_ids
     return _request(token, "POST", "/api/paper/qa/search", body=body)
 
 
@@ -624,7 +631,8 @@ def workflow_venue_papers(token: str, venue: str, year: Optional[int] = None,
 
 def workflow_paper_qa(token: str, query: str = None,
                       topic_high: str = None, topic_middle: str = None,
-                      sci_flag: bool = False, sort_citation: bool = False,
+                      sci_flag: bool = False, sort_citation: bool = False, sort_year: bool = False,
+                      author_id: list = None, org_id: list = None, venue_ids: list = None,
                       size: int = 10) -> dict:
     """
     工作流 5：学术智能问答
@@ -636,6 +644,8 @@ def workflow_paper_qa(token: str, query: str = None,
         token, query=query, use_topic=use_topic,
         topic_high=topic_high, topic_middle=topic_middle,
         sci_flag=sci_flag, force_citation_sort=sort_citation,
+        force_year_sort=sort_year,
+        author_id=author_id, org_id=org_id, venue_ids=venue_ids,
         size=size
     )
     if qa_result and qa_result.get("code") == 200 and qa_result.get("data"):
@@ -799,6 +809,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--topic_middle", help="大幅加分关键词（格式同 topic_high）")
     p.add_argument("--sci_flag", action="store_true", help="只返回 SCI 论文")
     p.add_argument("--sort_citation", action="store_true", help="按引用量排序")
+    p.add_argument("--sort_year", action="store_true", help="按年份排序（最新优先）")
+    p.add_argument("--author_id", help="作者ID过滤，支持单个ID或JSON数组字符串")
+    p.add_argument("--org_id", help="机构ID过滤，支持单个ID或JSON数组字符串")
+    p.add_argument("--venue_ids", help="会议/期刊ID过滤，支持JSON数组字符串")
 
     # raw 模式
     p.add_argument("--api", help="[raw模式] API 函数名，如 paper_search")
@@ -811,6 +825,26 @@ def main():
     parser = build_parser()
     args = parser.parse_args()
     token = args.token
+
+    if not token or not token.strip():
+        parser.error(
+            "缺少 --token，无法继续调用 AMiner API。请先前往 "
+            "https://open.aminer.cn/open/board?tab=control 生成 token。"
+        )
+
+    def _parse_id_filter(value: Optional[str]) -> Optional[list]:
+        if not value:
+            return None
+        # 兼容传单个 ID 字符串或 JSON 数组字符串
+        try:
+            parsed = json.loads(value)
+            if isinstance(parsed, list):
+                return parsed
+            if isinstance(parsed, str) and parsed.strip():
+                return [parsed.strip()]
+        except Exception:
+            pass
+        return [value.strip()] if value.strip() else None
 
     if args.action == "scholar_profile":
         if not args.name:
@@ -838,10 +872,16 @@ def main():
     elif args.action == "paper_qa":
         if not args.query and not args.topic_high:
             parser.error("--action paper_qa 需要 --query 或 --topic_high 参数")
+        if args.sort_citation and args.sort_year:
+            parser.error("--sort_citation 与 --sort_year 不能同时开启")
+        author_id_filter = _parse_id_filter(args.author_id)
+        org_id_filter = _parse_id_filter(args.org_id)
+        venue_ids_filter = _parse_id_filter(args.venue_ids)
         result = workflow_paper_qa(
             token, query=args.query,
             topic_high=args.topic_high, topic_middle=args.topic_middle,
-            sci_flag=args.sci_flag, sort_citation=args.sort_citation,
+            sci_flag=args.sci_flag, sort_citation=args.sort_citation, sort_year=args.sort_year,
+            author_id=author_id_filter, org_id=org_id_filter, venue_ids=venue_ids_filter,
             size=args.size
         )
 
