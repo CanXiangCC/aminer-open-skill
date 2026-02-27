@@ -11,6 +11,7 @@ description: >
 
 AMiner 是全球领先的学术数据平台，提供学者、论文、机构、期刊、专利等全维度学术数据。
 本 skill 涵盖全部 28 个开放 API，并将它们组合成 6 大实用工作流。
+使用前请先在控制台生成 token，并建议写入环境变量 `aminer_op_token` 供脚本自动读取。
 
 - **API 文档**：https://open.aminer.cn/open/doc
 - **控制台（生成 Token）**：https://open.aminer.cn/open/board?tab=control
@@ -21,14 +22,13 @@ AMiner 是全球领先的学术数据平台，提供学者、论文、机构、�
 
 在执行任何 API 调用前，必须先检查用户是否已经提供可用 token（请求头格式：`Authorization: <your_token>`）。
 
-推荐先在本地环境中配置 token（脚本会默认读取环境变量 `aminer_op_token`）：
-
-```bash
-export aminer_op_token="<YOUR_TOKEN>"
-```
-
 - **若已提供 token**：继续执行后续查询流程。
 - **若未提供 token**：立即停止，不要继续调用任何 API，也不要进入后续工作流；先引导用户获取 token。
+
+**token 建议配置方式（推荐）：**
+1. 前往 [AMiner 控制台](https://open.aminer.cn/open/board?tab=control) 登录并生成 API Token
+2. 将 token 写入环境变量：`export aminer_op_token="<TOKEN>"`
+3. 脚本默认优先读取环境变量 `aminer_op_token`（若显式传入 `--token`，则以 `--token` 为准）
 
 **无 token 时的引导话术要求：**
 1. 明确告知“当前缺少 token，无法继续调用 AMiner API”
@@ -45,8 +45,8 @@ export aminer_op_token="<YOUR_TOKEN>"
 所有工作流均可通过 `scripts/aminer_client.py` 驱动：
 
 ```bash
-# 推荐：先写入环境变量（后续命令可不传 --token）
-export aminer_op_token="<YOUR_TOKEN>"
+# 推荐：先设置环境变量（后续命令可不再重复传 --token）
+export aminer_op_token="<TOKEN>"
 
 # 学者全景分析
 python scripts/aminer_client.py --action scholar_profile --name "Andrew Ng"
@@ -70,6 +70,10 @@ python scripts/aminer_client.py --action patent_search --query "量子计算"
 也可以直接调用单个 API：
 ```bash
 python scripts/aminer_client.py --action raw \
+  --api paper_search --params '{"title": "BERT", "page": 0, "size": 5}'
+
+# 或临时覆盖环境变量，显式传 --token
+python scripts/aminer_client.py --token <TOKEN> --action raw \
   --api paper_search --params '{"title": "BERT", "page": 0, "size": 5}'
 ```
 

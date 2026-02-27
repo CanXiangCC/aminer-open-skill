@@ -4,9 +4,7 @@ AMiner 开放平台 API 客户端
 支持 6 大学术数据查询工作流及全部 28 个独立 API
 
 使用方法：
-    # 推荐：先配置环境变量（脚本默认读取 aminer_op_token）
-    export aminer_op_token=<TOKEN>
-    python aminer_client.py --action <ACTION> [选项]
+    python aminer_client.py --token <TOKEN> --action <ACTION> [选项]
 
 工作流：
     scholar_profile   学者全景分析（搜索→详情+画像+论文+专利+项目）
@@ -37,7 +35,7 @@ from typing import Any, Optional
 
 BASE_URL = "https://datacenter.aminer.cn/gateway/open_platform"
 
-TEST_TOKEN = ""  # 可留空；默认优先读取环境变量 aminer_op_token
+TEST_TOKEN = ""  # 请前往 https://open.aminer.cn/open/board?tab=control 生成你自己的 Token
 
 REQUEST_TIMEOUT_SECONDS = 30
 MAX_RETRIES = 3
