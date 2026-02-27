@@ -785,7 +785,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--token",
         default=None,
         help=(
-            "AMiner API Token。未传时默认读取环境变量 aminer_op_token；"
+            "AMiner API Token。未传时默认读取环境变量 AMINER_API_KEY；"
             "也可前往 https://open.aminer.cn/open/board?tab=control 生成"
         ),
     )
@@ -831,8 +831,8 @@ def build_parser() -> argparse.ArgumentParser:
 def main():
     parser = build_parser()
     args = parser.parse_args()
-    # token 优先级：命令行 --token > 环境变量 aminer_op_token > TEST_TOKEN
-    token = (args.token or os.getenv("aminer_op_token") or TEST_TOKEN or "").strip()
+    # token 优先级：命令行 --token > 环境变量 AMINER_API_KEY > TEST_TOKEN
+    token = (args.token or os.getenv("AMINER_API_KEY") or TEST_TOKEN or "").strip()
 
     if not token or not token.strip():
         parser.error(

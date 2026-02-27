@@ -11,7 +11,7 @@ description: >
 
 AMiner 是全球领先的学术数据平台，提供学者、论文、机构、期刊、专利等全维度学术数据。
 本 skill 涵盖全部 28 个开放 API，并将它们组合成 6 大实用工作流。
-使用前请先在控制台生成 token，并建议写入环境变量 `aminer_op_token` 供脚本自动读取。
+使用前请先在控制台生成 token，并建议写入环境变量 `AMINER_API_KEY` 供脚本自动读取。
 
 - **API 文档**：https://open.aminer.cn/open/doc
 - **控制台（生成 Token）**：https://open.aminer.cn/open/board?tab=control
@@ -27,8 +27,8 @@ AMiner 是全球领先的学术数据平台，提供学者、论文、机构、�
 
 **token 建议配置方式（推荐）：**
 1. 前往 [AMiner 控制台](https://open.aminer.cn/open/board?tab=control) 登录并生成 API Token
-2. 将 token 写入环境变量：`export aminer_op_token="<TOKEN>"`
-3. 脚本默认优先读取环境变量 `aminer_op_token`（若显式传入 `--token`，则以 `--token` 为准）
+2. 将 token 写入环境变量：`export AMINER_API_KEY="<TOKEN>"`
+3. 脚本默认优先读取环境变量 `AMINER_API_KEY`（若显式传入 `--token`，则以 `--token` 为准）
 
 **无 token 时的引导话术要求：**
 1. 明确告知“当前缺少 token，无法继续调用 AMiner API”
@@ -46,7 +46,7 @@ AMiner 是全球领先的学术数据平台，提供学者、论文、机构、�
 
 ```bash
 # 推荐：先设置环境变量（后续命令可不再重复传 --token）
-export aminer_op_token="<TOKEN>"
+export AMINER_API_KEY="<TOKEN>"
 
 # 学者全景分析
 python scripts/aminer_client.py --action scholar_profile --name "Andrew Ng"
