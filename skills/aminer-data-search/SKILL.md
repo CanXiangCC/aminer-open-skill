@@ -18,12 +18,13 @@ AMiner 是全球领先的学术数据平台，提供学者、论文、机构、�
 
 ---
 
-## 第一步：先检查用户是否已提供 Token（必须）
+## 第一步：先检查环境变量 Token（必须）
 
-在执行任何 API 调用前，必须先检查用户是否已经提供可用 token（请求头格式：`Authorization: <your_token>`）。
+在执行任何 API 调用前，必须先检查环境变量 `AMINER_API_KEY` 是否存在可用 token（请求头格式：`Authorization: <your_token>`）。
 
-- **若已提供 token**：继续执行后续查询流程。
-- **若未提供 token**：立即停止，不要继续调用任何 API，也不要进入后续工作流；先引导用户获取 token。
+- **若环境变量中已有 token**：继续执行后续查询流程。
+- **若环境变量中无 token**：再检查用户是否显式提供了 `--token`。
+- **若环境变量与 `--token` 都没有**：立即停止，不要继续调用任何 API，也不要进入后续工作流；先引导用户获取 token。
 
 **token 建议配置方式（推荐）：**
 1. 前往 [AMiner 控制台](https://open.aminer.cn/open/board?tab=control) 登录并生成 API Token
