@@ -10,7 +10,7 @@
   },
   "plugins": [
     {
-      "name": "aminer-academic-search",
+      "name": "aminer-data-search",
       "description": "AMiner 开放平台全套学术数据查询能力，支持论文/学者/机构/期刊/专利检索与分析",
       "source": "./",
       "strict": false,
