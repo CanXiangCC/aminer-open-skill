@@ -21,6 +21,12 @@ AMiner 是全球领先的学术数据平台，提供学者、论文、机构、�
 
 在执行任何 API 调用前，必须先检查用户是否已经提供可用 token（请求头格式：`Authorization: <your_token>`）。
 
+推荐先在本地环境中配置 token（脚本会默认读取环境变量 `aminer_op_token`）：
+
+```bash
+export aminer_op_token="<YOUR_TOKEN>"
+```
+
 - **若已提供 token**：继续执行后续查询流程。
 - **若未提供 token**：立即停止，不要继续调用任何 API，也不要进入后续工作流；先引导用户获取 token。
 
@@ -39,28 +45,31 @@ AMiner 是全球领先的学术数据平台，提供学者、论文、机构、�
 所有工作流均可通过 `scripts/aminer_client.py` 驱动：
 
 ```bash
+# 推荐：先写入环境变量（后续命令可不传 --token）
+export aminer_op_token="<YOUR_TOKEN>"
+
 # 学者全景分析
-python scripts/aminer_client.py --token <TOKEN> --action scholar_profile --name "Andrew Ng"
+python scripts/aminer_client.py --action scholar_profile --name "Andrew Ng"
 
 # 论文深度挖掘（含引用链）
-python scripts/aminer_client.py --token <TOKEN> --action paper_deep_dive --title "Attention is all you need"
+python scripts/aminer_client.py --action paper_deep_dive --title "Attention is all you need"
 
 # 机构研究力分析
-python scripts/aminer_client.py --token <TOKEN> --action org_analysis --org "清华大学"
+python scripts/aminer_client.py --action org_analysis --org "清华大学"
 
 # 期刊论文监控（指定年份）
-python scripts/aminer_client.py --token <TOKEN> --action venue_papers --venue "Nature" --year 2024
+python scripts/aminer_client.py --action venue_papers --venue "Nature" --year 2024
 
 # 学术智能问答（自然语言提问）
-python scripts/aminer_client.py --token <TOKEN> --action paper_qa --query "transformer架构最新进展"
+python scripts/aminer_client.py --action paper_qa --query "transformer架构最新进展"
 
 # 专利搜索与详情
-python scripts/aminer_client.py --token <TOKEN> --action patent_search --query "量子计算"
+python scripts/aminer_client.py --action patent_search --query "量子计算"
 ```
 
 也可以直接调用单个 API：
 ```bash
-python scripts/aminer_client.py --token <TOKEN> --action raw \
+python scripts/aminer_client.py --action raw \
   --api paper_search --params '{"title": "BERT", "page": 0, "size": 5}'
 ```
 

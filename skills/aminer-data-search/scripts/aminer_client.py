@@ -4,7 +4,9 @@ AMiner 开放平台 API 客户端
 支持 6 大学术数据查询工作流及全部 28 个独立 API
 
 使用方法：
-    python aminer_client.py --token <TOKEN> --action <ACTION> [选项]
+    # 推荐：先配置环境变量（脚本默认读取 aminer_op_token）
+    export aminer_op_token=<TOKEN>
+    python aminer_client.py --action <ACTION> [选项]
 
 工作流：
     scholar_profile   学者全景分析（搜索→详情+画像+论文+专利+项目）
@@ -24,6 +26,7 @@ AMiner 开放平台 API 客户端
 
 import argparse
 import json
+import os
 import sys
 import time
 import random
@@ -34,7 +37,7 @@ from typing import Any, Optional
 
 BASE_URL = "https://datacenter.aminer.cn/gateway/open_platform"
 
-TEST_TOKEN = ""  # 请前往 https://open.aminer.cn/open/board?tab=control 生成你自己的 Token
+TEST_TOKEN = ""  # 可留空；默认优先读取环境变量 aminer_op_token
 
 REQUEST_TIMEOUT_SECONDS = 30
 MAX_RETRIES = 3
@@ -780,8 +783,14 @@ def build_parser() -> argparse.ArgumentParser:
 文档：https://open.aminer.cn/open/doc
         """
     )
-    p.add_argument("--token", default=TEST_TOKEN,
-                   help="AMiner API Token（前往 https://open.aminer.cn/open/board?tab=control 生成）")
+    p.add_argument(
+        "--token",
+        default=None,
+        help=(
+            "AMiner API Token。未传时默认读取环境变量 aminer_op_token；"
+            "也可前往 https://open.aminer.cn/open/board?tab=control 生成"
+        ),
+    )
     p.add_argument("--action", required=True,
                    choices=["scholar_profile", "paper_deep_dive", "org_analysis",
                             "venue_papers", "paper_qa", "patent_search",
@@ -824,7 +833,8 @@ def build_parser() -> argparse.ArgumentParser:
 def main():
     parser = build_parser()
     args = parser.parse_args()
-    token = args.token
+    # token 优先级：命令行 --token > 环境变量 aminer_op_token > TEST_TOKEN
+    token = (args.token or os.getenv("aminer_op_token") or TEST_TOKEN or "").strip()
 
     if not token or not token.strip():
         parser.error(
