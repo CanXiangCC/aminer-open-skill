@@ -37,6 +37,15 @@ AMiner 是全球领先的学术数据平台，提供学者、论文、机构、�
 在执行任何 API 调用前，必须先检查环境变量 `AMINER_API_KEY` 是否存在（请求头格式：`Authorization: <your_token>`）。
 检查时仅判断“存在/不存在”，禁止输出、回显或记录 token 明文（包括日志、终端输出、示例结果）。
 
+**标准检查写法（推荐直接使用）：**
+```bash
+if [ -z "${AMINER_API_KEY+x}" ]; then
+    echo "AMINER_API_KEY 不存在"
+else
+    echo "AMINER_API_KEY 存在"
+fi
+```
+
 - **若环境变量中已有 token**：继续执行后续查询流程。
 - **若环境变量中无 token**：再检查用户是否显式提供了 `--token`。
 - **若环境变量与 `--token` 都没有**：立即停止，不要继续调用任何 API，也不要进入后续工作流；先引导用户获取 token。
