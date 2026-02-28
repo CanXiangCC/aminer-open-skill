@@ -1,13 +1,8 @@
 ---
 name: aminer-data-search
-version: 1.0.0
+version: 1.0.1
 author: AMiner
 contact: report@aminer.cn
-package: aminer-skills
-source: ./
-strict: false
-requires:
-  python: ">=3.8"
 description: >
   使用 AMiner 开放平台 API 进行学术数据查询与分析。当用户需要查询学者信息、论文详情、机构数据、期刊内容或专利信息时使用此 skill。
   触发场景：提到 AMiner、学术数据查询、查论文/学者/机构/期刊/专利、学术问答搜索、引用分析、科研机构分析、学者画像、论文引用链、期刊投稿分析等。
@@ -20,17 +15,6 @@ description: >
 AMiner 是全球领先的学术数据平台，提供学者、论文、机构、期刊、专利等全维度学术数据。
 本 skill 涵盖全部 28 个开放 API，并将它们组合成 6 大实用工作流。
 使用前请先在控制台生成 token，并建议写入环境变量 `AMINER_API_KEY` 供脚本自动读取。
-
-## Marketplace 元信息对齐
-
-以下信息已与 `.claude-plugin/marketplace.json` 对齐：
-
-- 插件包名：`aminer-skills`
-- 所有者：`AMiner`（`report@aminer.cn`）
-- Skill 名称：`aminer-data-search`
-- 市场版本：`1.0.0`
-- 插件配置：`source=./`、`strict=false`
-- Skill 路径：`./skills/aminer-data-search`
 
 - **API 文档**：https://open.aminer.cn/open/doc
 - **控制台（生成 Token）**：https://open.aminer.cn/open/board?tab=control
