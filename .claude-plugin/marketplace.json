@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "AMiner 开放平台学术数据查询技能集",
-    "version": "1.0.0"
+    "version": "1.0.2"
   },
   "plugins": [
     {
