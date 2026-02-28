@@ -164,6 +164,12 @@ curl -X POST \
 - **价格**：免费
 - **说明**：批量根据论文 ID 获取基础信息（标题、卷号、期刊、作者）
 
+> **强制参数约束（高优先级）**
+> 1. `paper_info` 仅支持批量参数 `ids`（数组），不支持单条 `paper_id`。
+> 2. `paper_detail` 仅支持单条参数 `id`（字符串）；在客户端 `raw` 函数封装中对应参数名 `paper_id`。
+> 3. 严禁把 `ids` 传给 `paper_detail`，否则会触发参数错误（如 `unexpected keyword argument 'ids'`）。
+> 4. 若命中结果很多且用户未指定数量，默认只查询前 10 条详情，避免不必要费用。
+
 **请求参数：**
 
 | 参数名 | 类型 | 必填 | 说明 |
@@ -188,6 +194,13 @@ curl -X POST \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: <TOKEN>' \
   -d '{"ids": ["53e9ab9bb7602d97023e53b2", "53e9a98eb7602d9703e42e5a"]}'
+```
+
+**raw 调用正确示例（aminer_client.py）：**
+```bash
+# 批量基础信息（正确）
+python scripts/aminer_client.py --action raw \
+  --api paper_info --params '{"ids":["53e9ab9bb7602d97023e53b2","53e9a98eb7602d9703e42e5a"]}'
 ```
 
 ---
@@ -229,6 +242,17 @@ curl -X POST \
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/paper/detail?id=53e9ab9bb7602d97023e53b2' \
   -H 'Authorization: <TOKEN>'
+```
+
+**raw 调用正确/错误示例（aminer_client.py）：**
+```bash
+# 单篇详情（正确）
+python scripts/aminer_client.py --action raw \
+  --api paper_detail --params '{"paper_id":"53e9ab9bb7602d97023e53b2"}'
+
+# 错误示例（不要这样做：ids 不能传给 paper_detail）
+python scripts/aminer_client.py --action raw \
+  --api paper_detail --params '{"ids":["53e9ab9bb7602d97023e53b2"]}'
 ```
 
 ---

@@ -1,6 +1,6 @@
 ---
 name: aminer-data-search
-version: 1.0.2
+version: 1.0.3
 author: AMiner
 contact: report@aminer.cn
 description: >
@@ -23,10 +23,18 @@ AMiner 是全球领先的学术数据平台，提供学者、论文、机构、�
 
 ## 高优先级强制规则（重点）
 
-以下两条为**最高优先级**，在任何查询任务中都必须优先遵守：
+以下四条为**最高优先级**，在任何查询任务中都必须优先遵守：
 
 1. **Token 安全**：只允许检查 `AMINER_API_KEY` 是否存在，严禁在任何位置泄露 token 明文（包括终端输出、日志、示例结果、调试信息）。
 2. **费用控制**：必须优先采用最优组合查询，禁止无差别全量详情拉取；当命中结果很多且用户未指定数量时，默认仅查询前 10 条详情。
+3. **免费优先**：在用户未明确要求更深字段/更高精度前，优先使用免费接口；仅在免费接口无法满足需求时再升级到收费接口。
+4. **结果链接**：最终列出实体（论文/学者/专利/期刊）时，必须在每个实体后附上可访问 URL。
+
+实体 URL 模板（强制使用）：
+- 论文：`https://www.aminer.cn/pub/{论文id}`
+- 学者：`https://www.aminer.cn/profile/{学者id}`
+- 专利：`https://www.aminer.cn/patent/{专利id}`
+- 期刊：`https://www.aminer.cn/open/journal/detail/{期刊id}`
 
 > 违反以上任一条，视为流程不合规，必须立即中止并修正后再继续。
 
@@ -102,6 +110,14 @@ python scripts/aminer_client.py --token <TOKEN> --action raw \
   --api paper_search --params '{"title": "BERT", "page": 0, "size": 5}'
 ```
 
+**raw 模式防错规则（强制）：**
+1. 调用前必须先核对函数签名（参数名与类型必须完全匹配），禁止“按语义猜参数”。
+2. raw 参数约束以 `references/api-catalog.md` 为最终准则；若与经验判断冲突，一律以 catalog 为准。
+3. `paper_info` 只用于批量基础信息，参数必须为 `{"ids": [...]}`。
+4. `paper_detail` 只支持单篇详情，参数必须为 `{"paper_id": "..."}`，**严禁**传 `ids`。
+5. 若需要多篇详情：先用低成本接口筛选（如 `paper_info` / `paper_search_pro`），再仅对目标子集调用 `paper_detail`（用户未指定数量时默认前 10 条）。
+6. 执行前先输出“即将调用的函数名 + 参数 JSON”进行自检，再发起请求。
+
 ---
 
 ## 稳定性与失败处理策略（必读）
@@ -156,6 +172,9 @@ python scripts/aminer_client.py --token <TOKEN> --action raw \
 4. 若存在多种组合方案，优先选择成本更低、稳定性更高、字段满足需求的方案。
 5. 尽可能使用“最优查询组合”，避免无差别全量拉取；先做低成本检索与筛选，再对少量目标做详情补全。
 6. 当结果量很大且用户未指定数量时，默认仅查询前 10 条详情并先返回摘要结果；例如命中 1000 篇论文时，不应对 1000 条全部调用详情接口，以减少用户费用。
+7. 涉及 `raw` 调用时，必须先做参数级校验：例如 `paper_info` 使用 `ids`，`paper_detail` 使用 `paper_id`，不得混用。
+8. 用户未明确要求深度信息时，优先走免费链路（如 `paper_search` / `paper_info` / `venue_search`），确认不足后再补充必要的收费接口。
+9. 最终返回实体列表时，必须附带对应 URL；若缺少实体 ID，应先补齐 ID 再输出结果。
 
 > 禁止因“没有现成工作流”而直接放弃查询；应基于 `api-catalog` 主动完成 API 组合。
 
