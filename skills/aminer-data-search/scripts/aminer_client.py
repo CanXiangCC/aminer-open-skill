@@ -19,7 +19,7 @@ AMiner 开放平台 API 客户端
     raw               直接调用任意 API，需指定 --api 和 --params
 
 控制台（生成Token）：https://open.aminer.cn/open/board?tab=control
-文档：https://open.aminer.cn/open/doc
+文档：https://open.aminer.cn/open/docs
 """
 
 import argparse
@@ -778,7 +778,7 @@ def build_parser() -> argparse.ArgumentParser:
     --api paper_search --params '{"title":"BERT","page":0,"size":5}'
 
 控制台（生成Token）：https://open.aminer.cn/open/board?tab=control
-文档：https://open.aminer.cn/open/doc
+文档：https://open.aminer.cn/open/docs
         """
     )
     p.add_argument(

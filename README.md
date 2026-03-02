@@ -70,5 +70,5 @@ python skills/aminer-data-search/scripts/aminer_client.py \
 
 ## 参考资料
 
-- AMiner 开放平台文档：https://open.aminer.cn/open/doc
+- AMiner 开放平台文档：https://open.aminer.cn/open/docs
 - Skill 详细文档：`skills/aminer-data-search/SKILL.md`

@@ -16,7 +16,7 @@ AMiner 是全球领先的学术数据平台，提供学者、论文、机构、�
 本 skill 涵盖全部 28 个开放 API，并将它们组合成 6 大实用工作流。
 使用前请先在控制台生成 token，并建议写入环境变量 `AMINER_API_KEY` 供脚本自动读取。
 
-- **API 文档**：https://open.aminer.cn/open/doc
+- **API 文档**：https://open.aminer.cn/open/docs
 - **控制台（生成 Token）**：https://open.aminer.cn/open/board?tab=control
 
 ---
@@ -68,7 +68,7 @@ fi
 **无 token 时的引导话术要求：**
 1. 明确告知“当前缺少 token，无法继续调用 AMiner API”
 2. 引导前往 [AMiner 控制台](https://open.aminer.cn/open/board?tab=control) 登录并生成 API Token
-3. 如需帮助，可参考 [开放平台文档](https://open.aminer.cn/open/doc)
+3. 如需帮助，可参考 [开放平台文档](https://open.aminer.cn/open/docs)
 4. 提示用户拿到 token 后再继续，并可直接回复：`这是我的 token: <TOKEN>`
 
 > token 可在控制台生成并在有效期内复用。未拿到 token 前，不执行任何数据查询步骤。
@@ -390,5 +390,5 @@ python scripts/aminer_client.py --token <TOKEN> --action scholar_patents --name 
 - 完整 API 参数文档：读取 `references/api-catalog.md`
 - Python 客户端源码：`scripts/aminer_client.py`
 - 测试用例：`evals/evals.json`
-- 官方文档：https://open.aminer.cn/open/doc
+- 官方文档：https://open.aminer.cn/open/docs
 - 控制台：https://open.aminer.cn/open/board?tab=control
