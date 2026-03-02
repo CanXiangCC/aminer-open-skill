@@ -1,6 +1,6 @@
 ---
 name: aminer-data-search
-version: 1.0.3
+version: 1.0.4
 author: AMiner
 contact: report@aminer.cn
 description: >
