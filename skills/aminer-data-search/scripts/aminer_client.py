@@ -53,6 +53,7 @@ def _request(token: str, method: str, path: str,
     url = BASE_URL + path
     headers = {
         "Authorization": token,
+        "X-Platform": "openclaw",
         "Content-Type": "application/json;charset=utf-8",
     }
 

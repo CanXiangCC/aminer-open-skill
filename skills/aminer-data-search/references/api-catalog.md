@@ -1,7 +1,7 @@
 # AMiner 开放平台 API 完整参考手册
 
 **基础域名**：`https://datacenter.aminer.cn/gateway/open_platform`  
-**认证方式**：所有接口在请求头中携带 `Authorization: <TOKEN>`  
+**认证方式**：所有接口在请求头中必须同时携带 `Authorization: <TOKEN>` 与 `X-Platform: openclaw`  
 **Token 获取**：登录 [控制台](https://open.aminer.cn/open/board?tab=control) 生成，在下方所有 curl 示例中将 `<TOKEN>` 替换为你的实际 Token。
 
 ---
@@ -46,7 +46,8 @@
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/paper/search?page=0&size=5&title=BERT' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
@@ -85,7 +86,8 @@ curl -X GET \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/paper/search/pro?title=transformer&author=Vaswani&order=n_citation&page=0&size=5' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
@@ -137,6 +139,7 @@ curl -X POST \
   'https://datacenter.aminer.cn/gateway/open_platform/api/paper/qa/search' \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw' \
   -d '{"use_topic": false, "query": "深度学习蛋白质结构预测", "size": 10, "sci_flag": true}'
 ```
 
@@ -146,6 +149,7 @@ curl -X POST \
   'https://datacenter.aminer.cn/gateway/open_platform/api/paper/qa/search' \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw' \
   -d '{
     "use_topic": true,
     "topic_high": "[[\\"transformer\\",\\"self-attention\\"],[\\"protein folding\\"]]",
@@ -193,6 +197,7 @@ curl -X POST \
   'https://datacenter.aminer.cn/gateway/open_platform/api/paper/info' \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw' \
   -d '{"ids": ["53e9ab9bb7602d97023e53b2", "53e9a98eb7602d9703e42e5a"]}'
 ```
 
@@ -241,7 +246,8 @@ python scripts/aminer_client.py --action raw \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/paper/detail?id=53e9ab9bb7602d97023e53b2' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 **raw 调用正确/错误示例（aminer_client.py）：**
@@ -282,7 +288,8 @@ python scripts/aminer_client.py --action raw \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/paper/relation?id=53e9ab9bb7602d97023e53b2' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
@@ -325,7 +332,8 @@ curl -X GET \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/paper/list/by/search/venue?keyword=graph+neural+network&page=0&size=10&order=n_citation' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
@@ -360,7 +368,8 @@ curl -X GET \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/paper/list/citation/by/keywords?page=0&size=10&keywords=%5B%22deep+learning%22%2C%22object+detection%22%5D' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
@@ -398,7 +407,8 @@ curl -X GET \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/paper/platform/allpubs/more/detail/by/ts/org/venue?year=2023&venue_id=<VENUE_ID>' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
@@ -441,6 +451,7 @@ curl -X POST \
   'https://datacenter.aminer.cn/gateway/open_platform/api/person/search' \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw' \
   -d '{"name": "Andrew Ng", "size": 5}'
 ```
 
@@ -477,7 +488,8 @@ curl -X POST \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/person/detail?id=53f3ae78dabfae4b34b0c75d' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
@@ -508,7 +520,8 @@ curl -X GET \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/person/figure?id=53f3ae78dabfae4b34b0c75d' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
@@ -537,7 +550,8 @@ curl -X GET \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/person/paper/relation?id=53f3ae78dabfae4b34b0c75d' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
@@ -568,7 +582,8 @@ curl -X GET \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/person/patent/relation?id=53f3ae78dabfae4b34b0c75d' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
@@ -603,7 +618,8 @@ curl -X GET \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/project/person/v3/open?id=53f3ae78dabfae4b34b0c75d' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
@@ -636,6 +652,7 @@ curl -X POST \
   'https://datacenter.aminer.cn/gateway/open_platform/api/organization/search' \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw' \
   -d '{"orgs": ["Tsinghua University"]}'
 ```
 
@@ -673,6 +690,7 @@ curl -X POST \
   'https://datacenter.aminer.cn/gateway/open_platform/api/organization/detail' \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw' \
   -d '{"ids": ["5f71b2091c455f439fe9a7d7"]}'
 ```
 
@@ -705,7 +723,8 @@ curl -X POST \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/organization/person/relation?org_id=5f71b2091c455f439fe9a7d7&offset=0' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
@@ -736,7 +755,8 @@ curl -X GET \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/organization/paper/relation?org_id=5f71b2091c455f439fe9a7d7&offset=0' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
@@ -766,7 +786,8 @@ curl -X GET \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/organization/patent/relation?id=6233173d0a6eb145604733e2&page=1&page_size=100' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
@@ -795,6 +816,7 @@ curl -X POST \
   'https://datacenter.aminer.cn/gateway/open_platform/api/organization/na' \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw' \
   -d '{"org": "MIT CSAIL"}'
 ```
 
@@ -828,6 +850,7 @@ curl -X POST \
   'https://datacenter.aminer.cn/gateway/open_platform/api/organization/na/pro' \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw' \
   -d '{"org": "Department of Computer Science, Tsinghua University"}'
 ```
 
@@ -862,6 +885,7 @@ curl -X POST \
   'https://datacenter.aminer.cn/gateway/open_platform/api/venue/search' \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw' \
   -d '{"name": "NeurIPS"}'
 ```
 
@@ -896,6 +920,7 @@ curl -X POST \
   'https://datacenter.aminer.cn/gateway/open_platform/api/venue/detail' \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw' \
   -d '{"id": "<VENUE_ID>"}'
 ```
 
@@ -932,6 +957,7 @@ curl -X POST \
   'https://datacenter.aminer.cn/gateway/open_platform/api/venue/paper/relation' \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw' \
   -d '{"id": "<VENUE_ID>", "year": 2023, "offset": 0, "limit": 20}'
 ```
 
@@ -967,6 +993,7 @@ curl -X POST \
   'https://datacenter.aminer.cn/gateway/open_platform/api/patent/search' \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw' \
   -d '{"query": "量子计算芯片", "page": 0, "size": 10}'
 ```
 
@@ -1001,7 +1028,8 @@ curl -X POST \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/patent/info?id=<PATENT_ID>' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
@@ -1043,7 +1071,8 @@ curl -X GET \
 ```bash
 curl -X GET \
   'https://datacenter.aminer.cn/gateway/open_platform/api/patent/detail?id=<PATENT_ID>' \
-  -H 'Authorization: <TOKEN>'
+  -H 'Authorization: <TOKEN>' \
+  -H 'X-Platform: openclaw'
 ```
 
 ---
