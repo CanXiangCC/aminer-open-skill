@@ -294,7 +294,9 @@ def _render_card_markdown_text(card: dict[str, Any]) -> str:
             if content:
                 sections.append(content)
 
-    for element in card.get("elements", []):
+    body = card.get("body") if isinstance(card.get("body"), dict) else {}
+    elements = body.get("elements") or card.get("elements") or []
+    for element in elements:
         if not isinstance(element, dict):
             continue
         text = element.get("text")

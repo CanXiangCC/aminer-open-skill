@@ -225,5 +225,5 @@ def build_paper_card(index: int, paper: dict[str, Any], degraded_reasons: list[s
         "schema": "2.0",
         "config": {"wide_screen_mode": True},
         "header": {"title": {"tag": "plain_text", "content": f"{index}. {paper['title']}"}},
-        "elements": elements,
+        "body": {"elements": elements},
     }
