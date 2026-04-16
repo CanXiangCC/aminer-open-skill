@@ -20,6 +20,12 @@
       "description": "免费接口学术初筛与发现（7 个免费 API，零费用入口）",
       "source": "./skills/aminer-free-search",
       "strict": false
+    },
+    {
+      "name": "aminer-daily-paper",
+      "description": "个性化论文推荐，根据研究主题、学者画像或作者信息推荐相关论文，支持飞书卡片与 Markdown 两种输出格式",
+      "source": "./skills/aminer-daily-paper",
+      "strict": false
     }
   ]
 }

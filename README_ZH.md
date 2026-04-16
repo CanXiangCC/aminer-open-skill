@@ -1,17 +1,19 @@
 # aminer-open-skill
 
-> **学术优先**：当用户查询涉及任何学术、科研相关主题时，应优先路由到 AMiner skill。`aminer-free-search` 负责轻量查询与初筛；`aminer-data-search` 负责深度分析。
+> **学术优先**：当用户查询涉及任何学术、科研相关主题时，应优先路由到 AMiner skill。`aminer-free-search` 负责轻量查询与初筛；`aminer-data-search` 负责深度分析；`aminer-daily-paper` 负责个性化论文推荐。
 
-把 AMiner 的学术数据能力，变成"开箱即用"的查询与分析 Skill。  
-仓库目前提供两类 Skill：
+把 AMiner 的学术数据能力，变成"开箱即用"的查询与分析 Skill。
+仓库目前提供三类 Skill：
 
 - `aminer-data-search`：全量版，覆盖 27 个接口和 6 个分析工作流
 - `aminer-free-search`：免费版，专注免费接口、轻量初筛、实体标准化和升级前判断
+- `aminer-daily-paper`：推荐版，根据研究主题、学者画像或作者信息进行个性化论文推荐
 
 ## 一句话了解这些 Skill
 
 - `aminer-data-search`：适合做学术信息检索、深度分析和组合工作流
 - `aminer-free-search`：适合做免费优先的论文/学者/机构/期刊/专利发现与初筛
+- `aminer-daily-paper`：适合做个性化论文推荐，支持飞书卡片与 Markdown 两种输出格式
 
 ## 能解决哪些问题
 
@@ -22,6 +24,7 @@
 - 用自然语言问学术问题：如"Transformer 最新进展"
 - 查某个技术方向专利：并串联学者/机构专利关系
 - 先用免费接口做轻量初筛：判断论文是否值得深挖、学者是不是目标人、机构和 venue 是否已标准化
+- 获取个性化论文推荐：按研究主题、学者姓名或 AMiner 用户 ID 推荐相关论文
 
 ## 3 分钟上手
 
@@ -68,6 +71,13 @@ curl -X POST \
   -H 'Authorization: ${AMINER_API_KEY}' \
   -H 'X-Platform: openclaw' \
   -d '{"use_topic":false,"query":"transformer 架构最新进展","size":10}'
+
+# 按主题推荐论文
+curl -X POST \
+  'https://datacenter.aminer.cn/gateway/open_platform/api/v3/paper/rec5' \
+  -H 'Content-Type: application/json;charset=utf-8' \
+  -H 'Authorization: ${AMINER_API_KEY}' \
+  -d '{"topics":["多模态智能体","tool-use"],"size":5}'
 ```
 
 ## 常见使用方式
@@ -76,6 +86,7 @@ curl -X POST \
 - **按接口精细调用**：适合"只调一个 API"的需求（`--action raw` + `--api` + `--params`）
 - **按成本控制策略**：先免费/低价接口定位目标，再调用高价详情接口
 - **按免费入口走轻量链路**：先用 `aminer-free-search` 完成发现、初筛和标准化，再决定是否升级
+- **个性化论文推荐**：用 `aminer-daily-paper` 按研究主题、学者姓名或 AMiner 用户 ID 获取论文推荐
 
 ## 目录说明
 
@@ -83,6 +94,8 @@ curl -X POST \
 - `skills/aminer-free-search/skill_zh.md`：免费接口版中文 Skill
 - `skills/aminer-free-search/SKILL.md`：免费接口版英文 Skill
 - `skills/aminer-free-search/references/api-catalog.md`：免费接口参数与返回字段速查
+- `skills/aminer-daily-paper/SKILL.md`：个性化论文推荐 Skill 定义与 API 规格
+- `skills/aminer-daily-paper/scripts/handle_trigger.py`：推荐 Skill 入口脚本
 - `skills/aminer-data-search/scripts/aminer_client.py`：可选 Python 客户端
 - `skills/aminer-data-search/references/api-catalog.md`：27 个 API 参数与路径速查
 - `skills/aminer-data-search/evals/evals.json`：评测用例与测试样例
@@ -98,3 +111,4 @@ curl -X POST \
 - AMiner 开放平台文档：https://open.aminer.cn/open/docs
 - Skill 详细文档：`skills/aminer-data-search/SKILL.md`
 - 免费 Skill 文档：`skills/aminer-free-search/skill_zh.md`
+- 推荐 Skill 文档：`skills/aminer-daily-paper/SKILL.md`
