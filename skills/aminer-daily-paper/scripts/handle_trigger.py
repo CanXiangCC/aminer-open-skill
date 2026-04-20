@@ -52,12 +52,14 @@ def _extract_command_text(raw_text: str) -> str:
 
 
 FIELD_LABELS = {
-    "aminer_user_id": ["aminer_user_id"],
+    "aminer_author_id": ["aminer_author_id"],
     "topics": ["topics", "topic", "方向", "研究方向"],
     "scholar_name": ["scholar", "name", "author", "学者", "作者"],
     "scholar_org": ["org", "organization", "affiliation", "机构", "单位"],
     "paper_titles": ["paper", "papers", "代表作", "论文"],
     "papers_file": ["papers_file", "source_file", "profile_file", "文件", "路径"],
+    "language_sort": ["language_sort"],
+    "size": ["size"],
 }
 
 
@@ -156,17 +158,24 @@ def _resolve_interface_papers_file(base_dir: Path, path_text: str) -> str:
 
 def _normalize_interface_payload(parsed: dict[str, Any], *, base_dir: Path) -> dict[str, Any]:
     normalized = dict(parsed)
-    raw_uid = _clean_text(parsed.get("raw_aminer_user_id"))
+    raw_uid = _clean_text(parsed.get("raw_aminer_author_id"))
     if raw_uid and not re.fullmatch(r"[0-9a-fA-F]{24}", raw_uid):
-        raise ValueError("invalid_aminer_user_id")
+        raise ValueError("invalid_aminer_author_id")
 
-    normalized["aminer_user_id"] = _clean_text(parsed.get("aminer_user_id"))
+    normalized["aminer_author_id"] = _clean_text(parsed.get("aminer_author_id"))
     normalized["topics"] = _normalize_topics_for_interface(list(parsed.get("topics") or []))
     normalized["scholar_name"] = _truncate_text(parsed.get("scholar_name"), MAX_SCHOLAR_NAME_LENGTH)
     normalized["scholar_org"] = _truncate_text(parsed.get("scholar_org"), MAX_SCHOLAR_ORG_LENGTH)
     normalized["paper_titles"] = _normalize_paper_titles_for_interface(list(parsed.get("paper_titles") or []))
     normalized["papers_file"] = _resolve_interface_papers_file(base_dir, str(parsed.get("papers_file") or ""))
     normalized["free_text"] = _truncate_text(parsed.get("free_text"), MAX_FREE_TEXT_LENGTH)
+    lang = _clean_text(parsed.get("language_sort"))
+    normalized["language_sort"] = lang if lang in {"zh", "en"} else ""
+    raw_size = _clean_text(parsed.get("size"))
+    try:
+        normalized["size"] = max(1, min(int(raw_size), 20)) if raw_size else 0
+    except (ValueError, TypeError):
+        normalized["size"] = 0
     return normalized
 
 
@@ -232,11 +241,11 @@ def parse_trigger_text(text: str) -> dict[str, Any]:
     command_text = _extract_command_text(raw_text)
     normalized = _clean_text(command_text)
     body = re.sub(r"^/(skill\s+)?aminer[-_]dp\b", "", command_text, flags=re.IGNORECASE).strip()
-    uid_match = re.search(r"aminer_user_id\s*[:：]\s*([0-9a-fA-F]{24})", body, flags=re.IGNORECASE)
+    uid_match = re.search(r"aminer_author_id\s*[:：]\s*([0-9a-fA-F]{24})", body, flags=re.IGNORECASE)
     uid = uid_match.group(1) if uid_match else ""
     scholar_name = _capture_field(body, "scholar_name")
     scholar_org = _capture_field(body, "scholar_org")
-    free_text = _strip_explicit_fields(re.sub(r"aminer_user_id\s*[:：]\s*[0-9a-fA-F]{24}", " ", body, flags=re.IGNORECASE))
+    free_text = _strip_explicit_fields(re.sub(r"aminer_author_id\s*[:：]\s*[0-9a-fA-F]{24}", " ", body, flags=re.IGNORECASE))
     if not scholar_name:
         inferred_name, inferred_org, residual = _infer_scholar_from_free_text(free_text)
         if inferred_name:
@@ -248,13 +257,15 @@ def parse_trigger_text(text: str) -> dict[str, Any]:
     return {
         "raw_text": raw_text,
         "command_text": command_text,
-        "raw_aminer_user_id": _capture_field(body, "aminer_user_id"),
-        "aminer_user_id": uid,
+        "raw_aminer_author_id": _capture_field(body, "aminer_author_id"),
+        "aminer_author_id": uid,
         "topics": _split_topics(_capture_field(body, "topics")),
         "scholar_name": scholar_name,
         "scholar_org": scholar_org,
         "paper_titles": _split_papers(_capture_field(body, "paper_titles")),
         "papers_file": _capture_field(body, "papers_file"),
+        "language_sort": _capture_field(body, "language_sort"),
+        "size": _capture_field(body, "size"),
         "free_text": free_text,
         "is_trigger": bool(re.search(r"^/(skill\s+)?aminer[-_]dp\b", normalized, flags=re.IGNORECASE)),
     }
@@ -327,13 +338,15 @@ def _run_pipeline(
     base_dir: Path,
     output_dir: Path,
     config_path: Path | None,
-    aminer_user_id: str,
+    aminer_author_id: str,
     topics: list[str],
     scholar_name: str,
     scholar_org: str,
     paper_titles: list[str],
     papers_file: str,
     free_text: str,
+    language_sort: str,
+    size: int,
     target: str,
     account_id: str,
 ) -> dict[str, Any]:
@@ -351,8 +364,12 @@ def _run_pipeline(
         command.extend(["--config", str(config_path)])
     if target.strip():
         command.extend(["--target", target.strip()])
-    if aminer_user_id.strip():
-        command.extend(["--aminer-user-id", aminer_user_id.strip()])
+    if aminer_author_id.strip():
+        command.extend(["--aminer-author-id", aminer_author_id.strip()])
+    if language_sort.strip():
+        command.extend(["--language-sort", language_sort.strip()])
+    if size > 0:
+        command.extend(["--size", str(size)])
     if topics:
         command.extend(["--topics", *topics])
     if scholar_name.strip():
@@ -391,13 +408,13 @@ def _build_acknowledgement_message(parsed: dict[str, Any]) -> str:
     scholar_org = _clean_text(parsed.get("scholar_org"))
     topics = [topic for topic in list(parsed.get("topics") or []) if _clean_text(topic)]
     free_text = _clean_text(parsed.get("free_text"))
-    aminer_user_id = _clean_text(parsed.get("aminer_user_id"))
+    aminer_author_id = _clean_text(parsed.get("aminer_author_id"))
 
     if scholar_name:
         if scholar_org:
             return f"已识别学者 {scholar_name}（{scholar_org}），正在根据已发论文归纳研究方向并生成推荐，请稍候。"
         return f"已识别学者 {scholar_name}，正在根据已发论文归纳研究方向并生成推荐，请稍候。"
-    if aminer_user_id:
+    if aminer_author_id:
         return "已识别 AMiner 学者线索，正在归纳研究方向并生成推荐，请稍候。"
     if topics:
         return f"已收到推荐请求，正在围绕 {' / '.join(topics[:5])} 检索并整理论文，请稍候。"
@@ -442,8 +459,8 @@ def handle_trigger(
         parsed = _normalize_interface_payload(parsed, base_dir=base_dir)
     except ValueError as exc:
         detail = _clean_text(str(exc))
-        if detail == "invalid_aminer_user_id":
-            reply_text = "输入里的 `aminer_user_id` 不合法。请提供 24 位十六进制字符串，例如：`/aminer-dp aminer_user_id: 696259801cb939bc391d3a37 topics: 多模态, 智能体`。"
+        if detail == "invalid_aminer_author_id":
+            reply_text = "输入里的 `aminer_author_id` 不合法。请提供 24 位十六进制字符串，例如：`/aminer-dp aminer_author_id: 696259801cb939bc391d3a37 topics: 多模态, 智能体`。"
         elif detail == "papers_file_outside_base_dir":
             reply_text = "出于安全限制，`papers_file` 只能指向当前 skill 目录内的 JSON 文件，不能引用目录外路径。"
         elif detail == "unsupported_papers_file":
@@ -460,7 +477,7 @@ def handle_trigger(
     resolved_target = _truncate_text(_clean_text(target) or inferred_route["target"], MAX_TARGET_LENGTH)
     resolved_account_id = _truncate_text(_clean_text(account_id) or inferred_route["account_id"] or "default", MAX_ACCOUNT_ID_LENGTH) or "default"
     has_profile_input = bool(
-        parsed["aminer_user_id"]
+        parsed["aminer_author_id"]
         or parsed["topics"]
         or parsed["scholar_name"]
         or parsed["scholar_org"]
@@ -493,24 +510,26 @@ def handle_trigger(
             base_dir=base_dir,
             output_dir=output_dir,
             config_path=runtime_config_path,
-            aminer_user_id=parsed["aminer_user_id"],
+            aminer_author_id=parsed["aminer_author_id"],
             topics=parsed["topics"],
             scholar_name=parsed["scholar_name"],
             scholar_org=parsed["scholar_org"],
             paper_titles=parsed["paper_titles"],
             papers_file=parsed["papers_file"],
             free_text=parsed["free_text"],
+            language_sort=parsed["language_sort"],
+            size=parsed["size"],
             target=resolved_target,
             account_id=resolved_account_id,
         )
     except Exception as exc:
         detail = _compact_pipeline_error(str(exc).strip())
-        if parsed["aminer_user_id"] and not parsed["topics"] and ("profile_unavailable" in detail or "missing_topics" in detail or "no_bind_papers_or_experts_topic" in detail):
+        if parsed["aminer_author_id"] and not parsed["topics"] and ("profile_unavailable" in detail or "missing_topics" in detail or "no_bind_papers_or_experts_topic" in detail):
             return {
                 "status": "success",
                 "mode": "onboarding_prompt",
                 "final_response": "TEXT",
-                "reply_text": "我还没能从这个 `aminer_user_id` 归纳出稳定研究方向，请补充研究方向或代表论文，例如：`/aminer-dp aminer_user_id: 696259801cb939bc391d3a37 topics: 多模态, 智能体`。",
+                "reply_text": f"我还没能从这个 `aminer_author_id` 归纳出稳定研究方向，请补充研究方向或代表论文，例如：`/aminer-dp aminer_author_id: {parsed['aminer_author_id']} topics: 多模态, 智能体`。",
             }
         if parsed["scholar_name"] and ("profile_unavailable" in detail or "missing_topics" in detail):
             return {

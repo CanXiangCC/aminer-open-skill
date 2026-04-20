@@ -1,6 +1,6 @@
 ---
 name: aminer-daily-paper
-version: 1.1.1
+version: 1.1.2
 description: "Personalized academic paper recommendation via AMiner rec5 API. Activate this skill whenever the user asks for paper recommendations, whether triggered by /aminer-dp, /skill aminer-dp, or any natural language request such as 'recommend me papers on multimodal agents'. When invoked: extract topics/scholar signals from the input yourself, call handle_trigger.py with structured fields, then dispatch results as Feishu cards (if Feishu target is available) or return Markdown text."
 user-invocable: true
 disable-model-invocation: false
@@ -54,14 +54,15 @@ Content-Type: application/json;charset=utf-8
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `aminer_author_id` | string | conditional | AMiner user ID (24-char hex). |
+| `aminer_author_id` | string | conditional | AMiner platform scholar ID (24-char hex). Recommendations are based on that scholar's research interests. |
 | `author_name` | string | conditional | Scholar name. |
 | `author_org` | string | optional | Scholar institution (improves disambiguation). |
 | `topics` | string[] | conditional | Research topics list. |
-| `size` | int | optional | Number of papers (1–20, default 5). |
+| `size` | int | optional | Number of papers per call (1–20). Omit to let the model decide (see below). |
 | `offset` | int | optional | Pagination offset (0–100, default 0). |
+| `language_sort` | string | optional | Language preference for sorting: `zh` or `en`. |
 
-At least one of `aminer_author_id`, `author_name`, or `topics` must be provided.
+At least one of `aminer_author_id`, `author_name`, or `topics` should be provided. When none are given, the API returns personalized recommendations based on the account associated with `AMINER_API_KEY`.
 
 ### Response Structure
 
@@ -112,23 +113,43 @@ Structured commands or plain natural language — both are valid.
 /aminer-dp
 /aminer-dp topics: multimodal agents, tool-use
 /aminer-dp scholar: Jie Tang org: Tsinghua papers: OAG-Bench | RPC-Bench
-/aminer-dp aminer_user_id: 696259801cb939bc391d3a37 topics: multimodal, tool-use
+/aminer-dp aminer_author_id: 696259801cb939bc391d3a37 topics: multimodal, tool-use
 recommend me recent papers on RAG
 ```
 
-`/aminer-dp` with no parameters calls the API with only the token — the API returns personalized recommendations based on the account associated with `AMINER_API_KEY`.
+`/aminer-dp` with no parameters calls the API with only the token — the API uses `AMINER_API_KEY` to identify the account and returns personalized recommendations.
 
 **Natural language input** — you (the model) must parse it yourself before calling the script:
 
-1. Extract `topics`, `author_name`, `author_org`, or `aminer_user_id` from the text.
-2. Reconstruct the trigger with explicit fields, then call `handle_trigger.py`.
+1. Extract `topics`, `author_name`, `author_org`, or `aminer_author_id` from the text.
+2. Decide `size` and whether to make multiple calls (see **Call Strategy** below).
+3. Reconstruct the trigger with explicit fields, then call `handle_trigger.py`.
 
 Example:
 - User: `/aminer-dp 我做多模态智能体和 tool-use，帮我推荐最近论文`
 - You extract: `topics: 多模态智能体, tool-use`
-- You call: `handle_trigger.py --text "/aminer-dp topics: multimodal agents, tool-use"`
+- You call: `handle_trigger.py --text "/aminer-dp topics: multimodal agents, tool-use size: 5"`
 
 **`papers` field**: representative paper titles (e.g. `papers: OAG-Bench | RPC-Bench`) accompany `scholar`/`author_name` for disambiguation context. They do not map directly to an API field.
+
+---
+
+## Call Strategy
+
+You decide `size` and whether to make multiple calls based on the input:
+
+| Scenario | Action |
+|----------|--------|
+| Single topic or scholar, casual request | 1 call, `size: 5` |
+| User explicitly asks for more (e.g. "give me 10") | 1 call, honor the number (max 20) |
+| Multiple distinct topics (e.g. RAG + multimodal agents) | 1 call per topic group, `size: 3–5` each |
+| Broad open-ended request with no topics | 1 call, `size: 5` |
+
+**Multi-call rules:**
+- Call `handle_trigger.py` once per topic group, passing a focused `topics:` subset each time.
+- Keep each `topics:` list to 1–3 closely related terms for precision.
+- Make calls sequentially; present all results together after all calls finish.
+- Total papers across all calls should not exceed ~15 unless the user asks for more.
 
 ---
 
@@ -167,5 +188,5 @@ python3 "{baseDir}/scripts/handle_trigger.py" \
 ## Error Handling
 
 - `AMINER_API_KEY` missing → stop, prompt user to set it.
-- No profile input → prompt user to provide topics, scholar name, or `aminer_user_id`.
+- No profile input → prompt user to provide topics, scholar name, or `aminer_author_id`.
 - API error → report the error stage; do not fall back to other skills.

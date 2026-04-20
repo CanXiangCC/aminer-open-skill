@@ -113,7 +113,7 @@ def run_pipeline(
     base_dir: Path,
     output_dir: Path,
     config: dict[str, Any],
-    aminer_user_id: str,
+    aminer_author_id: str,
     topics: list[str],
     scholar_name: str,
     scholar_org: str,
@@ -122,6 +122,8 @@ def run_pipeline(
     free_text: str,
     target: str,
     account_id: str,
+    language_sort: str = "",
+    size: int = 0,
     skip_dispatch: bool = False,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -135,18 +137,20 @@ def run_pipeline(
 
     # Derive topics from paper_titles when no other topics or author signal provided
     all_topics = list(topics)
-    if paper_titles and not all_topics and not scholar_name and not aminer_user_id:
+    if paper_titles and not all_topics and not scholar_name and not aminer_author_id:
         all_topics = _topics_from_paper_titles(paper_titles)
 
     search_config = config.get("search") if isinstance(config.get("search"), dict) else {}
-    size = max(1, min(int(search_config.get("top_k") or DEFAULT_TOP_K), 20))
+    if size <= 0:
+        size = max(1, min(int(search_config.get("top_k") or DEFAULT_TOP_K), 20))
 
     api_request = build_api_request(
-        aminer_author_id=aminer_user_id,
+        aminer_author_id=aminer_author_id,
         author_name=scholar_name,
         author_org=scholar_org,
         topics=all_topics,
         size=size,
+        language_sort=language_sort,
     )
 
     try:
@@ -164,20 +168,21 @@ def run_pipeline(
         "status": "success",
         "profile_topics": profile_topics,
         "profile_name": scholar_name or "",
-        "profile_source": "scholar_path" if (aminer_user_id or scholar_name) else "topic_path",
+        "profile_source": "scholar_path" if (aminer_author_id or scholar_name) else "topic_path",
         "papers": papers,
     }
 
-    mode = "scholar_path" if (aminer_user_id or scholar_name) else "topic_path"
+    mode = "scholar_path" if (aminer_author_id or scholar_name) else "topic_path"
 
     write_json(output_dir / "request_context.json", {
-        "aminer_user_id": aminer_user_id,
+        "aminer_author_id": aminer_author_id,
         "topics": topics,
         "scholar_name": scholar_name,
         "scholar_org": scholar_org,
         "paper_titles": paper_titles,
         "papers_file": papers_file,
         "free_text": free_text,
+        "language_sort": language_sort,
         "api_request": api_request,
     })
 
@@ -226,13 +231,15 @@ def main() -> int:
     parser.add_argument("--base-dir", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--config", type=Path, default=None)
     parser.add_argument("--output-dir", type=Path, default=Path(__file__).resolve().parents[1] / "outputs")
-    parser.add_argument("--aminer-user-id", default="")
+    parser.add_argument("--aminer-author-id", default="")
     parser.add_argument("--topics", nargs="*", default=[])
     parser.add_argument("--scholar-name", default="")
     parser.add_argument("--scholar-org", default="")
     parser.add_argument("--paper-title", action="append", dest="paper_titles", default=[])
     parser.add_argument("--papers-file", default="")
     parser.add_argument("--free-text", default="")
+    parser.add_argument("--language-sort", default="")
+    parser.add_argument("--size", type=int, default=0)
     parser.add_argument("--target", default="")
     parser.add_argument("--account", default="main")
     parser.add_argument("--skip-dispatch", action="store_true")
@@ -246,13 +253,15 @@ def main() -> int:
         base_dir=resolved_base_dir,
         output_dir=args.output_dir.resolve(),
         config=config,
-        aminer_user_id=args.aminer_user_id,
+        aminer_author_id=args.aminer_author_id,
         topics=list(args.topics or []),
         scholar_name=args.scholar_name,
         scholar_org=args.scholar_org,
         paper_titles=list(args.paper_titles or []),
         papers_file=args.papers_file,
         free_text=args.free_text,
+        language_sort=args.language_sort,
+        size=args.size,
         target=args.target,
         account_id=args.account,
         skip_dispatch=args.skip_dispatch,

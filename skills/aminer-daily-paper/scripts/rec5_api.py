@@ -42,6 +42,7 @@ def build_api_request(
     offset: int = 0,
     start_year: int | None = None,
     end_year: int | None = None,
+    language_sort: str = "",
 ) -> dict[str, Any]:
     params: dict[str, Any] = {}
     if _clean_text(aminer_author_id):
@@ -59,6 +60,8 @@ def build_api_request(
         params["start_year"] = int(start_year)
     if end_year is not None:
         params["end_year"] = int(end_year)
+    if _clean_text(language_sort) in {"zh", "en"}:
+        params["language_sort"] = _clean_text(language_sort)
     return params
 
 
