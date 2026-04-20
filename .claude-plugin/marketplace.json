@@ -10,15 +10,15 @@
   },
   "plugins": [
     {
-      "name": "aminer-data-search",
+      "name": "aminer-open-academic",
       "description": "全套学术数据查询，支持论文/学者/机构/期刊/专利检索与分析（27 API + 5 工作流）",
-      "source": "./skills/aminer-data-search",
+      "source": "./skills/aminer-open-academic",
       "strict": false
     },
     {
-      "name": "aminer-free-search",
+      "name": "aminer-free-academic",
       "description": "免费接口学术初筛与发现（7 个免费 API，零费用入口）",
-      "source": "./skills/aminer-free-search",
+      "source": "./skills/aminer-free-academic",
       "strict": false
     },
     {

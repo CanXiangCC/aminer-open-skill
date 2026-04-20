@@ -1,5 +1,5 @@
 ---
-name: aminer-free-search
+name: aminer-free-academic
 version: 1.1.1
 author: AMiner
 contact: report@aminer.cn
@@ -8,7 +8,7 @@ description: >
   Free-tier-only AMiner skill (7 free APIs, zero cost). Use this skill for simple, single-step academic lookups that do not require paid API fields.
   Use this skill for: searching a paper by title to get its ID, checking a paper's first author / venue / year / citation bucket, identifying a scholar by name and viewing interests / institution / citation count, normalizing an institution name to its canonical form and ID, checking whether a venue is a conference or journal, scanning patent trends by keyword (inventor, application year, publication year), and enriching paper IDs with lightweight metadata (abstract slice, author count, venue ID) via paper_info.
   Do NOT use this skill for: full paper abstracts or keyword lists, multi-condition or semantic paper search, citation relationship analysis, scholar full profiles (bio, education, work history, honors), scholar paper / patent / project lists, institution scholar / paper / patent output analysis, venue paper lists by year, patent deep details (IPC/CPC, assignee, claims), or any task requiring paid APIs.
-  Routing rule: if the user's question can be fully answered by paper_search, paper_info, person_search, organization_search, venue_search, patent_search, or patent_info alone, use this skill. Otherwise route to aminer-data-search.
+  Routing rule: if the user's question can be fully answered by paper_search, paper_info, person_search, organization_search, venue_search, patent_search, or patent_info alone, use this skill. Otherwise route to aminer-open-academic.
 metadata:
   {
     "openclaw":
