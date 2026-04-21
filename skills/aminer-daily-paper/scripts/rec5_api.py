@@ -191,10 +191,17 @@ def call_rec5_api(
         data = payload.get("data")
         if isinstance(data, list) and data:
             papers = list(data[0].get("papers") or [])
+            data_obj = data[0] if isinstance(data[0], dict) else {}
         elif isinstance(data, dict):
             papers = list(data.get("papers") or [])
+            data_obj = data
         else:
             papers = []
-        return [p for p in papers if isinstance(p, dict)]
+            data_obj = {}
+        analyzed_topics = list(data_obj.get("analyzed_topics") or []) if isinstance(data_obj, dict) else []
+        return {
+            "papers": [p for p in papers if isinstance(p, dict)],
+            "analyzed_topics": [str(t).strip() for t in analyzed_topics if str(t).strip()],
+        }
 
     raise RuntimeError(f"rec5_api_unreachable:{_clean_text(str(last_error))}") from last_error

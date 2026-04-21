@@ -2,10 +2,14 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import json
 import os
+import re
+import ssl
 import subprocess
 import sys
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -108,6 +112,101 @@ def _run_python(script_path: Path, args: list[str]) -> None:
         raise RuntimeError(detail)
 
 
+# ---------------------------------------------------------------------------
+# LLM fallback: enrich papers when backend didn't return Chinese content
+# ---------------------------------------------------------------------------
+
+_LLM_ENRICH_SYSTEM_PROMPT = """你是论文推荐助手。根据论文的 title、abstract、venue 信息，生成中文润色结果。
+
+输出 JSON 格式：
+{
+  "summary": "本文...（中文，不超过两句话，用'本文'开头）",
+  "keywords": "关键词1，关键词2，关键词3（中文，不超过3个）",
+  "comment": "已发表在 XXX（CCF-A）"或空字符串
+}
+
+规则：
+1. summary 用中文简要介绍论文内容和意义，"本文"开头，不超过两句话
+2. keywords 是中文关键词，不超过3个
+3. comment 根据 venue 判断是否为知名会议/期刊，如有则标注 CCF/SCI 等级，格式如"已发表在AAAI（CCF-A）"，没有则空字符串
+4. 不要生成作者相关信息
+5. 英文术语保持原文
+6. 只输出 JSON"""
+
+
+def _has_chinese(text: str) -> bool:
+    return any("\u4e00" <= ch <= "\u9fff" for ch in (text or ""))
+
+
+def _paper_needs_enrich(paper: dict[str, Any]) -> bool:
+    summary = _clean_text(paper.get("summary") or "")
+    return not _has_chinese(summary)
+
+
+def _llm_enrich_one(paper: dict[str, Any], *, api_url: str, api_key: str, model: str, timeout: int) -> None:
+    title = _clean_text(paper.get("title") or "")
+    if not title:
+        return
+    abstract = _clean_text(paper.get("summary") or "")
+    authors_str = ", ".join(_clean_text(a) for a in list(paper.get("authors") or [])[:10] if _clean_text(a))
+    venue = _clean_text(paper.get("venue") or "")
+    user_msg = f"title: {title}\nauthors: {authors_str}\nvenue: {venue or '未知'}\nabstract: {(abstract or '无')[:800]}"
+
+    body = json.dumps({
+        "model": model,
+        "messages": [
+            {"role": "system", "content": _LLM_ENRICH_SYSTEM_PROMPT},
+            {"role": "user", "content": user_msg},
+        ],
+        "temperature": 0.1,
+        "max_tokens": 600,
+    }, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(
+        api_url,
+        data=body,
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
+        method="POST",
+    )
+    try:
+        ctx = ssl.create_default_context()
+        with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        text = _clean_text(content)
+        json_match = re.search(r'\{.*\}', text, re.DOTALL)
+        if not json_match:
+            return
+        result = json.loads(json_match.group(0))
+        if result.get("summary"):
+            paper["summary"] = _clean_text(result["summary"])
+        if result.get("keywords"):
+            paper["keywords"] = [_clean_text(k) for k in str(result["keywords"]).split("，") if _clean_text(k)][:4]
+        if result.get("comment"):
+            paper["comment"] = _clean_text(result["comment"])
+    except Exception:
+        pass  # graceful fallback: keep original English data
+
+
+def _llm_enrich_papers_fallback(papers: list[dict[str, Any]], config: dict[str, Any]) -> None:
+    """Enrich papers missing Chinese content via LLM. Skips papers already enriched by backend."""
+    llm_config = config.get("llm") if isinstance(config.get("llm"), dict) else {}
+    api_key = _clean_text(llm_config.get("api_key") or os.getenv("LLM_API_KEY") or "")
+    if not api_key:
+        return
+    base_url = _clean_text(llm_config.get("base_url") or "https://open.bigmodel.cn/api/paas/v4/")
+    api_url = base_url.rstrip("/") + "/chat/completions"
+    model = _clean_text(llm_config.get("model") or "glm-4-flash")
+    timeout = int(llm_config.get("timeout_seconds") or 30)
+    max_workers = int(llm_config.get("max_concurrent_requests") or 5)
+
+    to_enrich = [p for p in papers if _paper_needs_enrich(p)]
+    if not to_enrich:
+        return
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as pool:
+        pool.map(lambda p: _llm_enrich_one(p, api_url=api_url, api_key=api_key, model=model, timeout=timeout), to_enrich)
+
+
 def run_pipeline(
     *,
     base_dir: Path,
@@ -154,7 +253,9 @@ def run_pipeline(
     )
 
     try:
-        raw_papers = call_rec5_api(api_request, token=token, url=resolve_rec5_url(config))
+        result = call_rec5_api(api_request, token=token, url=resolve_rec5_url(config))
+        raw_papers = result["papers"]
+        api_analyzed_topics = result.get("analyzed_topics") or []
     except Exception as exc:
         raise _stage_error("recall", exc) from exc
 
@@ -162,8 +263,12 @@ def run_pipeline(
         raise _stage_error("recall", "no_papers_returned")
 
     papers = [normalize_rec5_paper(p) for p in raw_papers]
+    papers = [p for p in papers if _clean_text(p.get("title"))]
 
-    profile_topics = all_topics or ([scholar_name] if scholar_name else [])
+    # LLM fallback: if backend didn't return Chinese summary, enrich locally
+    _llm_enrich_papers_fallback(papers, config)
+
+    profile_topics = api_analyzed_topics or all_topics or ([scholar_name] if scholar_name else [])
     summarized_payload = {
         "status": "success",
         "profile_topics": profile_topics,
