@@ -5,11 +5,8 @@ import argparse
 import json
 import os
 import re
-import ssl
 import subprocess
 import sys
-import urllib.request
-import urllib.error
 from pathlib import Path
 from typing import Any
 
@@ -163,7 +160,6 @@ def _normalize_interface_payload(parsed: dict[str, Any], *, base_dir: Path) -> d
     normalized = dict(parsed)
     raw_uid = _clean_text(parsed.get("raw_aminer_author_id"))
     if raw_uid and not re.fullmatch(r"[0-9a-fA-F]{24}", raw_uid):
-        # LLM 可能返回非 ID 值，静默清空而非报错
         normalized["raw_aminer_author_id"] = ""
         normalized["aminer_author_id"] = ""
 
@@ -241,169 +237,6 @@ def _infer_scholar_from_free_text(text: str) -> tuple[str, str, str]:
     return "", "", normalized
 
 
-_INTENT_SYSTEM_PROMPT = """你是论文推荐系统的意图解析器。从用户输入中提取结构化信息。
-
-输出 JSON：
-{
-  "aminer_author_id": "24位十六进制ID，没有则空字符串",
-  "scholar_name": "学者姓名，没有则空字符串",
-  "scholar_org": "学者机构，没有则空字符串",
-  "topics": ["研究方向1", "研究方向2"],
-  "paper_titles": ["论文标题1"],
-  "free_text": "无法归类的剩余文本",
-  "language_sort": "zh 或 en 或空字符串",
-  "size": 0
-}
-
-规则：
-1. 英文人名保持原文（如 Jie Tang，不要翻译）
-2. topics 提取研究方向关键词（中英文均可）
-3. 如果用户说"我是XX，YY大学"，提取 scholar_name 和 scholar_org
-4. 如果用户只是泛泛说"推荐论文"没有具体方向，topics 为空
-5. size 默认 0（由系统决定），除非用户明确说了数量
-6. 只输出 JSON"""
-
-_INTENT_API_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
-_INTENT_API_KEY = "1bd66129c5fa4492d0bc7c3db7691151.pQU91n8ZQdvPtNNc"
-
-
-def _llm_parse_intent(text: str) -> dict[str, Any] | None:
-    """Use LLM to parse user intent from natural language. Returns None on failure."""
-    cleaned = _clean_text(text)
-    if not cleaned or len(cleaned) < 2:
-        return None
-    body = json.dumps({
-        "model": "glm-4-flash",
-        "messages": [
-            {"role": "system", "content": _INTENT_SYSTEM_PROMPT},
-            {"role": "user", "content": cleaned},
-        ],
-        "temperature": 0.1,
-        "max_tokens": 400,
-    }, ensure_ascii=False).encode("utf-8")
-    req = urllib.request.Request(
-        _INTENT_API_URL,
-        data=body,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {_INTENT_API_KEY}",
-        },
-        method="POST",
-    )
-    try:
-        ctx = ssl.create_default_context()
-        with urllib.request.urlopen(req, timeout=10, context=ctx) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-        # Extract JSON from response
-        json_match = re.search(r'\{.*\}', content, re.DOTALL)
-        if not json_match:
-            return None
-        parsed = json.loads(json_match.group(0))
-        if not isinstance(parsed, dict):
-            return None
-        return parsed
-    except Exception:
-        return None
-
-
-def _is_chinese_text(text: str) -> bool:
-    return any("\u4e00" <= ch <= "\u9fff" for ch in (text or ""))
-
-
-def _translate_scholar_name(
-    chinese_name: str, chinese_org: str, config: dict[str, Any]
-) -> tuple[str, str]:
-    """Translate a Chinese scholar name to English via LLM. Returns (en_name, en_org) or ('', '')."""
-    llm_config = config.get("llm") if isinstance(config.get("llm"), dict) else {}
-    api_key = _clean_text(llm_config.get("api_key") or "")
-    if not api_key:
-        # fallback: try the intent API key
-        api_key = _INTENT_API_KEY
-    base_url = _clean_text(llm_config.get("base_url") or "https://open.bigmodel.cn/api/paas/v4/")
-    api_url = base_url.rstrip("/") + "/chat/completions"
-    model = _clean_text(llm_config.get("model") or "glm-4-flash")
-
-    org_hint = f"，机构：{chinese_org}" if _clean_text(chinese_org) else ""
-    body = json.dumps({
-        "model": model,
-        "messages": [
-            {"role": "system", "content": "你是学术姓名翻译助手。将中文学者姓名翻译为其在英文论文中最常用的拼写。只输出JSON。"},
-            {"role": "user", "content": f"学者：{chinese_name}{org_hint}\n输出 JSON：{{\"en_name\": \"英文名\", \"en_org\": \"英文机构名\"}}"},
-        ],
-        "temperature": 0.0,
-        "max_tokens": 100,
-    }, ensure_ascii=False).encode("utf-8")
-    req = urllib.request.Request(
-        api_url,
-        data=body,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
-        method="POST",
-    )
-    try:
-        ctx = ssl.create_default_context()
-        with urllib.request.urlopen(req, timeout=8, context=ctx) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-        json_match = re.search(r'\{.*\}', content, re.DOTALL)
-        if not json_match:
-            return "", ""
-        result = json.loads(json_match.group(0))
-        return _clean_text(result.get("en_name", "")), _clean_text(result.get("en_org", ""))
-    except Exception:
-        return "", ""
-
-
-def _translate_topics(topics: list[str], config: dict[str, Any]) -> list[str]:
-    """Translate Chinese topics to English for ES retrieval."""
-    chinese_topics = [t for t in topics if _is_chinese_text(t)]
-    english_topics = [t for t in topics if not _is_chinese_text(t)]
-    if not chinese_topics:
-        return topics
-
-    llm_config = config.get("llm") if isinstance(config.get("llm"), dict) else {}
-    api_key = _clean_text(llm_config.get("api_key") or "") or _INTENT_API_KEY
-    base_url = _clean_text(llm_config.get("base_url") or "https://open.bigmodel.cn/api/paas/v4/")
-    api_url = base_url.rstrip("/") + "/chat/completions"
-    model = _clean_text(llm_config.get("model") or "glm-4-flash")
-
-    joined = "、".join(chinese_topics)
-    body = json.dumps({
-        "model": model,
-        "messages": [
-            {"role": "system", "content": "你是学术术语翻译助手。将中文学术关键词翻译为英文学术术语。只输出JSON。"},
-            {"role": "user", "content": f"翻译以下研究方向为英文学术术语：{joined}\n输出JSON：{{\"en_topics\": [\"English term 1\", \"English term 2\"]}}"},
-        ],
-        "temperature": 0.0,
-        "max_tokens": 200,
-    }, ensure_ascii=False).encode("utf-8")
-    req = urllib.request.Request(
-        api_url, data=body,
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
-        method="POST",
-    )
-    try:
-        ctx = ssl.create_default_context()
-        with urllib.request.urlopen(req, timeout=8, context=ctx) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-        json_match = re.search(r'\{.*\}', content, re.DOTALL)
-        if json_match:
-            result = json.loads(json_match.group(0))
-            en = [_clean_text(t) for t in list(result.get("en_topics") or []) if _clean_text(t)]
-            if en:
-                seen = set()
-                deduped = []
-                for t in en + english_topics:
-                    if t.casefold() not in seen:
-                        seen.add(t.casefold())
-                        deduped.append(t)
-                return deduped
-    except Exception:
-        pass
-    return topics
-
-
 def parse_trigger_text(text: str) -> dict[str, Any]:
     raw_text = str(text or "")
     command_text = _extract_command_text(raw_text)
@@ -411,36 +244,6 @@ def parse_trigger_text(text: str) -> dict[str, Any]:
     is_trigger = bool(re.search(r"^/(skill\s+)?aminer[-_]dp\b", normalized, flags=re.IGNORECASE))
     body = re.sub(r"^/(skill\s+)?aminer[-_]dp\b", "", command_text, flags=re.IGNORECASE).strip()
 
-    # --- LLM intent parsing (primary), regex fallback ---
-    llm_result = _llm_parse_intent(body) if _clean_text(body) else None
-    if llm_result:
-        uid_raw = _clean_text(llm_result.get("aminer_author_id"))
-        uid = uid_raw if re.fullmatch(r"[0-9a-fA-F]{24}", uid_raw) else ""
-        topics = [_clean_text(t) for t in list(llm_result.get("topics") or []) if _clean_text(t)]
-        paper_titles = [_clean_text(t) for t in list(llm_result.get("paper_titles") or []) if _clean_text(t)]
-        lang = _clean_text(llm_result.get("language_sort"))
-        raw_size = _clean_text(llm_result.get("size"))
-        try:
-            size = str(max(1, min(int(raw_size), 20))) if raw_size and int(raw_size) > 0 else ""
-        except (ValueError, TypeError):
-            size = ""
-        return {
-            "raw_text": raw_text,
-            "command_text": command_text,
-            "raw_aminer_author_id": uid_raw,
-            "aminer_author_id": uid,
-            "topics": topics,
-            "scholar_name": _clean_text(llm_result.get("scholar_name")),
-            "scholar_org": _clean_text(llm_result.get("scholar_org")),
-            "paper_titles": paper_titles,
-            "papers_file": "",
-            "language_sort": lang if lang in {"zh", "en"} else "",
-            "size": size,
-            "free_text": _clean_text(llm_result.get("free_text")),
-            "is_trigger": is_trigger,
-        }
-
-    # --- Regex fallback ---
     uid_match = re.search(r"aminer_author_id\s*[:：]\s*([0-9a-fA-F]{24})", body, flags=re.IGNORECASE)
     uid = uid_match.group(1) if uid_match else ""
     scholar_name = _capture_field(body, "scholar_name")
@@ -586,6 +389,7 @@ def _run_pipeline(
         command.extend(["--papers-file", papers_file.strip()])
     if free_text.strip():
         command.extend(["--free-text", free_text.strip()])
+    command.append("--skip-dispatch")
     completed = subprocess.run(command, capture_output=True, text=True, check=False)
     if completed.returncode != 0:
         detail = completed.stderr.strip() or completed.stdout.strip() or "run_pipeline failed"
@@ -645,7 +449,6 @@ def _maybe_send_acknowledgement(
             dry_run=False,
         )
     except Exception:
-        # Acknowledgement is best-effort; do not block the pipeline if this fails.
         return
 
 
@@ -708,18 +511,6 @@ def handle_trigger(
         account_id=resolved_account_id,
     )
 
-    # Translate Chinese scholar name to English (AMiner person search only indexes English names)
-    if parsed["scholar_name"] and _is_chinese_text(parsed["scholar_name"]):
-        en_name, en_org = _translate_scholar_name(parsed["scholar_name"], parsed["scholar_org"], loaded_config)
-        if en_name:
-            parsed["scholar_name"] = en_name
-            if en_org and not parsed["scholar_org"]:
-                parsed["scholar_org"] = en_org
-
-    # Translate Chinese topics to English (ES index is English-dominant)
-    if parsed["topics"] and any(_is_chinese_text(t) for t in parsed["topics"]):
-        parsed["topics"] = _translate_topics(parsed["topics"], loaded_config)
-
     try:
         pipeline_result = _run_pipeline(
             base_dir=base_dir,
@@ -760,7 +551,32 @@ def handle_trigger(
             "reply_text": f"推荐流程执行失败，出错阶段：{detail}",
         }
 
-    result: dict[str, Any] = {
+    has_feishu_target = bool(resolved_target.strip())
+    papers_path = pipeline_result.get("summarized_path", "")
+
+    # Feishu target: return papers for claw to enrich, then dispatch separately
+    if has_feishu_target and papers_path:
+        result: dict[str, Any] = {
+            "status": "success",
+            "mode": pipeline_result.get("mode", "success"),
+            "parsed_input": parsed,
+            "artifacts": {
+                "runtime_config": str(runtime_config_path),
+                "output_dir": str(output_dir),
+                "papers_path": papers_path,
+            },
+            "delivery_route": {
+                "target": resolved_target,
+                "account_id": resolved_account_id,
+            },
+            "pipeline": pipeline_result,
+            "final_response": "ENRICH_AND_DISPATCH",
+            "paper_count": pipeline_result.get("paper_count", 0),
+        }
+        return result
+
+    # No Feishu target: return markdown text directly
+    result = {
         "status": "success",
         "mode": pipeline_result.get("mode", "success"),
         "parsed_input": parsed,
@@ -773,9 +589,8 @@ def handle_trigger(
             "account_id": resolved_account_id,
         },
         "pipeline": pipeline_result,
-        "final_response": pipeline_result.get("final_response", "NO_REPLY"),
+        "final_response": pipeline_result.get("final_response", "TEXT"),
     }
-    # Forward reply_text when pipeline falls back to text mode (non-Feishu channels)
     reply_text = pipeline_result.get("reply_text", "")
     if reply_text:
         result["reply_text"] = reply_text
