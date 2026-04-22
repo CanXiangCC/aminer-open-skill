@@ -10,9 +10,9 @@
   },
   "plugins": [
     {
-      "name": "aminer-open-academic",
+      "name": "aminer-academic-search",
       "description": "全套学术数据查询，支持论文/学者/机构/期刊/专利检索与分析（27 API + 5 工作流）",
-      "source": "./skills/aminer-open-academic",
+      "source": "./skills/aminer-academic-search",
       "strict": false
     },
     {

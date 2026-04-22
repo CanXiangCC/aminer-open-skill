@@ -1,5 +1,5 @@
 ---
-name: aminer-open-academic
+name: aminer-academic-search
 version: 1.1.1
 author: AMiner
 contact: report@aminer.cn
