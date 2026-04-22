@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -154,7 +155,9 @@ def run_pipeline(
     )
 
     try:
-        raw_papers = call_rec5_api(api_request, token=token, url=resolve_rec5_url(config))
+        result = call_rec5_api(api_request, token=token, url=resolve_rec5_url(config))
+        raw_papers = result["papers"]
+        api_analyzed_topics = result.get("analyzed_topics") or []
     except Exception as exc:
         raise _stage_error("recall", exc) from exc
 
@@ -162,8 +165,9 @@ def run_pipeline(
         raise _stage_error("recall", "no_papers_returned")
 
     papers = [normalize_rec5_paper(p) for p in raw_papers]
+    papers = [p for p in papers if _clean_text(p.get("title"))]
 
-    profile_topics = all_topics or ([scholar_name] if scholar_name else [])
+    profile_topics = api_analyzed_topics or all_topics or ([scholar_name] if scholar_name else [])
     summarized_payload = {
         "status": "success",
         "profile_topics": profile_topics,

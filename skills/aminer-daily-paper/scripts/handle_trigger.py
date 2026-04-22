@@ -160,7 +160,8 @@ def _normalize_interface_payload(parsed: dict[str, Any], *, base_dir: Path) -> d
     normalized = dict(parsed)
     raw_uid = _clean_text(parsed.get("raw_aminer_author_id"))
     if raw_uid and not re.fullmatch(r"[0-9a-fA-F]{24}", raw_uid):
-        raise ValueError("invalid_aminer_author_id")
+        normalized["raw_aminer_author_id"] = ""
+        normalized["aminer_author_id"] = ""
 
     normalized["aminer_author_id"] = _clean_text(parsed.get("aminer_author_id"))
     normalized["topics"] = _normalize_topics_for_interface(list(parsed.get("topics") or []))
@@ -240,7 +241,9 @@ def parse_trigger_text(text: str) -> dict[str, Any]:
     raw_text = str(text or "")
     command_text = _extract_command_text(raw_text)
     normalized = _clean_text(command_text)
+    is_trigger = bool(re.search(r"^/(skill\s+)?aminer[-_]dp\b", normalized, flags=re.IGNORECASE))
     body = re.sub(r"^/(skill\s+)?aminer[-_]dp\b", "", command_text, flags=re.IGNORECASE).strip()
+
     uid_match = re.search(r"aminer_author_id\s*[:：]\s*([0-9a-fA-F]{24})", body, flags=re.IGNORECASE)
     uid = uid_match.group(1) if uid_match else ""
     scholar_name = _capture_field(body, "scholar_name")
@@ -267,13 +270,16 @@ def parse_trigger_text(text: str) -> dict[str, Any]:
         "language_sort": _capture_field(body, "language_sort"),
         "size": _capture_field(body, "size"),
         "free_text": free_text,
-        "is_trigger": bool(re.search(r"^/(skill\s+)?aminer[-_]dp\b", normalized, flags=re.IGNORECASE)),
+        "is_trigger": is_trigger,
     }
 
 
 def _load_config(base_dir: Path, config_path: Path | None) -> dict[str, Any]:
     if config_path and config_path.exists():
         return yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+    default_path = base_dir / "config.yaml"
+    if default_path.exists():
+        return yaml.safe_load(default_path.read_text(encoding="utf-8")) or {}
     return {}
 
 
@@ -383,6 +389,7 @@ def _run_pipeline(
         command.extend(["--papers-file", papers_file.strip()])
     if free_text.strip():
         command.extend(["--free-text", free_text.strip()])
+    command.append("--skip-dispatch")
     completed = subprocess.run(command, capture_output=True, text=True, check=False)
     if completed.returncode != 0:
         detail = completed.stderr.strip() or completed.stdout.strip() or "run_pipeline failed"
@@ -442,7 +449,6 @@ def _maybe_send_acknowledgement(
             dry_run=False,
         )
     except Exception:
-        # Acknowledgement is best-effort; do not block the pipeline if this fails.
         return
 
 
@@ -558,9 +564,8 @@ def handle_trigger(
             "account_id": resolved_account_id,
         },
         "pipeline": pipeline_result,
-        "final_response": pipeline_result.get("final_response", "NO_REPLY"),
+        "final_response": pipeline_result.get("final_response", "TEXT"),
     }
-    # Forward reply_text when pipeline falls back to text mode (non-Feishu channels)
     reply_text = pipeline_result.get("reply_text", "")
     if reply_text:
         result["reply_text"] = reply_text
