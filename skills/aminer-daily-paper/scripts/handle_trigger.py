@@ -551,32 +551,7 @@ def handle_trigger(
             "reply_text": f"推荐流程执行失败，出错阶段：{detail}",
         }
 
-    has_feishu_target = bool(resolved_target.strip())
-    papers_path = pipeline_result.get("summarized_path", "")
-
-    # Feishu target: return papers for claw to enrich, then dispatch separately
-    if has_feishu_target and papers_path:
-        result: dict[str, Any] = {
-            "status": "success",
-            "mode": pipeline_result.get("mode", "success"),
-            "parsed_input": parsed,
-            "artifacts": {
-                "runtime_config": str(runtime_config_path),
-                "output_dir": str(output_dir),
-                "papers_path": papers_path,
-            },
-            "delivery_route": {
-                "target": resolved_target,
-                "account_id": resolved_account_id,
-            },
-            "pipeline": pipeline_result,
-            "final_response": "ENRICH_AND_DISPATCH",
-            "paper_count": pipeline_result.get("paper_count", 0),
-        }
-        return result
-
-    # No Feishu target: return markdown text directly
-    result = {
+    result: dict[str, Any] = {
         "status": "success",
         "mode": pipeline_result.get("mode", "success"),
         "parsed_input": parsed,
