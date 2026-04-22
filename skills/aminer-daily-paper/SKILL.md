@@ -54,15 +54,14 @@ Content-Type: application/json;charset=utf-8
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `aminer_author_id` | string | conditional | AMiner platform scholar ID (24-char hex). Recommendations are based on that scholar's research interests. |
-| `author_name` | string | conditional | Scholar name. |
-| `author_org` | string | optional | Scholar institution (improves disambiguation). |
-| `topics` | string[] | conditional | Research topics list. |
+| `author_name` | string | conditional | Scholar name (English). The backend resolves it to a scholar ID via person search. |
+| `author_org` | string | optional | Scholar institution (English full name). Required for disambiguation when the name is ambiguous. |
+| `topics` | string[] | conditional | Research topics list (English). |
 | `size` | int | optional | Number of papers per call (1–20). Omit to let the model decide (see below). |
 | `offset` | int | optional | Pagination offset (0–100, default 0). |
 | `language_sort` | string | optional | Language preference for sorting: `zh` or `en`. |
 
-At least one of `aminer_author_id`, `author_name`, or `topics` should be provided. When none are given, the API returns personalized recommendations based on the account associated with `AMINER_API_KEY`.
+At least one of `author_name` or `topics` should be provided. When none are given, the API returns personalized recommendations based on the account associated with `AMINER_API_KEY`.
 
 ### Response Structure
 
@@ -113,22 +112,34 @@ Structured commands or plain natural language — both are valid.
 /aminer-dp
 /aminer-dp topics: multimodal agents, tool-use
 /aminer-dp scholar: Jie Tang org: Tsinghua papers: OAG-Bench | RPC-Bench
-/aminer-dp aminer_author_id: 696259801cb939bc391d3a37 topics: multimodal, tool-use
 recommend me recent papers on RAG
 ```
 
 `/aminer-dp` with no parameters calls the API with only the token — the API uses `AMINER_API_KEY` to identify the account and returns personalized recommendations.
 
-**Natural language input** — you (the model) must parse it yourself before calling the script:
+**Natural language input** — you (the model) must parse it into backend-consumable fields before calling the script:
 
-1. Extract `topics`, `author_name`, `author_org`, or `aminer_author_id` from the text.
+1. Extract `topics`, `author_name`, and/or `author_org` from the text. Apply the following rules:
+   - **English only**: All field values must be in English. `author_name` → scholar's commonly used English name (e.g. `唐杰` → `Jie Tang`, `李飞飞` → `Fei-Fei Li`). `author_org` → institution's full English name (e.g. `清华大学` → `Tsinghua University`, `UIUC` → `University of Illinois at Urbana-Champaign`). `topics` → English research terms. The backend person search and paper retrieval APIs operate in English.
+   - **Expand abbreviations**: Always use the full official English name for institutions (e.g. `MIT` → `Massachusetts Institute of Technology`, `ETH` → `ETH Zurich`, `PKU` → `Peking University`). The backend uses substring matching and cannot match abbreviations.
+   - **Disambiguate scholars**: If the scholar name is ambiguous (common name, multiple matches likely), you MUST also provide `author_org`. If the user did not specify an org, ask them before proceeding — the backend will reject requests with ambiguous names and no org.
+   - **Unknown English name**: If you cannot confidently determine the scholar's English name, ask the user to provide it or describe their research direction instead.
 2. Decide `size` and whether to make multiple calls (see **Call Strategy** below).
 3. Reconstruct the trigger with explicit fields, then call `handle_trigger.py`.
 
 Example:
 - User: `/aminer-dp 我做多模态智能体和 tool-use，帮我推荐最近论文`
-- You extract: `topics: 多模态智能体, tool-use`
+- You extract: `topics: multimodal agents, tool-use`
 - You call: `handle_trigger.py --text "/aminer-dp topics: multimodal agents, tool-use size: 5"`
+
+Example (scholar):
+- User: `/aminer-dp 我是唐杰，清华大学，做多模态和知识图谱`
+- You extract: `scholar: Jie Tang, org: Tsinghua University, topics: multimodal, knowledge graph`
+- You call: `handle_trigger.py --text "/aminer-dp scholar: Jie Tang org: Tsinghua University topics: multimodal, knowledge graph"`
+
+Example (ambiguous name, ask user):
+- User: `/aminer-dp 推荐张伟方向的论文`
+- You: "张伟是一个常见名字，请提供机构信息以便精确匹配，例如：张伟，北京大学。或者直接提供 aminer_author_id。"
 
 **`papers` field**: representative paper titles (e.g. `papers: OAG-Bench | RPC-Bench`) accompany `scholar`/`author_name` for disambiguation context. They do not map directly to an API field.
 
