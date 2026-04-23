@@ -66,7 +66,7 @@ def build_api_request(
 
 
 def normalize_rec5_paper(raw: dict[str, Any]) -> dict[str, Any]:
-    """Normalize raw API paper dict into the internal format expected by feishu_cards."""
+    """Normalize raw rec5 paper dict to the in-skill record shape (Markdown display / JSON 输出)."""
     paper_id = _clean_text(raw.get("paper_id") or raw.get("id"))
     links = raw.get("links") if isinstance(raw.get("links"), dict) else {}
     aminer_url = (
@@ -85,17 +85,20 @@ def normalize_rec5_paper(raw: dict[str, Any]) -> dict[str, Any]:
         structured_summary = {}
 
     raw_fa = raw.get("famous_authors")
-    famous_authors: list[str] = []
+    famous_authors: list[Any] = []
     if isinstance(raw_fa, list):
         for item in raw_fa:
             if isinstance(item, dict):
                 name = _clean_text(item.get("name"))
-                desc = _clean_text(item.get("description") or item.get("bio") or "")
-                url = _clean_text(item.get("profile_url") or "")
-                if name:
-                    text = f"[{name}]({url})" if url else name
-                    text = f"{text}: {desc}" if desc else text
-                    famous_authors.append(text)
+                if not name:
+                    continue
+                famous_authors.append(
+                    {
+                        "name": name,
+                        "description": _clean_text(item.get("description") or item.get("bio") or ""),
+                        "profile_url": _clean_text(item.get("profile_url") or ""),
+                    }
+                )
             elif isinstance(item, str) and _clean_text(item):
                 famous_authors.append(_clean_text(item))
 
@@ -144,7 +147,7 @@ def call_rec5_api(
     url: str = DEFAULT_REC5_URL,
     timeout_seconds: int = DEFAULT_TIMEOUT_SECONDS,
     retry_attempts: int = DEFAULT_RETRY_ATTEMPTS,
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     if not _clean_text(token):
         raise RuntimeError("missing_aminer_api_key")
 

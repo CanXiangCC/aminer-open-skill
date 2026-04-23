@@ -3,9 +3,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
-import re
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -24,7 +21,6 @@ from scripts.rec5_api import (
     resolve_rec5_url,
     resolve_token,
 )
-from scripts.render_feishu_messages import render_feishu_messages
 
 
 def _clean_text(value: Any) -> str:
@@ -43,7 +39,7 @@ def _stage_error(stage: str, detail: Any) -> RuntimeError:
 
 
 def _format_papers_as_markdown(papers: list[dict[str, Any]], profile_topics: list[str]) -> str:
-    """Render recommended papers as Markdown text for non-Feishu channels."""
+    """Render recommended papers as Markdown for the host to display."""
     lines: list[str] = []
     topic_hint = " / ".join(profile_topics[:5]) if profile_topics else ""
     header = f"为你推荐 {len(papers)} 篇相关论文"
@@ -102,16 +98,8 @@ def _topics_from_paper_titles(paper_titles: list[str]) -> list[str]:
     return topics[:5]
 
 
-def _run_python(script_path: Path, args: list[str]) -> None:
-    completed = subprocess.run([sys.executable, str(script_path), *args], capture_output=True, text=True, check=False)
-    if completed.returncode != 0:
-        detail = completed.stderr.strip() or completed.stdout.strip() or f"{script_path.name} failed"
-        raise RuntimeError(detail)
-
-
 def run_pipeline(
     *,
-    base_dir: Path,
     output_dir: Path,
     config: dict[str, Any],
     aminer_author_id: str,
@@ -121,22 +109,15 @@ def run_pipeline(
     paper_titles: list[str],
     papers_file: str,
     free_text: str,
-    target: str,
-    account_id: str,
     language_sort: str = "",
     size: int = 0,
-    skip_dispatch: bool = False,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
-
-    if target.strip() and account_id.strip():
-        write_json(output_dir / "manual_reply_route.json", {"target": target.strip(), "accountId": account_id.strip()})
 
     token = resolve_token(config)
     if not token:
         raise _stage_error("auth", "AMINER_API_KEY is not set")
 
-    # Derive topics from paper_titles when no other topics or author signal provided
     all_topics = list(topics)
     if paper_titles and not all_topics and not scholar_name and not aminer_author_id:
         all_topics = _topics_from_paper_titles(paper_titles)
@@ -145,13 +126,16 @@ def run_pipeline(
     if size <= 0:
         size = max(1, min(int(search_config.get("top_k") or DEFAULT_TOP_K), 20))
 
+    # language_sort only when user explicitly passed language_sort: zh|en in the trigger (see SKILL).
+    sort_for_api = _clean_text(language_sort) if _clean_text(language_sort) in {"zh", "en"} else ""
+
     api_request = build_api_request(
         aminer_author_id=aminer_author_id,
         author_name=scholar_name,
         author_org=scholar_org,
         topics=all_topics,
         size=size,
-        language_sort=language_sort,
+        language_sort=sort_for_api,
     )
 
     try:
@@ -178,53 +162,30 @@ def run_pipeline(
 
     mode = "scholar_path" if (aminer_author_id or scholar_name) else "topic_path"
 
-    write_json(output_dir / "request_context.json", {
-        "aminer_author_id": aminer_author_id,
-        "topics": topics,
-        "scholar_name": scholar_name,
-        "scholar_org": scholar_org,
-        "paper_titles": paper_titles,
-        "papers_file": papers_file,
-        "free_text": free_text,
-        "language_sort": language_sort,
-        "api_request": api_request,
-    })
+    write_json(
+        output_dir / "request_context.json",
+        {
+            "aminer_author_id": aminer_author_id,
+            "input_topics": topics,
+            "topics": all_topics,
+            "scholar_name": scholar_name,
+            "scholar_org": scholar_org,
+            "paper_titles": paper_titles,
+            "papers_file": papers_file,
+            "free_text": free_text,
+            "language_sort": language_sort,
+            "api_request": api_request,
+        },
+    )
 
     summarized_path = output_dir / "papers_summarized.json"
     write_json(summarized_path, summarized_payload)
-
-    # Non-Feishu channels (WeChat, Telegram, pure OpenClaw conversation, etc.):
-    # target is empty → skip card dispatch and return Markdown text instead.
-    has_feishu_target = bool(target.strip()) and not skip_dispatch
-    if not has_feishu_target:
-        markdown_text = _format_papers_as_markdown(papers, profile_topics)
-        return {
-            "status": "success",
-            "summarized_path": str(summarized_path),
-            "final_response": "TEXT",
-            "reply_text": markdown_text,
-            "mode": mode,
-            "paper_count": len(papers),
-        }
-
-    messages_path = output_dir / "feishu_messages.json"
-    try:
-        messages_payload = render_feishu_messages(summarized_payload)
-    except Exception as exc:
-        raise _stage_error("render", exc) from exc
-    write_json(messages_path, messages_payload)
-
-    dispatch_args = ["--messages", str(messages_path), "--account-id", account_id, "--target", target.strip()]
-    try:
-        _run_python(base_dir / "scripts" / "dispatch_feishu_messages.py", dispatch_args)
-    except Exception as exc:
-        raise _stage_error("dispatch", exc) from exc
-
+    markdown_text = _format_papers_as_markdown(papers, profile_topics)
     return {
         "status": "success",
         "summarized_path": str(summarized_path),
-        "messages_path": str(messages_path),
-        "final_response": "NO_REPLY",
+        "final_response": "TEXT",
+        "reply_text": markdown_text,
         "mode": mode,
         "paper_count": len(papers),
     }
@@ -244,17 +205,12 @@ def main() -> int:
     parser.add_argument("--free-text", default="")
     parser.add_argument("--language-sort", default="")
     parser.add_argument("--size", type=int, default=0)
-    parser.add_argument("--target", default="")
-    parser.add_argument("--account", default="main")
-    parser.add_argument("--skip-dispatch", action="store_true")
     args = parser.parse_args()
 
-    resolved_base_dir = args.base_dir.resolve()
     resolved_config = args.config.resolve() if args.config else None
     config = _load_yaml(resolved_config)
 
     result = run_pipeline(
-        base_dir=resolved_base_dir,
         output_dir=args.output_dir.resolve(),
         config=config,
         aminer_author_id=args.aminer_author_id,
@@ -266,9 +222,6 @@ def main() -> int:
         free_text=args.free_text,
         language_sort=args.language_sort,
         size=args.size,
-        target=args.target,
-        account_id=args.account,
-        skip_dispatch=args.skip_dispatch,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0

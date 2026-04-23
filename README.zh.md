@@ -13,7 +13,7 @@
 
 - `aminer-academic-search`：适合做学术信息检索、深度分析和组合工作流
 - `aminer-free-academic`：适合做免费优先的论文/学者/机构/期刊/专利发现与初筛
-- `aminer-daily-paper`：适合做个性化论文推荐，支持飞书卡片与 Markdown 两种输出格式
+- `aminer-daily-paper`：适合做个性化论文推荐，通过 `reply_text` 返回 Markdown
 
 ## 能解决哪些问题
 

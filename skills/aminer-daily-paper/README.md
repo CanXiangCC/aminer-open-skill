@@ -1,6 +1,6 @@
 # aminer-daily-paper
 
-Personalized academic paper recommendation via the AMiner rec5 API. Works as an OpenClaw skill, dispatching results as Feishu interactive cards or returning Markdown text when no Feishu target is available.
+Personalized academic paper recommendation via the AMiner rec5 API. Intended for OpenClaw or similar hosts: the scripts return JSON with Markdown in `reply_text`; the host sends or displays that content.
 
 ## Requirements
 
@@ -27,9 +27,9 @@ The model (running the skill) extracts `topics`, `author_name`, `author_org`, or
 
 ## How It Works
 
-1. `handle_trigger.py` parses the trigger text and infers the Feishu delivery route.
-2. `run_pipeline.py` calls the AMiner rec5 API with the extracted parameters.
-3. If a Feishu target is available, paper cards are dispatched via `openclaw message send`. Otherwise, results are returned as Markdown text.
+1. `handle_trigger.py` parses the trigger text and runs `run_pipeline.py` as a subprocess.
+2. `run_pipeline.py` calls the AMiner rec5 API and writes `papers_summarized.json` under the output directory.
+3. The pipeline returns `final_response: "TEXT"` and `reply_text` (Markdown). No Feishu card builders or `openclaw` dispatch live in this skill.
 
 ## API
 

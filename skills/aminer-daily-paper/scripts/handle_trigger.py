@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import subprocess
 import sys
@@ -14,9 +13,6 @@ import yaml
 
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from scripts.dispatch_feishu_messages import send_text_via_route
-
 
 def _clean_text(value: Any) -> str:
     return re.sub(r"\s+", " ", str(value or "")).strip()
@@ -96,9 +92,20 @@ MAX_PAPER_TITLE_LENGTH = 300
 MAX_SCHOLAR_NAME_LENGTH = 80
 MAX_SCHOLAR_ORG_LENGTH = 160
 MAX_FREE_TEXT_LENGTH = 600
-MAX_TARGET_LENGTH = 160
-MAX_ACCOUNT_ID_LENGTH = 64
 ALLOWED_PAPERS_FILE_SUFFIXES = {".json"}
+TOPIC_STOPWORDS = {
+    "论文",
+    "推荐",
+    "一下",
+    "推荐一下",
+    "相关论文",
+    "papers",
+    "paper",
+    "recommend",
+    "recommendation",
+    "research papers",
+}
+TOPIC_STOPWORDS_CASEFOLD = {item.casefold() for item in TOPIC_STOPWORDS}
 
 
 def _capture_field(command_body: str, field_name: str) -> str:
@@ -160,8 +167,7 @@ def _normalize_interface_payload(parsed: dict[str, Any], *, base_dir: Path) -> d
     normalized = dict(parsed)
     raw_uid = _clean_text(parsed.get("raw_aminer_author_id"))
     if raw_uid and not re.fullmatch(r"[0-9a-fA-F]{24}", raw_uid):
-        normalized["raw_aminer_author_id"] = ""
-        normalized["aminer_author_id"] = ""
+        raise ValueError("invalid_aminer_author_id")
 
     normalized["aminer_author_id"] = _clean_text(parsed.get("aminer_author_id"))
     normalized["topics"] = _normalize_topics_for_interface(list(parsed.get("topics") or []))
@@ -177,6 +183,8 @@ def _normalize_interface_payload(parsed: dict[str, Any], *, base_dir: Path) -> d
         normalized["size"] = max(1, min(int(raw_size), 20)) if raw_size else 0
     except (ValueError, TypeError):
         normalized["size"] = 0
+    if not normalized["topics"] and normalized["free_text"]:
+        normalized["topics"] = _infer_topics_from_free_text(normalized["free_text"])
     return normalized
 
 
@@ -193,6 +201,55 @@ def _remove_generic_request_phrases(text: str) -> str:
         cleaned = re.sub(pattern, " ", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"[。！？!?.，,；;、\s]+", " ", cleaned)
     return _clean_text(cleaned)
+
+
+def _normalize_topic_candidate(text: str) -> str:
+    candidate = _clean_text(text)
+    if not candidate:
+        return ""
+    candidate = re.sub(r'^[\'"`“”‘’]+|[\'"`“”‘’]+$', "", candidate)
+    candidate = re.sub(r"^(?:关于|研究(?:方向)?|方向|领域|做|关注|topic(?:s)?|about|on)\s*", "", candidate, flags=re.IGNORECASE)
+    candidate = re.sub(r"\s*(?:相关|方向|领域|论文|papers?|research)\s*$", "", candidate, flags=re.IGNORECASE)
+    candidate = _clean_text(candidate)
+    if not candidate:
+        return ""
+    if candidate.casefold() in TOPIC_STOPWORDS_CASEFOLD:
+        return ""
+    return _truncate_text(candidate, MAX_TOPIC_LENGTH)
+
+
+def _infer_topics_from_free_text(text: str) -> list[str]:
+    cleaned = _clean_text(text)
+    if not cleaned:
+        return []
+
+    for pattern in GENERIC_REQUEST_PATTERNS:
+        cleaned = re.sub(pattern, " ", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\b(?:recommend|papers?|please|find|show)\b", " ", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"(?:给我|帮我|请|想看|想要|推荐|看看)\s*", " ", cleaned)
+    cleaned = _clean_text(cleaned)
+    if not cleaned:
+        return []
+
+    parts = re.split(r"[,，;/；、\n]+|\s+(?:and|or|以及|和|与|及)\s+", cleaned, flags=re.IGNORECASE)
+    topics: list[str] = []
+    seen: set[str] = set()
+    for part in parts:
+        candidate = _normalize_topic_candidate(part)
+        if not candidate:
+            continue
+        key = candidate.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        topics.append(candidate)
+        if len(topics) >= MAX_TOPICS:
+            break
+    if topics:
+        return topics
+
+    fallback = _normalize_topic_candidate(cleaned)
+    return [fallback] if fallback else []
 
 
 def _infer_scholar_from_free_text(text: str) -> tuple[str, str, str]:
@@ -248,7 +305,7 @@ def parse_trigger_text(text: str) -> dict[str, Any]:
     uid = uid_match.group(1) if uid_match else ""
     scholar_name = _capture_field(body, "scholar_name")
     scholar_org = _capture_field(body, "scholar_org")
-    free_text = _strip_explicit_fields(re.sub(r"aminer_author_id\s*[:：]\s*[0-9a-fA-F]{24}", " ", body, flags=re.IGNORECASE))
+    free_text = _strip_explicit_fields(body)
     if not scholar_name:
         inferred_name, inferred_org, residual = _infer_scholar_from_free_text(free_text)
         if inferred_name:
@@ -283,62 +340,6 @@ def _load_config(base_dir: Path, config_path: Path | None) -> dict[str, Any]:
     return {}
 
 
-def _resolve_openclaw_home() -> Path:
-    explicit = _clean_text(os.getenv("OPENCLAW_HOME"))
-    if explicit:
-        return Path(explicit).expanduser()
-    return Path.home() / ".openclaw"
-
-
-def _infer_route_from_sessions_store() -> dict[str, str]:
-    explicit = _clean_text(os.getenv("OPENCLAW_SESSIONS_PATH"))
-    sessions_path = Path(explicit).expanduser() if explicit else _resolve_openclaw_home() / "agents/main/sessions/sessions.json"
-    if not sessions_path.exists():
-        return {"target": "", "account_id": "default"}
-    try:
-        payload = json.loads(sessions_path.read_text(encoding="utf-8"))
-    except Exception:
-        return {"target": "", "account_id": "default"}
-
-    latest_key = ""
-    latest_updated_at = -1
-    for key, value in payload.items():
-        if not str(key).startswith("agent:main:feishu:direct:"):
-            continue
-        if not isinstance(value, dict):
-            continue
-        updated_at = int(value.get("updatedAt") or -1)
-        if updated_at > latest_updated_at:
-            latest_updated_at = updated_at
-            latest_key = str(key)
-
-    if not latest_key:
-        return {"target": "", "account_id": "default"}
-
-    sender_id = latest_key.rsplit(":", 1)[-1].strip()
-    target = f"user:{sender_id}" if sender_id else ""
-    return {"target": target, "account_id": "default"}
-
-
-def infer_delivery_route(text: str) -> dict[str, str]:
-    raw_text = str(text or "")
-    sender_match = re.search(r'"sender_id"\s*:\s*"([^"]+)"', raw_text)
-    if not sender_match:
-        sender_match = re.search(r"sender_id\s*[:：]\s*([A-Za-z0-9_-]+)", raw_text, flags=re.IGNORECASE)
-    sender_id = _clean_text(sender_match.group(1)) if sender_match else ""
-    target = f"user:{sender_id}" if sender_id and ":" not in sender_id else sender_id
-
-    account_match = re.search(r'"accountId"\s*:\s*"([^"]+)"', raw_text)
-    if not account_match:
-        account_match = re.search(r"account[_ ]id\s*[:：]\s*([A-Za-z0-9_-]+)", raw_text, flags=re.IGNORECASE)
-    account_id = _clean_text(account_match.group(1)) if account_match else "default"
-
-    if target:
-        return {"target": target, "account_id": account_id or "default"}
-
-    return _infer_route_from_sessions_store()
-
-
 def _run_pipeline(
     *,
     base_dir: Path,
@@ -353,8 +354,6 @@ def _run_pipeline(
     free_text: str,
     language_sort: str,
     size: int,
-    target: str,
-    account_id: str,
 ) -> dict[str, Any]:
     command = [
         sys.executable,
@@ -363,13 +362,9 @@ def _run_pipeline(
         str(base_dir),
         "--output-dir",
         str(output_dir),
-        "--account",
-        account_id,
     ]
     if config_path is not None:
         command.extend(["--config", str(config_path)])
-    if target.strip():
-        command.extend(["--target", target.strip()])
     if aminer_author_id.strip():
         command.extend(["--aminer-author-id", aminer_author_id.strip()])
     if language_sort.strip():
@@ -389,7 +384,6 @@ def _run_pipeline(
         command.extend(["--papers-file", papers_file.strip()])
     if free_text.strip():
         command.extend(["--free-text", free_text.strip()])
-    command.append("--skip-dispatch")
     completed = subprocess.run(command, capture_output=True, text=True, check=False)
     if completed.returncode != 0:
         detail = completed.stderr.strip() or completed.stdout.strip() or "run_pipeline failed"
@@ -410,54 +404,10 @@ def _compact_pipeline_error(detail: str) -> str:
     return _clean_text(lines[-1]) if lines else text
 
 
-def _build_acknowledgement_message(parsed: dict[str, Any]) -> str:
-    scholar_name = _clean_text(parsed.get("scholar_name"))
-    scholar_org = _clean_text(parsed.get("scholar_org"))
-    topics = [topic for topic in list(parsed.get("topics") or []) if _clean_text(topic)]
-    free_text = _clean_text(parsed.get("free_text"))
-    aminer_author_id = _clean_text(parsed.get("aminer_author_id"))
-
-    if scholar_name:
-        if scholar_org:
-            return f"已识别学者 {scholar_name}（{scholar_org}），正在根据已发论文归纳研究方向并生成推荐，请稍候。"
-        return f"已识别学者 {scholar_name}，正在根据已发论文归纳研究方向并生成推荐，请稍候。"
-    if aminer_author_id:
-        return "已识别 AMiner 学者线索，正在归纳研究方向并生成推荐，请稍候。"
-    if topics:
-        return f"已收到推荐请求，正在围绕 {' / '.join(topics[:5])} 检索并整理论文，请稍候。"
-    if free_text:
-        return "已收到推荐请求，正在解析研究方向并检索相关论文，请稍候。"
-    return "已收到推荐请求，正在生成论文推荐，请稍候。"
-
-
-def _maybe_send_acknowledgement(
-    *,
-    output_dir: Path,
-    parsed: dict[str, Any],
-    target: str,
-    account_id: str,
-) -> None:
-    if not _clean_text(target):
-        return
-    message_text = _build_acknowledgement_message(parsed)
-    try:
-        send_text_via_route(
-            output_dir,
-            message_text,
-            target=target,
-            account_id=account_id,
-            dry_run=False,
-        )
-    except Exception:
-        return
-
-
 def handle_trigger(
     *,
     base_dir: Path,
     text: str,
-    target: str = "",
-    account_id: str = "default",
     config_path: Path | None = None,
 ) -> dict[str, Any]:
     parsed = parse_trigger_text(text)
@@ -479,9 +429,6 @@ def handle_trigger(
             "final_response": "TEXT",
             "reply_text": reply_text,
         }
-    inferred_route = infer_delivery_route(text)
-    resolved_target = _truncate_text(_clean_text(target) or inferred_route["target"], MAX_TARGET_LENGTH)
-    resolved_account_id = _truncate_text(_clean_text(account_id) or inferred_route["account_id"] or "default", MAX_ACCOUNT_ID_LENGTH) or "default"
     has_profile_input = bool(
         parsed["aminer_author_id"]
         or parsed["topics"]
@@ -504,12 +451,6 @@ def handle_trigger(
     loaded_config = _load_config(base_dir, config_path)
     runtime_config_path = output_dir / "runtime_config.yaml"
     runtime_config_path.write_text(yaml.safe_dump(loaded_config, allow_unicode=True, sort_keys=False), encoding="utf-8")
-    _maybe_send_acknowledgement(
-        output_dir=output_dir,
-        parsed=parsed,
-        target=resolved_target,
-        account_id=resolved_account_id,
-    )
 
     try:
         pipeline_result = _run_pipeline(
@@ -525,8 +466,6 @@ def handle_trigger(
             free_text=parsed["free_text"],
             language_sort=parsed["language_sort"],
             size=parsed["size"],
-            target=resolved_target,
-            account_id=resolved_account_id,
         )
     except Exception as exc:
         detail = _compact_pipeline_error(str(exc).strip())
@@ -559,10 +498,6 @@ def handle_trigger(
             "runtime_config": str(runtime_config_path),
             "output_dir": str(output_dir),
         },
-        "delivery_route": {
-            "target": resolved_target,
-            "account_id": resolved_account_id,
-        },
         "pipeline": pipeline_result,
         "final_response": pipeline_result.get("final_response", "TEXT"),
     }
@@ -573,19 +508,15 @@ def handle_trigger(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Handle Feishu trigger text for aminer-daily-paper.")
+    parser = argparse.ArgumentParser(description="Parse and run aminer-daily-paper recommendation from trigger text.")
     parser.add_argument("--base-dir", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--text", required=True)
-    parser.add_argument("--target", default="")
-    parser.add_argument("--account", default="default")
     parser.add_argument("--config", type=Path, default=None)
     args = parser.parse_args()
 
     result = handle_trigger(
         base_dir=args.base_dir.resolve(),
         text=args.text,
-        target=args.target,
-        account_id=args.account,
         config_path=args.config.resolve() if args.config else None,
     )
     print(json.dumps(result, ensure_ascii=False, indent=2))

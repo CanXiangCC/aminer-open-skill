@@ -1,7 +1,7 @@
 ---
 name: aminer-daily-paper
 version: 1.1.2
-description: "Personalized academic paper recommendation via AMiner rec5 API. Activate this skill whenever the user asks for paper recommendations, whether triggered by /aminer-dp, /skill aminer-dp, or any natural language request such as 'recommend me papers on multimodal agents'. When invoked: extract topics/scholar signals from the input yourself, call handle_trigger.py with structured fields, then dispatch results as Feishu cards (if Feishu target is available) or return Markdown text."
+description: "Personalized academic paper recommendation via AMiner rec5 API. Activate this skill whenever the user asks for paper recommendations, whether triggered by /aminer-dp, /skill aminer-dp, or any natural language request such as 'recommend me papers on multimodal agents'. When invoked: extract topics/scholar signals from the input yourself, call handle_trigger.py with structured fields, then present the Markdown in `reply_text` to the user."
 user-invocable: true
 disable-model-invocation: false
 metadata:
@@ -56,10 +56,10 @@ Content-Type: application/json;charset=utf-8
 |-------|------|----------|-------------|
 | `author_name` | string | conditional | Scholar name (English). The backend resolves it to a scholar ID via person search. |
 | `author_org` | string | optional | Scholar institution (English full name). Required for disambiguation when the name is ambiguous. |
-| `topics` | string[] | conditional | Research topics list (English). |
+| `topics` | string[] | conditional | Research topic phrases. **Use the user’s wording** (Chinese, English, or mixed). The API accepts multi-language topic strings. |
 | `size` | int | optional | Number of papers per call (1–20). Omit to let the model decide (see below). |
 | `offset` | int | optional | Pagination offset (0–100, default 0). |
-| `language_sort` | string | optional | Language preference for sorting: `zh` or `en`. |
+| `language_sort` | string | optional | `zh` or `en` **only when the user explicitly asks** for Chinese- or English-biased ranking (e.g. “优先中文论文” / “prefer English papers”). Otherwise omit; the request will not include this field. |
 
 At least one of `author_name` or `topics` should be provided. When none are given, the API returns personalized recommendations based on the account associated with `AMINER_API_KEY`.
 
@@ -117,15 +117,25 @@ recommend me recent papers on RAG
 
 `/aminer-dp` with no parameters calls the API with only the token — the API uses `AMINER_API_KEY` to identify the account and returns personalized recommendations.
 
-**Natural language input** — you (the model) must parse it into backend-consumable fields before calling the script:
+**Natural language input** — you (the model) must parse it into fields before calling the script. **Critical for `topics`:**
 
-1. Extract `topics`, `author_name`, and/or `author_org` from the text. Apply the following rules:
-   - **English only**: All field values must be in English. `author_name` → scholar's commonly used English name (e.g. `唐杰` → `Jie Tang`, `李飞飞` → `Fei-Fei Li`). `author_org` → institution's full English name (e.g. `清华大学` → `Tsinghua University`, `UIUC` → `University of Illinois at Urbana-Champaign`). `topics` → English research terms. The backend person search and paper retrieval APIs operate in English.
-   - **Expand abbreviations**: Always use the full official English name for institutions (e.g. `MIT` → `Massachusetts Institute of Technology`, `ETH` → `ETH Zurich`, `PKU` → `Peking University`). The backend uses substring matching and cannot match abbreviations.
-   - **Disambiguate scholars**: If the scholar name is ambiguous (common name, multiple matches likely), you MUST also provide `author_org`. If the user did not specify an org, ask them before proceeding — the backend will reject requests with ambiguous names and no org.
-   - **Unknown English name**: If you cannot confidently determine the scholar's English name, ask the user to provide it or describe their research direction instead.
-2. Decide `size` and whether to make multiple calls (see **Call Strategy** below).
-3. Reconstruct the trigger with explicit fields, then call `handle_trigger.py`.
+1. **`topics` — do not “translate away” the user’s intent**
+   - If the user already wrote `topics:` in the trigger (e.g. `具身智能`, `环境保护`), pass **those exact strings** into `handle_trigger.py`’s `--text`. **Do not** replace them with unrelated English terms (e.g. do **not** map arbitrary topics to “Knowledge Distillation”, “Smart agriculture”, or any other field the user did not ask for).
+   - If you add English for retrieval, it must be a **faithful** alias of the same concept (e.g. 具身智能 → `embodied intelligence`, 环境保护 → `environmental protection`). When in doubt, **keep the user’s original words** and do not invent synonyms.
+   - **Never** change the user’s topic into a different research area.
+
+2. **Scholars and institutions (person search still English-oriented)**
+   - `author_name` / `author_org`: use commonly used **English** forms when resolving scholars (e.g. `Jie Tang`, `Tsinghua University`), expand well-known institution abbreviations to full official names, and add `author_org` when the name is ambiguous. If you cannot map a name safely, ask the user.
+
+3. **`language_sort`** — Put `language_sort: zh` or `language_sort: en` in the trigger **only if** the user clearly wants recommendations ranked with a **Chinese** or **English** preference. If they did not ask, **do not** add it (the API call omits `language_sort`).
+
+4. Decide `size` and whether to make multiple calls (see **Call Strategy**).
+5. Reconstruct the trigger, then call `handle_trigger.py`.
+
+Example (Chinese topics — **keep as-is**):
+- User: `/aminer-dp topics: 具身智能, 环境保护`
+- You call: `handle_trigger.py --text "/aminer-dp topics: 具身智能, 环境保护"`  
+  (Do **not** rewrite `topics` into unrelated English.)
 
 Example:
 - User: `/aminer-dp 我做多模态智能体和 tool-use，帮我推荐最近论文`
@@ -172,15 +182,13 @@ Only one supported entrypoint:
 python3 "{baseDir}/scripts/handle_trigger.py" \
   --base-dir "{baseDir}" \
   --text "<trigger text with explicit fields>" \
-  [--target "user:{sender_id}"] \
-  [--account "{accountId}"]
+  [--config /path/to/config.yaml]
 ```
 
 - `--text`: reconstructed trigger with explicit fields (`topics:`, `scholar:`, etc.)
-- `--target`: optional Feishu delivery target (e.g. `user:ou_xxx`). Pass it when you have the sender's Feishu ID from the conversation context. Omit when not in a Feishu context.
-- `--account`: optional Feishu account ID (default: `default`)
+- `--config`: optional path to a YAML config (defaults to `{baseDir}/config.yaml` when the file exists, via the runtime copy under `outputs/`)
 
-`handle_trigger.py` parses the fields, calls the rec5 API, and returns results. It does **not** dispatch Feishu cards directly — that is a separate step.
+`handle_trigger.py` parses the fields, calls the rec5 API, and returns JSON including `reply_text` (Markdown) for you to show to the user.
 
 ---
 
@@ -190,30 +198,10 @@ python3 "{baseDir}/scripts/handle_trigger.py" \
 - Do not answer with status-only text.
 - Do not search, install, or repair skills.
 - After running `handle_trigger.py`, check `final_response` in the JSON output:
-  - `ENRICH_AND_DISPATCH` → Papers fetched, Feishu target detected. **You must enrich and dispatch** (see below).
-  - `TEXT` → No Feishu target. Present `reply_text` to the user directly.
-  - Any error → Report the `reply_text` detail to the user.
+  - `TEXT` — Normal path. Present `reply_text` (Markdown) to the user. Optional: you may still refine wording for the active channel; `prompts/enrich.md` is a reference for Chinese enrichment if you want richer copy.
+  - Any error → report the `reply_text` (or error detail) to the user.
 
-### `ENRICH_AND_DISPATCH` flow
-
-When `final_response` is `ENRICH_AND_DISPATCH`, follow these steps:
-
-1. **Read papers**: Load the file at `artifacts.papers_path` (a JSON file with a `papers` array).
-2. **Enrich**: For each paper whose `summary` is empty or English-only, generate Chinese content following the instructions in `{baseDir}/prompts/enrich.md`:
-   - `summary`: 1–2 sentence Chinese summary starting with "本文". Keep English terms as-is.
-   - `keywords`: 2–4 Chinese keywords.
-   - `comment`: Conference/journal tier annotation if applicable (e.g. "已发表在 AAAI（CCF-A）"), otherwise empty.
-   - Do NOT fabricate information. Do NOT modify `famous_authors`.
-3. **Write back**: Save the enriched data back to the same `artifacts.papers_path`.
-4. **Dispatch**: Run the dispatch script:
-   ```bash
-   python3 "{baseDir}/scripts/dispatch_papers.py" \
-     --base-dir "{baseDir}" \
-     --papers-path "{artifacts.papers_path}" \
-     --target "{delivery_route.target}" \
-     --account "{delivery_route.account_id}"
-   ```
-5. **Return**: If dispatch succeeds, return exactly `NO_REPLY`. Say nothing else.
+**Note:** The skill only returns JSON with `reply_text`; it does not implement channel-specific sending.
 
 ---
 

@@ -13,7 +13,7 @@ This repository currently provides three skill flavors:
 
 - `aminer-academic-search`: academic retrieval plus deeper analysis workflows
 - `aminer-free-academic`: free-tier paper / scholar / org / venue / patent discovery and triage
-- `aminer-daily-paper`: personalized paper recommendation via AMiner rec5 API, with Feishu card or Markdown output
+- `aminer-daily-paper`: personalized paper recommendation via AMiner rec5 API (Markdown in `reply_text`)
 
 ## What Problems It Solves
 
