@@ -75,6 +75,38 @@ def _format_papers_as_markdown(papers: list[dict[str, Any]], profile_topics: lis
                 author_str += " et al."
             lines.append(f"作者：{author_str}")
 
+        famous_authors = paper.get("famous_authors") or []
+        if famous_authors:
+            famous_parts: list[str] = []
+            for fa in famous_authors[:3]:
+                if isinstance(fa, dict):
+                    name = _clean_text(fa.get("name"))
+                    if not name:
+                        continue
+                    desc = _clean_text(fa.get("description") or "")
+                    if desc:
+                        if len(desc) > 80:
+                            desc = desc[:80].rstrip() + "…"
+                        famous_parts.append(f"{name}（{desc}）")
+                    else:
+                        famous_parts.append(name)
+                elif isinstance(fa, str):
+                    text = _clean_text(fa)
+                    if text:
+                        famous_parts.append(text)
+            if famous_parts:
+                lines.append(f"知名作者：{' · '.join(famous_parts)}")
+
+        comment = _clean_text(paper.get("comment") or "")
+        if comment:
+            lines.append(f"已发表在 {comment}")
+
+        reason = _clean_text(paper.get("recommendation_reason") or "")
+        if reason:
+            if len(reason) > 200:
+                reason = reason[:200].rstrip() + "…"
+            lines.append(f"推荐理由：{reason}")
+
         if summary:
             truncated = summary if len(summary) <= 300 else summary[:300].rstrip() + "…"
             lines.append("")
