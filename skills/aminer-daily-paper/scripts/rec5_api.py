@@ -137,6 +137,7 @@ def normalize_rec5_paper(raw: dict[str, Any]) -> dict[str, Any]:
         "author_entries": author_entries,
         "source": _clean_text(raw.get("source") or "rec5"),
         "recommendation_reason": _clean_text(raw.get("recommendation_reason") or ""),
+        "comment": _clean_text(raw.get("comment") or ""),
     }
 
 
