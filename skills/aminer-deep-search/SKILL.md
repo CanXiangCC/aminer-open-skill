@@ -6,23 +6,23 @@ contact: report@aminer.cn
 description: >
   Activate this skill when the user wants deep, multi-round academic paper collection for a survey or literature review using AMiner data and a ReAct-style LLM controller.
   Use this skill for broad topic exploration, survey bibliography construction, automatic keyword search plus backward-reference snowballing, and collecting hundreds of candidate papers with AMiner IDs and titles.
-  This skill calls a Yunwu/OpenAI-compatible chat model to decide tool calls, and uses AMiner keyword search plus paper reference APIs as tools. It is not intended for simple single-paper lookup or lightweight recommendations; use aminer-free-academic or aminer-daily-paper for those simpler tasks.
+  This skill calls an OpenAI-compatible chat model to decide tool calls, and uses AMiner keyword search plus paper reference APIs as tools. It is not intended for simple single-paper lookup or lightweight recommendations; use aminer-free-academic or aminer-daily-paper for those simpler tasks.
 metadata:
   {
     "openclaw":
       {
         "requires": {
           "bins": ["python"],
-          "env": ["YUNWU_API_KEY", "AMINER_API_KEY"]
+          "env": ["AMINER_API_KEY"]
         },
-        "primaryEnv": "YUNWU_API_KEY"
+        "primaryEnv": "AMINER_API_KEY"
       }
   }
 ---
 
 # AMiner Deep Search
 
-ReAct-style survey paper collection using Yunwu model calls and AMiner search/reference APIs.
+ReAct-style survey paper collection using OpenAI-compatible model calls and AMiner search/reference APIs.
 
 Use this skill when the user asks to collect papers for a research topic, build a large literature list, run citation snowballing, or prepare survey references.
 
@@ -39,21 +39,33 @@ The controller prompt asks the model to expand queries, prioritize high-quality 
 
 ## Required Environment Variables
 
-Check the Yunwu key before running:
-
-```bash
-[ -z "${YUNWU_API_KEY+x}" ] && echo "YUNWU_API_KEY missing" || echo "YUNWU_API_KEY exists"
-```
-
-If `YUNWU_API_KEY` is missing, stop and ask the user to provide or set it. Never print the key.
-
 Check the AMiner key before running:
 
 ```bash
-[ -z "${AMINER_API_KEY+x}" ] && echo "AMINER_API_KEY missing" || echo "AMINER_API_KEY exists"
+[ -z "${AMINER_API_KEY:-}" ] && echo "AMINER_API_KEY missing" || echo "AMINER_API_KEY exists"
 ```
 
 If `AMINER_API_KEY` is missing, stop and ask the user to provide or set it. Never print the key. The code does not contain a built-in AMiner token.
+
+## Optional LLM Configuration
+
+The LLM can use OpenClaw-provided settings or a user-provided OpenAI-compatible endpoint:
+
+- `llm.api_key`: LLM API key. Optional in metadata; check at runtime and prompt if neither OpenClaw nor the user supplies a key.
+- `llm.base_url`: LLM base URL. Optional when OpenClaw provides a default; otherwise pass `--base-url`.
+- `llm.model`: LLM model name. Optional; when omitted, the fallback list in `api_client.py` is used.
+
+Before running, check whether an LLM key is available:
+
+```bash
+if [ -z "$(printenv 'llm.api_key')" ]; then
+  echo "LLM API key missing"
+else
+  echo "LLM API key exists"
+fi
+```
+
+If no LLM key is available, stop and ask the user to configure OpenClaw `llm.api_key` or pass `--api-key`. Never print the key. Do not hard-code provider-specific tokens or base URLs in this skill.
 
 ## Environment Setup
 
@@ -87,6 +99,8 @@ Run the main collector from this skill directory:
 
 Useful options:
 
+- `--api-key`: LLM API key. Defaults to `llm.api_key`.
+- `--base-url`: LLM base URL. Defaults to `llm.base_url`.
 - `--models`: model fallback list. Default list is in `api_client.py`.
 - `--timeout`: per-model-call timeout in seconds. Default is 300.
 - `--target-size`: desired final paper count. Default is 400.
@@ -97,7 +111,7 @@ The script prints the final JSON list and saves a copy under `outputs/`.
 ## Operating Rules
 
 1. Use this skill only for deep collection workflows. For one-off lookup or normal AMiner Q&A, route to the simpler AMiner skills.
-2. Do not expose `YUNWU_API_KEY` or `AMINER_API_KEY`.
+2. Do not expose `llm.api_key` or `AMINER_API_KEY`.
 3. Keep model/tool-call budgets under control; default `--max-tool-calls 20` and `--max-rounds 50`.
 4. If AMiner returns too few papers, report the actual collected count instead of inventing missing papers.
 5. If a run is likely to be expensive or long, tell the user the planned topic, model, timeout, max tool calls, and output location before starting.
@@ -105,7 +119,7 @@ The script prints the final JSON list and saves a copy under `outputs/`.
 ## File Map
 
 - `react_agent.py`: ReAct loop and CLI.
-- `api_client.py`: Yunwu/OpenAI-compatible client with model fallback.
+- `api_client.py`: OpenAI-compatible client with model fallback.
 - `prompt.py`: paper-collection system prompt.
 - `search.py`: AMiner keyword search and paper detail normalization.
 - `citation.py`: AMiner reference expansion.

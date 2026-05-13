@@ -19,6 +19,14 @@ CURRENT_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = CURRENT_DIR / "outputs"
 
 
+def default_llm_api_key() -> str | None:
+    return os.getenv("llm.api_key")
+
+
+def default_llm_base_url() -> str | None:
+    return os.getenv("llm.base_url")
+
+
 def extract_tool_call(text: str) -> dict[str, Any] | None:
     stripped = text.strip()
     if not stripped:
@@ -67,7 +75,8 @@ class ReactPaperCollector:
         self,
         *,
         topic: str,
-        api_key: str,
+        api_key: str | None,
+        base_url: str | None = None,
         models: list[str] | None = None,
         timeout: float = 300,
         max_rounds: int = 50,
@@ -83,7 +92,7 @@ class ReactPaperCollector:
         self.max_tool_calls = max_tool_calls
         self.target_size = target_size
         self.include_abstracts = include_abstracts
-        self.client = APIClient(api_key=api_key, timeout=timeout)
+        self.client = APIClient(api_key=api_key, base_url=base_url, timeout=timeout)
         self.paper_set = PaperSet()
         self.paper_cache: dict[str, dict[str, Any]] = {}
         self.messages: list[dict[str, str]] = [
@@ -225,16 +234,30 @@ class ReactPaperCollector:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Collect survey papers with a Yunwu-driven ReAct loop.")
+    parser = argparse.ArgumentParser(description="Collect survey papers with an LLM-driven ReAct loop.")
     parser.add_argument("--topic", required=True, help="Research topic to collect papers for.")
-    parser.add_argument("--api-key", default=os.getenv("YUNWU_API_KEY"), help="Yunwu API key.")
+    parser.add_argument(
+        "--api-key",
+        default=default_llm_api_key(),
+        help="OpenAI-compatible LLM API key. Defaults to llm.api_key.",
+    )
+    parser.add_argument(
+        "--base-url",
+        default=default_llm_base_url(),
+        help="OpenAI-compatible LLM base URL. Defaults to llm.base_url.",
+    )
     parser.add_argument("--models", nargs="*", default=None, help="Optional model fallback list.")
     parser.add_argument("--timeout", type=float, default=300, help="Per-request model timeout in seconds.")
     parser.add_argument("--max-rounds", type=int, default=50)
     parser.add_argument("--max-tool-calls", type=int, default=20)
     parser.add_argument("--target-size", type=int, default=400)
     parser.add_argument("--include-abstracts", action="store_true")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.models is None:
+        model = os.getenv("llm.model")
+        if model:
+            args.models = [item.strip() for item in model.split(",") if item.strip()]
+    return args
 
 
 def main() -> None:
@@ -242,6 +265,7 @@ def main() -> None:
     collector = ReactPaperCollector(
         topic=args.topic,
         api_key=args.api_key,
+        base_url=args.base_url,
         models=args.models,
         timeout=args.timeout,
         max_rounds=args.max_rounds,

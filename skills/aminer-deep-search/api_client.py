@@ -15,7 +15,7 @@ class Response:
 
 
 class APIClient:
-    """Yunwu/OpenAI-compatible chat client with model fallback."""
+    """OpenAI-compatible chat client with model fallback."""
 
     MODEL_NAME_LIST = [
         "claude-sonnet-4-5-20250929",
@@ -26,19 +26,24 @@ class APIClient:
 
     def __init__(
         self,
-        api_key: str,
-        api_type: str = "yunwu",
+        api_key: str | None,
+        api_type: str = "openai-compatible",
         base_url: str | None = None,
         timeout: float = 20,
     ) -> None:
         if not api_key:
-            raise ValueError("Yunwu API key is required. Pass --api-key or set YUNWU_API_KEY.")
+            raise ValueError(
+                "LLM API key is required. Use OpenClaw llm.api_key or pass --api-key."
+            )
 
         self.api_type = api_type
-        self.base_url = base_url or ("https://yunwu.ai/v1" if api_type == "yunwu" else None)
+        self.base_url = base_url
         self.api_key = api_key
         self.timeout = timeout
-        self.client = OpenAI(base_url=self.base_url, api_key=self.api_key, timeout=timeout)
+        client_kwargs: dict[str, Any] = {"api_key": self.api_key, "timeout": timeout}
+        if self.base_url:
+            client_kwargs["base_url"] = self.base_url
+        self.client = OpenAI(**client_kwargs)
 
     def call(
         self,
