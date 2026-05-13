@@ -246,7 +246,7 @@ def parse_args() -> argparse.Namespace:
         default=default_llm_base_url(),
         help="OpenAI-compatible LLM base URL. Defaults to llm.base_url.",
     )
-    parser.add_argument("--models", nargs="*", default=None, help="Optional model fallback list.")
+    parser.add_argument("--models", nargs="*", default=None, help="Required model fallback list unless llm.model is configured.")
     parser.add_argument("--timeout", type=float, default=300, help="Per-request model timeout in seconds.")
     parser.add_argument("--max-rounds", type=int, default=50)
     parser.add_argument("--max-tool-calls", type=int, default=20)

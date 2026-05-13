@@ -17,17 +17,11 @@ class Response:
 class APIClient:
     """OpenAI-compatible chat client with model fallback."""
 
-    MODEL_NAME_LIST = [
-        "claude-sonnet-4-5-20250929",
-        "gpt-5.2",
-        "claude-haiku-4-5-20251001-thinking",
-        "gemini-3-pro-preview",
-    ]
+    MODEL_NAME_LIST: list[str] = []
 
     def __init__(
         self,
         api_key: str | None,
-        api_type: str = "openai-compatible",
         base_url: str | None = None,
         timeout: float = 20,
     ) -> None:
@@ -36,7 +30,6 @@ class APIClient:
                 "LLM API key is required. Use OpenClaw llm.api_key or pass --api-key."
             )
 
-        self.api_type = api_type
         self.base_url = base_url
         self.api_key = api_key
         self.timeout = timeout
@@ -65,6 +58,8 @@ class APIClient:
         validator: Callable[[str], bool] | None = None,
     ) -> tuple[Response, bool]:
         models = list(model_list or self.MODEL_NAME_LIST)
+        if not models:
+            raise ValueError("LLM model is required. Set OpenClaw llm.model or pass --models.")
         for model in models:
             try:
                 print(f"Trying model: {model}")

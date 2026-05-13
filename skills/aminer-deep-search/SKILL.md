@@ -11,6 +11,7 @@ metadata:
   {
     "openclaw":
       {
+        "emoji": "🔎",
         "requires": {
           "bins": ["python"],
           "env": ["AMINER_API_KEY"]
@@ -53,7 +54,7 @@ The LLM can use OpenClaw-provided settings or a user-provided OpenAI-compatible 
 
 - `llm.api_key`: LLM API key. Optional in metadata; check at runtime and prompt if neither OpenClaw nor the user supplies a key.
 - `llm.base_url`: LLM base URL. Optional when OpenClaw provides a default; otherwise pass `--base-url`.
-- `llm.model`: LLM model name. Optional; when omitted, the fallback list in `api_client.py` is used.
+- `llm.model`: LLM model name. Required unless `--models` is passed.
 
 Before running, check whether an LLM key is available:
 
@@ -66,6 +67,14 @@ fi
 ```
 
 If no LLM key is available, stop and ask the user to configure OpenClaw `llm.api_key` or pass `--api-key`. Never print the key. Do not hard-code provider-specific tokens or base URLs in this skill.
+
+Check whether an LLM model is available:
+
+```bash
+[ -z "$(printenv 'llm.model')" ] && echo "LLM model missing" || echo "LLM model exists"
+```
+
+If no LLM model is available, ask the user to configure OpenClaw `llm.model` or pass `--models`. There is no provider-specific default model list.
 
 ## Environment Setup
 
@@ -91,7 +100,6 @@ Run the main collector from this skill directory:
 ```bash
 "$(pwd)/.conda/bin/python" react_agent.py \
   --topic "<research topic>" \
-  --models gemini-3-pro-preview \
   --timeout 300 \
   --max-tool-calls 20 \
   --max-rounds 50
@@ -101,7 +109,7 @@ Useful options:
 
 - `--api-key`: LLM API key. Defaults to `llm.api_key`.
 - `--base-url`: LLM base URL. Defaults to `llm.base_url`.
-- `--models`: model fallback list. Default list is in `api_client.py`.
+- `--models`: model fallback list. Required unless `llm.model` is configured.
 - `--timeout`: per-model-call timeout in seconds. Default is 300.
 - `--target-size`: desired final paper count. Default is 400.
 - `--include-abstracts`: include abstracts in the final saved JSON when available.

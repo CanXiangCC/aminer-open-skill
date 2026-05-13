@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Iterable, Sequence
+from typing import Any, Sequence
 
 import requests
 
 from search import (
+    _dedupe_preserve_order,
+    _extract_paper_id,
     aminer_get_paper_info_batch,
     get_aminer_key,
     normalize_paper_detail,
@@ -18,26 +20,6 @@ AMINER_CITATION_URL = "https://datacenter.aminer.cn/gateway/api/v3/paper/pub_rel
 
 def _auth_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {get_aminer_key()}"}
-
-
-def _dedupe_preserve_order(items: Iterable[str]) -> list[str]:
-    deduped: list[str] = []
-    seen: set[str] = set()
-    for item in items:
-        cleaned = str(item).strip()
-        if not cleaned or cleaned in seen:
-            continue
-        seen.add(cleaned)
-        deduped.append(cleaned)
-    return deduped
-
-
-def _extract_paper_id(detail: Any) -> str:
-    if isinstance(detail, dict):
-        return str(detail.get("id") or detail.get("_id") or "")
-    if detail is None:
-        return ""
-    return str(detail)
 
 
 def _fetch_pub_relation(params: dict[str, Any]) -> list[dict[str, Any]]:
