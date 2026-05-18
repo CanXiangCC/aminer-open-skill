@@ -11,9 +11,8 @@ metadata:
   {
     "openclaw":
       {
-        "emoji": "🔎",
         "requires": {
-          "bins": ["python"],
+          "bins": ["python3"],
           "env": ["AMINER_API_KEY"]
         },
         "primaryEnv": "AMINER_API_KEY"
@@ -48,11 +47,11 @@ Check the AMiner key before running:
 
 If `AMINER_API_KEY` is missing, stop and ask the user to provide or set it. Never print the key. The code does not contain a built-in AMiner token.
 
-## Optional LLM Configuration
+## LLM Configuration
 
 The LLM can use OpenClaw-provided settings or a user-provided OpenAI-compatible endpoint:
 
-- `llm.api_key`: LLM API key. Optional in metadata; check at runtime and prompt if neither OpenClaw nor the user supplies a key.
+- `llm.api_key`: LLM API key. Check at runtime and prompt if neither OpenClaw nor the user supplies a key.
 - `llm.base_url`: LLM base URL. Optional when OpenClaw provides a default; otherwise pass `--base-url`.
 - `llm.model`: LLM model name. Required unless `--models` is passed.
 
@@ -78,27 +77,28 @@ If no LLM model is available, ask the user to configure OpenClaw `llm.model` or 
 
 ## Environment Setup
 
-From this skill directory:
+From this skill directory, install dependencies into the Python environment used by `python3`:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
+
+If you prefer an isolated conda environment, create and activate one first, then install the dependencies:
 
 ```bash
 CONDA_PKGS_DIRS="$(pwd)/.conda_pkgs" conda create -p "$(pwd)/.conda" python=3.11 pip -y
-PIP_CACHE_DIR="$(pwd)/.pip_cache" "$(pwd)/.conda/bin/pip" install -r requirements.txt
-```
-
-Activate:
-
-```bash
 conda activate "$(pwd)/.conda"
+PIP_CACHE_DIR="$(pwd)/.pip_cache" python3 -m pip install -r requirements.txt
 ```
 
-If a compatible Python environment already has `openai` and `requests`, it may run the script directly without recreating the conda environment.
+Any compatible Python 3 environment may run the script as long as it has `openai` and `requests`.
 
 ## Execution
 
 Run the main collector from this skill directory:
 
 ```bash
-"$(pwd)/.conda/bin/python" react_agent.py \
+python3 react_agent.py \
   --topic "<research topic>" \
   --timeout 300 \
   --max-tool-calls 20 \

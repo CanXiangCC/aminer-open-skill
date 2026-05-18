@@ -46,6 +46,21 @@ Verify the LLM model:
 
 If missing and `$ARGUMENTS` does not include `--models`, stop and ask the user to configure OpenClaw `llm.model` or pass `--models`.
 
+Verify the Python dependencies:
+
+```bash
+python3 - <<'PY'
+import importlib.util
+missing = [name for name in ("openai", "requests") if importlib.util.find_spec(name) is None]
+if missing:
+    print("Missing Python packages: " + ", ".join(missing))
+else:
+    print("Python dependencies exist")
+PY
+```
+
+If dependencies are missing, stop and ask the user to install them with the setup command in `${CLAUDE_PLUGIN_ROOT}/SKILL.md`. Do not call the script.
+
 ### 2. Parse `$ARGUMENTS`
 
 Extract:

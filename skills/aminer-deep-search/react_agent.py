@@ -186,15 +186,11 @@ class ReactPaperCollector:
     def run(self) -> list[dict[str, Any]]:
         for round_index in range(1, self.max_rounds + 1):
             if self.tool_calls >= self.max_tool_calls:
-                self.messages.append(
-                    {
-                        "role": "user",
-                        "content": (
-                            f"The ordinary tool-call budget ({self.max_tool_calls}) is reached. "
-                            "Call END now with exactly {\"tool\": \"END\"}."
-                        ),
-                    }
+                print(
+                    f"Ordinary tool-call budget ({self.max_tool_calls}) reached; "
+                    "returning collected papers."
                 )
+                break
 
             response, ok = self.client.call_messages(
                 self.messages,
