@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
-from search import aminer_get_paper_info_batch, normalize_paper_detail
+from _utils import aminer_get_paper_info_batch, normalize_paper_detail
 
 
 def paper_id_of(paper: Any) -> str:

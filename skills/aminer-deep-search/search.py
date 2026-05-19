@@ -5,15 +5,7 @@ from typing import Any, Sequence
 
 import requests
 
-from _utils import (
-    aminer_get_paper_info_batch,
-    dedupe_preserve_order,
-    extract_paper_id,
-    get_aminer_key,
-    normalize_paper_detail,
-    rule_based_score,
-    safe_int,
-)
+import _utils
 
 
 AMINER_SEARCH_URL = "https://datacenter.aminer.cn/gateway/api/v3/paper/search/paper/SearchPro"
@@ -22,7 +14,7 @@ AMINER_SEARCH_URL = "https://datacenter.aminer.cn/gateway/api/v3/paper/search/pa
 def _auth_headers() -> dict[str, str]:
     return {
         "Content-Type": "application/json;charset=utf-8",
-        "Authorization": f"Bearer {get_aminer_key()}",
+        "Authorization": f"Bearer {_utils.get_aminer_key()}",
     }
 
 
@@ -71,24 +63,27 @@ def search_papers(query: str, *, size: int = 20, year: int | None = None) -> lis
     if not raw_items:
         return []
 
-    ids = dedupe_preserve_order(extract_paper_id(item) for item in raw_items)
+    ids = _utils.dedupe_preserve_order(_utils.extract_paper_id(item) for item in raw_items)
     details_by_id = {
-        extract_paper_id(detail): detail
-        for detail in aminer_get_paper_info_batch(ids)
-        if extract_paper_id(detail)
+        _utils.extract_paper_id(detail): detail
+        for detail in _utils.aminer_get_paper_info_batch(ids)
+        if _utils.extract_paper_id(detail)
     }
 
     papers: list[dict[str, Any]] = []
     for raw in raw_items:
-        paper_id = extract_paper_id(raw)
+        paper_id = _utils.extract_paper_id(raw)
         merged = dict(raw)
         if paper_id in details_by_id:
             merged.update(details_by_id[paper_id])
-        normalized = normalize_paper_detail(merged, query=query)
+        normalized = _utils.normalize_paper_detail(merged, query=query)
         if normalized["id"] and normalized["title"]:
             papers.append(normalized)
 
-    papers.sort(key=lambda item: (float(item.get("score", 0.0)), safe_int(item.get("n_citation"), 0)), reverse=True)
+    papers.sort(
+        key=lambda item: (float(item.get("score", 0.0)), _utils.safe_int(item.get("n_citation"), 0)),
+        reverse=True,
+    )
     return papers[:size]
 
 
@@ -99,15 +94,15 @@ def search_adding(
     **_: Any,
 ) -> list[dict[str, Any]]:
     existing_ids = {
-        extract_paper_id(item)
+        _utils.extract_paper_id(item)
         for item in (total_paper_details or [])
-        if extract_paper_id(item)
+        if _utils.extract_paper_id(item)
     }
     papers: list[dict[str, Any]] = []
     seen = set(existing_ids)
     for keyword in keyword_list:
         for paper in search_papers(str(keyword), size=20):
-            paper_id = extract_paper_id(paper)
+            paper_id = _utils.extract_paper_id(paper)
             if not paper_id or paper_id in seen:
                 continue
             paper["topic"] = topic
@@ -120,12 +115,8 @@ keywords_adding = search_adding
 
 
 __all__ = [
-    "aminer_get_paper_info_batch",
     "aminer_pro_search",
-    "get_aminer_key",
     "keywords_adding",
-    "normalize_paper_detail",
-    "rule_based_score",
     "search_adding",
     "search_papers",
 ]
