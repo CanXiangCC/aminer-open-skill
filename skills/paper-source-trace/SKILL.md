@@ -204,7 +204,7 @@ json/extraction/*.json          # only when structured intermediates are saved
 9. 如果启用 AMiner，只补充元数据，不替代本地证据。
 10. 先写入 `json/graph/citation_graph.json`，再生成可视化产物。
 11. 写入 `analysis.md`；只有用户明确要求模板或固定格式时才使用 `references/analysis_template.md`。
-12. 按确认的模式和 `references/visual.md` 生成 SVG 和 `citation_map.html`。
+12. 按确认的模式和 `references/visual.md` 生成 SVG 和 `citation_map.html`；中文 `example` 或 `all` SVG 必须使用 `问题链`、`方法链`、`数据链`、`基线链`、`局限/资源链` 的链式布局。
 13. 最终回复前验证产物。
 
 ### Reference Files
@@ -222,4 +222,5 @@ json/extraction/*.json          # only when structured intermediates are saved
 - 关键引用能追溯到 citation sentence 或本地上下文。
 - 每个 entity 至少由一条 citation 支撑。
 - 每条 source trace 至少由一个本地 citation context 支撑；AMiner 元数据不能作为唯一支撑。
+- 中文 `citation_map_example.svg` 使用链式 hub 标签，不用 current 模式分组标签替代。
 - 即使 Markdown、SVG 或 HTML 有限制，`json/graph/citation_graph.json` 仍必须完整。

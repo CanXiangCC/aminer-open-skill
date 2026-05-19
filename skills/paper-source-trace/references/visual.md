@@ -126,16 +126,18 @@ When requested now, do not generate a fake static hybrid SVG. Still provide `cit
 
 | 分组 | 位置 | Intents |
 | --- | --- | --- |
-| 问题/背景 | 左上 | `background`, `problem`, `theory` |
-| 核心/辅助方法 | 右上 | `core-method`, `supporting-method`, `tool-resource` |
+| 问题/背景 | 左上 | `background`, `problem` |
+| 核心/辅助方法 | 右上 | `core-method`, `supporting-method`, `theory` |
 | 数据/评估 | 右侧或中部 | `dataset`, `metric` |
 | 基线/结果 | 左下 | `baseline`, `result-evidence` |
-| 局限/未来 | 底部或远左 | `limitation`, `future-work` |
+| 局限/资源/未来 | 底部或远左 | `limitation`, `tool-resource`, `future-work` |
 
 ### Example Mode：参考图式思维导图
 
 该模式适合右侧目标论文、左侧分层引用链。画布建议从 `2400 x 1000` 起步，并按 citation 数量动态增加高度。
 
+- 中文 `example` 或 `all` 模式必须使用旧中文链式布局：右侧目标论文，左侧多层引用链，一级 hub 固定为 `问题链`、`方法链`、`数据链`、`基线链`、`局限/资源链`。
+- 不要在 `citation_map_example.svg` 中复用 current 模式分组标签，例如 `问题/背景`、`核心/辅助方法`、`数据/评估`、`基线/结果`、`局限/未来`。
 - 只要静态 SVG 仍可读，就保留所有 `show_on_map` 不是 `false` 的 citation。
 - 优先使用动态高度、宽 lane、多列排布和充足间距，而不是删除节点。
 - 只有在极端情况下才使用 `+N citations`；完整记录必须保留在 `json/graph/citation_graph.json`。
@@ -146,12 +148,12 @@ When requested now, do not generate a fake static hybrid SVG. Still provide `cit
 
 - 目标论文节点在右侧垂直居中。
 - 左侧一级引用链 hub：
-  - 问题链：`background`, `problem`, `theory`
-  - 方法链：`core-method`, `supporting-method`, `tool-resource`
+  - 问题链：`background`, `problem`
+  - 方法链：`core-method`, `supporting-method`, `theory`
   - 数据链：`dataset`, `metric`
   - 基线链：`baseline`, `result-evidence`
-  - 局限/未来链：`limitation`, `future-work`
-- 主要边标签使用输出语言。
+  - 局限/资源链：`limitation`, `tool-resource`, `future-work`
+- 主要边标签固定使用中文语义 badge：`问题`、`方法`、`数据集`、`基线`、`局限`。
 - 二级节点展示方法组件、数据集、baseline 或关键 author-year 参考。
 - 可用虚线 cross-link 表示 secondary roles。
 
@@ -165,7 +167,7 @@ When requested now, do not generate a fake static hybrid SVG. Still provide `cit
 | Core/supporting methods | `#ef6c2f` |
 | Data/metrics | `#8a5cf6` |
 | Baselines/results | `#d18a19` |
-| Limits/future | `#4f9c56` |
+| Limits/resources/future | `#4f9c56` |
 | Unmatched/uncertain | `#9aa3ad` |
 
 ### SVG 要求
