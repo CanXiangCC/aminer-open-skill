@@ -1,17 +1,18 @@
 # Citation Graph Schema
 
-This file defines the canonical `citation_graph.json` structure for `paper-citation-map`.
+This file defines the canonical `citation_graph.json` structure for `paper-source-trace`.
 
-`citation_graph.json` is the minimum required artifact. Save it even when SVG generation fails.
+Operational note: save the canonical graph as `json/graph/citation_graph.json`. Save it even when SVG or HTML generation fails. Raw AMiner responses and structured extraction intermediates, when retained, should live under `json/aminer/` and `json/extraction/`.
 
 ## Top-Level Object
 
 ```json
 {
-  "schema_version": "0.2.0",
+  "schema_version": "0.3.0",
   "paper": {},
   "references": [],
   "citations": [],
+  "source_traces": [],
   "entities": [],
   "relations": [],
   "visual_groups": [],
@@ -79,6 +80,7 @@ Optional fields:
 - `cited_work_role`: role of the cited work.
 - `intent_rationale`: why the selected intent label is more appropriate than nearby labels.
 - `confidence_reason`: why the confidence value is high, medium, or low.
+- `trace_ids`: array of source trace IDs that use this citation as evidence.
 
 Validation rule: every citation must include `intent`, `evidence`, `confidence`, and either a non-empty `reference_id` or `unmatched_reference: true`.
 
@@ -98,6 +100,65 @@ result-evidence
 limitation
 future-work
 ```
+
+## `source_traces[]`
+
+Optional claim-centered traces. Use this section when the supplied paper text supports tracing target-paper claims or contributions back to local citation contexts and cited-source roles.
+
+Required fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `trace_id` | string | Stable ID, e.g. `trace-001` |
+| `claim_id` | string | Stable local claim ID, e.g. `claim-001` |
+| `target_claim` | string | Target-paper claim, contribution, method choice, dataset choice, result interpretation, or limitation being traced |
+| `claim_type` | string | One allowed claim type |
+| `summary` | string | Source-trace summary in the output language |
+| `source_steps` | array[object] | Ordered or grouped evidence steps linking the claim to cited sources |
+| `confidence` | number | 0.0 to 1.0 confidence for the full trace |
+| `notes` | string | Missing evidence, noisy extraction, AMiner-only metadata caveats, or uncertainty |
+
+Allowed `claim_type` values:
+
+```text
+problem
+method
+dataset
+evaluation
+result
+limitation
+future-work
+contribution
+```
+
+Required `source_steps[]` fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `citation_id` | string | Citation ID supporting this step |
+| `reference_id` | string or null | Reference ID when matched; null only if unmatched |
+| `source_role` | string | Role of the cited source in this trace |
+| `intent` | string | One allowed citation intent label |
+| `relation_type` | string | Relationship between the claim and source |
+| `evidence` | string | Grounded explanation in the output language |
+| `confidence` | number | 0.0 to 1.0 confidence for this step |
+
+Recommended `source_role` values:
+
+```text
+foundation
+method-origin
+method-adaptation
+dataset-source
+metric-source
+baseline-comparison
+evidence-support
+contrast
+limitation-source
+future-direction
+```
+
+Validation rule: every source trace must be supported by at least one local citation context. AMiner metadata can enrich IDs and URLs, but cannot be the sole evidence for `source_traces[]`.
 
 ## `entities[]`
 
@@ -189,7 +250,18 @@ Recommended fields:
 | `extraction_method` | string | `manual`, `llm`, `cli`, or `hybrid` |
 | `output_language` | string | `zh`, `en`, or another language tag |
 | `coverage_notes` | string | Missing sections, noisy PDF text, or reference matching caveats |
+| `source_trace` | object | Claim-centered source trace metadata |
 | `aminer_enrichment` | object | AMiner enrichment metadata |
+
+Recommended `metadata.source_trace` fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `enabled` | boolean | Whether claim-centered source tracing was performed |
+| `strategy` | string | Use `claim-centered` |
+| `claims_traced_count` | number | Number of target-paper claims traced |
+| `source_steps_count` | number | Total number of source steps across traces |
+| `coverage_notes` | string | Missing claims, weak evidence, noisy citation contexts, or trace limitations |
 
 Recommended `metadata.aminer_enrichment` fields:
 
@@ -206,7 +278,7 @@ Recommended `metadata.aminer_enrichment` fields:
 
 ```json
 {
-  "schema_version": "0.2.0",
+  "schema_version": "0.3.0",
   "paper": {
     "paper_id": "target-paper",
     "title": "Attention Is All You Need",
@@ -248,7 +320,30 @@ Recommended `metadata.aminer_enrichment` fields:
       "target_claim": "The target paper builds sequence transduction around attention mechanisms.",
       "cited_work_role": "method foundation",
       "intent_rationale": "The cited work is not only background; it directly supports the target method choice.",
-      "confidence_reason": "The citation sentence and reference match are both clear."
+      "confidence_reason": "The citation sentence and reference match are both clear.",
+      "trace_ids": ["trace-001"]
+    }
+  ],
+  "source_traces": [
+    {
+      "trace_id": "trace-001",
+      "claim_id": "claim-001",
+      "target_claim": "The target paper builds sequence transduction around attention mechanisms instead of recurrence.",
+      "claim_type": "method",
+      "summary": "The target method claim is traced to a cited attention-based translation model that supplies method foundation evidence.",
+      "source_steps": [
+        {
+          "citation_id": "cit-001",
+          "reference_id": "ref-001",
+          "source_role": "foundation",
+          "intent": "core-method",
+          "relation_type": "uses-method",
+          "evidence": "The citation sentence identifies attention mechanisms as integral to sequence modeling and transduction.",
+          "confidence": 0.86
+        }
+      ],
+      "confidence": 0.84,
+      "notes": "Minimal example; the trace uses local citation context as evidence, while AMiner only enriches IDs and URLs."
     }
   ],
   "entities": [
@@ -285,6 +380,13 @@ Recommended `metadata.aminer_enrichment` fields:
     "extraction_method": "llm",
     "output_language": "en",
     "coverage_notes": "Minimal schema example only.",
+    "source_trace": {
+      "enabled": true,
+      "strategy": "claim-centered",
+      "claims_traced_count": 1,
+      "source_steps_count": 1,
+      "coverage_notes": "Only one method claim is traced in this minimal example."
+    },
     "aminer_enrichment": {
       "enabled": true,
       "api_chain": ["paper_search", "paper_detail", "paper_relation", "paper_info"],

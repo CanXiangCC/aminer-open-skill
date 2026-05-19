@@ -1,15 +1,15 @@
-# Visual Citation Map Modes
+# Visual Source Trace Modes
 
-The skill supports two static SVG modes and one reserved interactive mode. Labels should follow the user's primary language.
+The skill supports two static SVG modes plus one single-file HTML graph. Labels should follow the user's primary language.
 
-## Mode Decision
+## SVG Mode Decision
 
 | User request | Output behavior |
 | --- | --- |
 | `current`, `current mode`, `original SVG`, `原 SVG`, `当前模式` | Generate only current mode as `citation_map.svg` |
 | `example`, `reference image`, `mind map`, `例图`, `参考图`, `思维导图` | Generate only example mode as `citation_map.svg` |
 | `all` | Generate current mode as `citation_map.svg` and example mode as `citation_map_example.svg` |
-| `hybrid`, `expandable knowledge graph`, `混合`, `可展开知识图谱` | Explain that hybrid is reserved for future interactive Web graph rendering; do not output fixed hybrid SVG |
+| `hybrid`, `expandable knowledge graph`, `混合`, `可展开知识图谱` | Generate `citation_map.html` as the interactive graph and `citation_map.svg` as a static fallback; do not output a fake hybrid SVG |
 | No explicit mode and asking is possible | Ask which mode the user wants |
 | No explicit mode and asking is not possible | Generate both current and example |
 
@@ -42,7 +42,7 @@ Readability and preservation rules:
 
 - Preserve every citation where `show_on_map` is not `false` whenever a static SVG can remain readable.
 - Prefer dynamic height, wide lanes, multi-column packing, and generous spacing over dropping nodes.
-- Use `+N citations` only as an extreme fallback; full records must remain in `citation_graph.json`.
+- Use `+N citations` only as an extreme fallback; full records must remain in `json/graph/citation_graph.json`.
 - Draw edges behind nodes.
 - Keep edge labels in small badges near chain hubs or open whitespace.
 - Wrap node titles with multiple text lines instead of shrinking below readable size.
@@ -89,12 +89,24 @@ Node text priority:
 - Avoid long verbatim citation sentences in nodes; use short evidence labels.
 - If AMiner enrichment is shown, mark it as metadata enrichment rather than citation-context evidence.
 
+## HTML Graph Requirements
+
+Generate `citation_map.html` whenever enough graph data exists. It is a standard artifact, not a replacement for `citation_map.svg`.
+
+- Make it a single self-contained HTML file with inline CSS, inline JavaScript, and an embedded graph data snapshot.
+- Do not depend on CDN assets, external scripts, external stylesheets, package installs, or a local HTTP server.
+- Provide one page that can switch between `current` and `example` views when both layouts are available; use one `citation_map.html` even when SVG mode is `all`.
+- Include a visible legend, intent-group toggles, claim/source trace viewer, node details panel, search/filter controls, and AMiner metadata badges when enrichment exists.
+- Display AMiner as metadata enrichment only; do not present AMiner-only links as local citation-context evidence.
+- Keep JSON keys and labels from `json/graph/citation_graph.json` unchanged inside embedded data; visible UI labels should follow the user's primary language.
+- If a view cannot be rendered cleanly, keep the data visible in a details panel and record the limitation in `analysis.md` or `citation_map_spec.md`.
+
 ## Hybrid Mode Reservation
 
-Hybrid means an expandable, interactive graph that reveals details on demand. It is not a fixed SVG mode yet.
+Hybrid means an expandable, interactive graph that reveals details on demand. Use `citation_map.html` for this behavior; it is not a fixed SVG mode.
 
 When requested now:
 
 - Do not generate a fake static hybrid SVG.
-- Explain that the mode is reserved for future Web integration.
-- Still provide `citation_graph.json`, because it is the data source for the future hybrid graph.
+- Still provide `citation_map.svg` as a readable static fallback.
+- Still provide `json/graph/citation_graph.json`, because it is the data source for the HTML graph.

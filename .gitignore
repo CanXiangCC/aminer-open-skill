@@ -1,0 +1,7 @@
+# Local secrets and generated runtime files
+.env
+*.local.yaml
+config.local.yaml
+config.yaml
+outputs/
+skills/*/outputs/

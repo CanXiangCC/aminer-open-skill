@@ -2,21 +2,22 @@
 
 Use these prompts when the workflow needs LLM-assisted extraction. Replace placeholders before use.
 
-Keep `citation_graph.json` keys, intent labels, and relation types in English. Write explanations in `{{output_language}}`.
+Keep `json/graph/citation_graph.json` keys, intent labels, and relation types in English. Write explanations in `{{output_language}}`.
 
 ## System Prompt
 
 ```text
-You are an academic paper analysis assistant. Extract citation intents, entities, and relations from one target paper.
+You are an academic paper analysis assistant. Extract citation intents, claim-centered source traces, entities, and relations from one target paper.
 
 Rules:
 1. Use only the supplied target paper text, citation contexts, reference list, user notes, and explicitly requested AMiner metadata.
 2. Use only the allowed intent labels.
 3. Ground every citation intent in a citation sentence, local context, section name, or reference entry.
 4. AMiner metadata may enrich IDs and URLs but cannot replace citation context evidence.
-5. If evidence is weak, lower confidence and explain uncertainty in {{output_language}}.
-6. Keep JSON keys and labels in English.
-7. Output a complete object that can be saved as citation_graph.json after validation.
+5. Ground every source trace in at least one local citation context; AMiner metadata alone cannot prove a trace.
+6. If evidence is weak, lower confidence and explain uncertainty in {{output_language}}.
+7. Keep JSON keys and labels in English.
+8. Output a complete object that can be saved as json/graph/citation_graph.json after validation.
 ```
 
 ## Citation Extraction Prompt
@@ -53,6 +54,69 @@ Return JSON only with this shape:
       "coarse_intent": "background/method/result"
     }
   ]
+}
+```
+
+## Source Trace Extraction Prompt
+
+```text
+Task: Build claim-centered source traces from the target paper.
+
+Use only target-paper claims, citation records, reference entries, and explicitly requested AMiner metadata. AMiner metadata may enrich IDs and URLs, but cannot be the sole evidence for a trace.
+
+Output language for summaries, evidence, and notes: {{output_language}}
+
+Allowed claim_type values:
+problem, method, dataset, evaluation, result, limitation, future-work, contribution
+
+Recommended source_role values:
+foundation, method-origin, method-adaptation, dataset-source, metric-source, baseline-comparison, evidence-support, contrast, limitation-source, future-direction
+
+<target_paper_summary>
+{{target_paper_summary}}
+</target_paper_summary>
+
+<citations>
+{{citations_json}}
+</citations>
+
+<references>
+{{references_json}}
+</references>
+
+Return JSON only:
+{
+  "source_traces": [
+    {
+      "trace_id": "trace-001",
+      "claim_id": "claim-001",
+      "target_claim": "target-paper claim being traced",
+      "claim_type": "method",
+      "summary": "claim-to-source trace summary in output language",
+      "source_steps": [
+        {
+          "citation_id": "cit-001",
+          "reference_id": "ref-001 or null",
+          "source_role": "foundation",
+          "intent": "one allowed citation intent label",
+          "relation_type": "uses-method",
+          "evidence": "grounded explanation from local citation context",
+          "confidence": 0.0
+        }
+      ],
+      "confidence": 0.0,
+      "notes": "uncertainty, missing evidence, or AMiner metadata caveat"
+    }
+  ],
+  "metadata": {
+    "source_trace": {
+      "enabled": true,
+      "strategy": "claim-centered",
+      "claims_traced_count": 0,
+      "source_steps_count": 0,
+      "coverage_notes": "coverage summary"
+    }
+  }
 }
 ```
 
@@ -144,8 +208,10 @@ Check:
 2. Every intent is allowed.
 3. Every entity is supported by at least one citation.
 4. AMiner metadata is not used as intent evidence by itself.
-5. Weak, noisy, or table-derived evidence is not reported as high confidence.
-6. visual_groups and show_on_map cues are sufficient for SVG or a deterministic fallback.
+5. Every source trace is supported by at least one local citation context and links to citation_id/reference_id when available.
+6. AMiner metadata is not used as the sole evidence for source_traces.
+7. Weak, noisy, or table-derived evidence is not reported as high confidence.
+8. visual_groups and show_on_map cues are sufficient for SVG or a deterministic fallback.
 
 Return a concise issue list in {{output_language}}.
 ```

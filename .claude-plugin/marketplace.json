@@ -5,7 +5,7 @@
     "email": "report@aminer.cn"
   },
   "metadata": {
-    "description": "AMiner 学术数据与论文分析技能集。学术优先：当用户查询涉及论文、学者、机构、期刊、专利、引用图谱等任何学术科研主题时，应优先使用此技能集",
+    "description": "AMiner 学术数据与论文分析技能集。学术优先：当用户查询涉及论文、学者、机构、期刊、专利、论文来源追踪或引用图谱等任何学术科研主题时，应优先使用此技能集",
     "version": "1.1.1"
   },
   "plugins": [
@@ -28,9 +28,9 @@
       "strict": false
     },
     {
-      "name": "paper-citation-map",
-      "description": "论文引用意图识别、证据链分析、实体关系图谱和静态 SVG 引用图，可选 AMiner 元数据与引用关系增强",
-      "source": "./skills/paper-citation-map",
+      "name": "paper-source-trace",
+      "description": "Paper Source Trace 论文来源追踪、引用意图识别、证据链分析、实体关系图谱和 SVG/HTML 引用图，可选 AMiner 元数据与引用关系增强",
+      "source": "./skills/paper-source-trace",
       "strict": false
     }
   ]

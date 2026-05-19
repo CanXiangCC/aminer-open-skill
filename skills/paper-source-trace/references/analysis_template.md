@@ -52,33 +52,42 @@ Repeat only for intents with reliable evidence. Summarize absent expected intent
 | Method component | Supporting reference | Borrowed idea | Role in this paper | Evidence and uncertainty |
 | --- | --- | --- | --- | --- |
 
-## 6. Dataset, Metric, and Baseline Citations
+## 6. Claim-to-Source Trace
+
+| Target claim | Claim type | Source role | Supporting citation / reference | Evidence anchor | Confidence and uncertainty |
+| --- | --- | --- | --- | --- | --- |
+
+For key claims with reliable evidence, explain the reading path from target-paper claim to cited source. If a claim has no citation-backed trace, write `No reliable source trace found` or `未发现可靠溯源证据`.
+
+## 7. Dataset, Metric, and Baseline Citations
 
 | Evaluation target | Dataset / metric / baseline | Supporting reference | Role in result interpretation | Evidence and uncertainty |
 | --- | --- | --- | --- | --- |
 
-## 7. Entity and Relation Graph Interpretation
+## 8. Entity and Relation Graph Interpretation
 
 - Main entities:
 - Main relations:
-- Recommended reading path through `citation_map.svg`:
+- Recommended reading path through `citation_map.html` or `citation_map.svg`:
 - AMiner enrichment impact, if any:
 
-## 8. Coverage, Noise, and Uncertainty
+## 9. Coverage, Noise, and Uncertainty
 
 - Coverage:
 - Missing or noisy evidence:
 - Reference matching caveats:
+- Source trace coverage:
 - AMiner enrichment caveats:
 - SVG generation status:
 
-## 9. Output File Checklist
+## 10. Output File Checklist
 
 | File | Status | Notes |
 | --- | --- | --- |
 | `analysis.md` | Generated | Report in the user's primary language |
-| `citation_graph.json` | Generated | Must parse as JSON |
+| `json/graph/citation_graph.json` | Generated | Must parse as JSON; includes `source_traces[]` when trace evidence exists |
 | `citation_map.svg` | Generated / not generated | Static citation map |
+| `citation_map.html` | Generated / not generated | Single-file interactive graph |
 | `citation_map_example.svg` | Generated / not used | Only for `all` mode |
 | `citation_map_spec.md` | Optional / not used | Fallback if SVG generation fails |
 ```
@@ -86,6 +95,7 @@ Repeat only for intents with reliable evidence. Summarize absent expected intent
 ## Quality Rules
 
 - Keep the section order.
-- Preserve all records in `citation_graph.json`; the Markdown report may summarize dense groups.
+- Preserve all records in `json/graph/citation_graph.json`; the Markdown report may summarize dense groups.
 - Each intent group must explain how the group supports the target paper's problem, method, experiment, or limitation.
+- Each source trace must connect a target-paper claim to local citation evidence and a cited-source role.
 - AMiner-enriched metadata must be labeled as metadata, not as local citation evidence.

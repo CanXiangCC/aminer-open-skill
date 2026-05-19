@@ -1,6 +1,6 @@
 # Evidence Protocol for Citation Intent Analysis
 
-Use this protocol before writing `analysis.md` and before finalizing `citation_graph.json`.
+Use this protocol before writing `analysis.md` and before finalizing `json/graph/citation_graph.json`.
 
 ## Evidence Sources
 
@@ -27,6 +27,20 @@ For each important citation, capture as many anchors as possible:
 | `cited_work_role` | Role of the cited work, such as problem origin, method component, dataset source, baseline, tool, theory, result evidence, or limitation |
 | `intent_rationale` | Why this citation belongs to its selected intent label instead of a nearby label |
 | `confidence_reason` | Why confidence is high, medium, or low |
+
+## Claim-Centered Source Tracing
+
+Use source tracing to answer: which cited sources support, motivate, supply, contrast, or limit a target-paper claim?
+
+For each important target-paper claim or contribution:
+
+1. Identify the claim from the target paper text, not from outside memory.
+2. Link the claim to one or more local citation contexts.
+3. Assign each cited source a `source_role`, such as `foundation`, `method-origin`, `method-adaptation`, `dataset-source`, `metric-source`, `baseline-comparison`, `evidence-support`, `contrast`, `limitation-source`, or `future-direction`.
+4. Explain how the cited source supports the claim using visible evidence.
+5. Record uncertainty when the claim is clear but the citation context is weak, noisy, or only indirectly connected.
+
+Build `source_traces[]` only when at least one local citation context supports the trace. AMiner metadata can enrich IDs, URLs, and candidate matches, but cannot by itself prove a claim-to-source relationship.
 
 ## Citation Context Rules
 
@@ -67,11 +81,14 @@ Do not use high confidence when only the reference title or AMiner metadata is k
 
 If an expected intent, method chain, dataset link, or baseline link has no reliable evidence, write the equivalent of `No reliable evidence found` in the output language. In Chinese output, write `未发现可靠证据`.
 
+If a target-paper claim has no reliable citation-backed source trace, write `No reliable source trace found` in the output language. In Chinese output, write `未发现可靠溯源证据`.
+
 When generating `analysis.md`, explicitly distinguish:
 
 - evidence-backed conclusions;
 - plausible but uncertain interpretations;
 - missing or noisy evidence;
 - AMiner metadata enrichment that does not prove intent.
+- claim-to-source traces supported by local citation contexts.
 
-When generating `citation_graph.json`, preserve uncertainty in `notes`, `intent_rationale`, or `confidence_reason`.
+When generating `json/graph/citation_graph.json`, preserve uncertainty in `notes`, `intent_rationale`, `confidence_reason`, or `source_traces[].notes`.
