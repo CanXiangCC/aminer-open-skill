@@ -1,5 +1,17 @@
-# Local secrets and generated runtime files
+.DS_Store
+.idea/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
 .env
+.venv/
+venv/
+*.log
+
+# Local secrets and generated runtime files
 *.local.yaml
 config.local.yaml
 config.yaml
