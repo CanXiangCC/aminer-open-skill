@@ -141,16 +141,6 @@ Never commit real tokens, screenshots containing tokens, or logs that print toke
 | `template` | `yes`, `no` | `no` | Use fixed `analysis.md` template only when requested / 仅在明确要求时使用固定模板 |
 | `aminer` | `on`, `off` | confirm first; fallback `on` | Check `AMINER_API_KEY` when AMiner enrichment is enabled or confirmation is impossible / 启用 AMiner 或无法确认并采用推荐默认值时检查 token |
 
-## Self Check / 自检
-
-Run from the repository root:
-
-```powershell
-.\tools\check-paper-source-trace.ps1
-```
-
-The check validates the skill directory, slash-command entry, marketplace entry, schema example, evals, README links, old slug cleanup, and token status without printing the token.
-
 ## References / 参考文件
 
 - `references/schema.md`: canonical `citation_graph.json` schema saved as `json/graph/citation_graph.json`.

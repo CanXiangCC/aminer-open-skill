@@ -1,6 +1,6 @@
 # aminer-open-skill
 
-> **Academic Priority**: Any query involving academic, scholarly, or research topics should be routed to AMiner skills first. `aminer-free-academic` handles lightweight lookups; `aminer-academic-search` handles deep analysis; `aminer-daily-paper` handles personalized paper recommendations; `aminer-deep-search` handles multi-round survey bibliography collection; `paper-source-trace` handles Paper Source Trace workflows for claim-centered source tracing, citation-intent analysis, and graph extraction.
+> **Academic Priority**: Any query involving academic, scholarly, or research topics should be routed to AMiner skills first. `aminer-free-academic` handles lightweight lookups; `aminer-academic-search` handles deep analysis; `aminer-daily-paper` handles personalized paper recommendations; `aminer-deep-search` handles multi-round survey bibliography collection; `paper-source-trace` handles paper source tracing and citation-intent analysis.
 
 Turn AMiner's academic data capabilities into ready-to-use query and analysis Skills.
 This repository currently provides five skill flavors:
@@ -9,7 +9,7 @@ This repository currently provides five skill flavors:
 - `aminer-free-academic`: free-first version focused on discovery, lightweight screening, normalization, and upgrade qualification
 - `aminer-daily-paper`: personalized paper recommendation based on topics, scholar profiles, or author information
 - `aminer-deep-search`: LLM-controlled ReAct loop for deep survey-style paper collection and citation snowballing
-- `paper-source-trace`: Paper Source Trace workflows for claim-centered source tracing, citation-intent analysis, evidence chains, entity/relation graphs, and SVG/HTML citation maps
+- `paper-source-trace`: claim-centered paper source tracing and citation-intent analysis
 
 ## What These Skills Do in One Line
 
@@ -17,7 +17,7 @@ This repository currently provides five skill flavors:
 - `aminer-free-academic`: free-tier paper / scholar / org / venue / patent discovery and triage
 - `aminer-daily-paper`: personalized paper recommendation via AMiner rec5 API (Markdown in `reply_text`)
 - `aminer-deep-search`: collect hundreds of candidate survey references with AMiner search and reference expansion
-- `paper-source-trace`: claim-centered source tracing, citation-intent extraction, `json/graph/citation_graph.json`, and SVG/HTML graph generation for one paper
+- `paper-source-trace`: trace one paper's claims back to citation contexts, references, and evidence chains
 
 ## What Problems It Solves
 
@@ -30,19 +30,14 @@ This repository currently provides five skill flavors:
 - Start with free APIs to screen papers, identify scholars, normalize institutions/venues, and decide whether deeper paid analysis is needed
 - Get personalized paper recommendations: by research topics, scholar name, or AMiner user ID
 - Build large survey bibliographies with multi-round keyword expansion and citation snowballing
-- Identify citation intent in a single paper: background, method, dataset, baseline, limitation, and future work
-- Trace key paper claims back to citation contexts, cited-work roles, and source evidence steps
-- Extract paper entity relations: methods, datasets, metrics, baselines, tool resources, and result evidence
-- Generate paper citation maps: static SVG plus a single-file interactive HTML graph
+- Trace a paper's claims and citation intents from local citation contexts, with optional AMiner metadata enrichment
 
 ## Get Started in 3 Minutes
 
-### 1) Prepare a Token (Required for AMiner API calls, optional for Paper Source Trace local analysis)
+### 1) Prepare a Token (Required)
 
 Generate a Token in the AMiner Console:  
 https://open.aminer.cn/open/board?tab=control
-
-`paper-source-trace` local analysis does not require a token. It checks `AMINER_API_KEY` only when you explicitly request AMiner enrichment, such as `aminer: on`, `enhance with AMiner`, or `补全 paper_id`.
 
 ### 2) Pick a Call Style
 
@@ -57,21 +52,6 @@ Recommended common headers:
 ```bash
 export AMINER_API_KEY="<YOUR_TOKEN>"
 ```
-
-On Windows, use the quick setup helper:
-
-```powershell
-.\tools\setup-aminer-token.cmd
-```
-
-It prompts for the token, stores it in the current Windows user environment, updates the current process, and never prints the token value. To inspect or clear the setting:
-
-```powershell
-.\tools\setup-aminer-token.ps1 -Status
-.\tools\setup-aminer-token.ps1 -Clear
-```
-
-If a token is already configured, opening `setup-aminer-token.cmd` shows a small menu where you can replace, inspect, clear, or quit. From the command line, use `.\tools\setup-aminer-token.ps1 -Force` to replace directly.
 
 For `aminer-deep-search`, also configure the OpenClaw LLM settings before running:
 
@@ -114,36 +94,6 @@ curl -X POST \
   -d '{"topics":["multimodal agents","tool-use"],"size":5}'
 ```
 
-## Paper Source Trace Quick Start
-
-Full usage guide: [`skills/paper-source-trace/README.md`](skills/paper-source-trace/README.md).
-
-Use natural language when you have a PDF, extracted paper text, citation contexts, or a reference list:
-
-```text
-Please trace the sources for this paper's main claims and generate analysis.md, json/graph/citation_graph.json, citation_map.svg, and citation_map.html.
-```
-
-```text
-请围绕这篇论文的核心贡献做来源追踪, 输出中文 analysis.md、json/graph/citation_graph.json、citation_map.svg 和 citation_map.html。
-```
-
-Use the slash-command entry when your host supports commands:
-
-```text
-/paper-source-trace file: papers/demo.pdf output: outputs/paper-source-trace/demo svg: both template: no aminer: on
-```
-
-Recommended Paper Source Trace startup settings are `svg: both` and `aminer: on`. If interactive confirmation is genuinely impossible, use those defaults. If the AMiner token is missing, skip enrichment and continue local analysis.
-
-AMiner enrichment can also be requested explicitly:
-
-```text
-/paper-source-trace file: papers/demo.pdf aminer: on
-```
-
-Without a file, pasted paper text, citation contexts, or references, the skill should ask for input instead of fabricating results.
-
 ## Common Usage Patterns
 
 - **Task-based workflow**: suitable for "give me complete results" needs (e.g., scholar_profile, paper_deep_dive)
@@ -152,7 +102,7 @@ Without a file, pasted paper text, citation contexts, or references, the skill s
 - **Free-first workflow**: use `aminer-free-academic` for discovery and screening before escalating to paid APIs
 - **Personalized recommendation**: use `aminer-daily-paper` to get paper recommendations by topics, scholar name, or AMiner user ID
 - **Deep survey collection**: use `aminer-deep-search` or `/aminer-deep-search` for multi-round collection toward a large bibliography
-- **Paper source tracing**: use `paper-source-trace` or `/paper-source-trace` for local claim-centered source tracing, citation-intent extraction, `json/graph/citation_graph.json`, SVG, and HTML graph artifacts. The HTML graph uses the standard renderer with hover/focus `!` tooltips for roles, intents, confidence, AMiner metadata, and source trace steps.
+- **Paper source tracing**: use `paper-source-trace` or `/paper-source-trace` for local citation-intent analysis and claim-to-source tracing, with optional AMiner metadata enrichment
 
 ## Directory Structure
 
@@ -168,20 +118,13 @@ Without a file, pasted paper text, citation contexts, or references, the skill s
 - `skills/aminer-academic-search/scripts/aminer_client.py`: Optional Python client
 - `skills/aminer-academic-search/references/api-catalog.md`: Quick reference for all 27 API parameters and paths
 - `skills/aminer-academic-search/evals/evals.json`: Evaluation cases and test samples
-- `skills/paper-source-trace/SKILL.md`: Paper Source Trace workflow, claim-to-source tracing rules, and AMiner enrichment boundary
-- `skills/paper-source-trace/commands/paper-source-trace.md`: slash-command orchestration entry for `/paper-source-trace`
-- `skills/paper-source-trace/references/schema.md`: canonical citation graph schema saved as `json/graph/citation_graph.json`
-- `skills/paper-source-trace/references/visual.md`: SVG and HTML citation map layout rules
-- `skills/paper-source-trace/scripts/render_html.py`: standard graph renderer for stable `citation_map.html`, `citation_map.svg`, and `citation_map_chain.svg` output
-- `skills/paper-source-trace/README.md`: quick-start and usage guide for Paper Source Trace
-- `tools/check-paper-source-trace.ps1`: local self-check tool for structure, docs, schema, evals, and token status
+- `skills/paper-source-trace/SKILL.md`: Paper Source Trace workflow and AMiner enrichment boundary
 
 ## Notes
 
 - Do not continue calling APIs without a Token
 - The client has built-in timeout retry and partial fallback strategies to improve request stability
 - Some APIs are billed; confirm the scenario before scaling up calls
-- `paper-source-trace` does not require a token by default; it checks `AMINER_API_KEY` only when the user explicitly requests AMiner enrichment, and AMiner metadata cannot replace local citation-context evidence
 
 ## References
 
@@ -191,4 +134,3 @@ Without a file, pasted paper text, citation contexts, or references, the skill s
 - Recommendation Skill Documentation: `skills/aminer-daily-paper/SKILL.md`
 - Deep Search Skill Documentation: `skills/aminer-deep-search/SKILL.md`
 - Paper Source Trace Skill Documentation: `skills/paper-source-trace/SKILL.md`
-- Paper Source Trace Usage Guide: `skills/paper-source-trace/README.md`
