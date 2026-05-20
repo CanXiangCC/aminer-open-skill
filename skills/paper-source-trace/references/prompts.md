@@ -30,7 +30,8 @@ Rules:
 5. Ground every source trace in at least one local citation context; AMiner metadata alone cannot prove a trace.
 6. If evidence is weak, lower confidence and explain uncertainty in {{output_language}}.
 7. Keep JSON keys and labels in English.
-8. Output a complete object that can be saved as json/graph/citation_graph.json after validation.
+8. Keep `citation_sentence` and `context` in the target paper's source language; do not translate them to {{output_language}}.
+9. Output a complete object that can be saved as json/graph/citation_graph.json after validation.
 ```
 
 ### Citation Extraction Prompt
@@ -53,8 +54,8 @@ Return JSON only with this shape:
       "unmatched_reference": false,
       "marker": "citation marker",
       "section": "section name",
-      "citation_sentence": "exact citation sentence",
-      "context": "short local context",
+      "citation_sentence": "exact source-language citation sentence",
+      "context": "short source-language local context",
       "intent": "one allowed label",
       "confidence": 0.0,
       "evidence": "grounded explanation in output language",
@@ -244,6 +245,7 @@ Return a concise issue list in {{output_language}}.
 5. 每条 source trace 至少要由一个本地 citation context 支撑；AMiner 元数据不能单独证明 trace。
 6. 如果证据较弱，降低 confidence，并用 {{output_language}} 解释不确定性。
 7. JSON keys 和 labels 保持英文。
+8. `citation_sentence` 和 `context` 保留目标论文原文语言，不要翻译为 {{output_language}}。
 8. 输出一个完整对象，验证后可保存为 json/graph/citation_graph.json。
 ```
 
@@ -267,8 +269,8 @@ background, problem, core-method, supporting-method, dataset, metric, baseline, 
       "unmatched_reference": false,
       "marker": "citation marker",
       "section": "section name",
-      "citation_sentence": "exact citation sentence",
-      "context": "short local context",
+      "citation_sentence": "exact source-language citation sentence",
+      "context": "short source-language local context",
       "intent": "one allowed label",
       "confidence": 0.0,
       "evidence": "grounded explanation in output language",

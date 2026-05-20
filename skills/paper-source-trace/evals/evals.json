@@ -270,6 +270,32 @@
         "Chain SVG uses only lightweight hub-to-citation and citation-to-target main edges",
         "AMiner is shown only as metadata badge, not as evidence edges"
       ]
+    },
+    {
+      "id": 22,
+      "prompt": "请从已有 json/graph/citation_graph.json 生成中文 citation_map.html，并在角色、意图、AMiner 元数据和来源追踪步骤旁加入悬浮提示。",
+      "expected_output": "Use scripts/render_html.py to generate the Chinese citation_map.html. The HTML must include unified ! tooltip circles with hover and keyboard focus support. Tooltip text must be Chinese, include 来源角色推荐值 and AMiner 元数据仅用于补全, and explain that source traces require local citation context evidence.",
+      "files": [],
+      "expectations": [
+        "Uses scripts/render_html.py rather than ad hoc tooltip HTML",
+        "HTML contains ! tooltip controls with tabindex or equivalent keyboard focus support",
+        "中文提示包含来源角色推荐值和固定 source_role 推荐值列表",
+        "中文 AMiner 提示说明 AMiner 元数据仅用于补全，不能替代本地引用上下文证据",
+        "中文 tooltip 不混用 English UI tooltip text such as Recommended source_role values"
+      ]
+    },
+    {
+      "id": 23,
+      "prompt": "Generate an English citation_map.html with help tooltips for Role, Intent, Confidence, AMiner metadata, Source traces, Steps, Fit screen, Reset layout, Export SVG, and Filter.",
+      "expected_output": "Use scripts/render_html.py to generate the English citation_map.html. The HTML must include unified ! tooltip circles with hover and keyboard focus support. Tooltip text must be English, include Recommended source_role values and AMiner metadata only enriches metadata, and explain that confidence is evidence confidence rather than an AMiner match score or model probability.",
+      "files": [],
+      "expectations": [
+        "Uses scripts/render_html.py rather than ad hoc tooltip HTML",
+        "HTML contains ! tooltip controls with tabindex or equivalent keyboard focus support",
+        "English tooltip includes Recommended source_role values and the source_role list",
+        "English AMiner tooltip says AMiner metadata only enriches metadata and cannot replace local citation-context evidence",
+        "English tooltip output does not use 中文 UI 提示 such as 来源角色推荐值"
+      ]
     }
   ]
 }

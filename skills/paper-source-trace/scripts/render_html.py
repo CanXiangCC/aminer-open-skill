@@ -47,6 +47,7 @@ I18N = {
         "intent": "Intent",
         "role": "Role",
         "context": "Context",
+        "claim_type": "Claim type",
         "summary": "Summary",
         "steps": "Steps",
         "no_items": "No records available.",
@@ -55,6 +56,23 @@ I18N = {
         "instructions": "Wheel to zoom, drag empty canvas to pan, drag nodes to adjust, double-click a node to reset it.",
         "download_name": "citation_map_view.svg",
         "uncertain": "Uncertain",
+        "tip_radial": "Radial gives an overview of citation-intent groups around the target paper.",
+        "tip_chain": "Chain shows claim-to-source relationships by source lane.",
+        "tip_search": "Search citation markers, evidence snippets, reference titles, roles, and claims.",
+        "tip_filter": "Filter controls which intent groups are visible on the canvas.",
+        "tip_fit": "Fit screen shows a full overview. It may zoom out too far for close reading.",
+        "tip_reset": "Reset layout restores automatic positions, zoom, and pan after manual adjustments.",
+        "tip_export_svg": "Export SVG saves the current HTML view. It does not replace the standard static SVG artifacts.",
+        "tip_role": "Role is inferred from local citation context. Recommended source_role values: foundation, method-origin, method-adaptation, dataset-source, metric-source, baseline-comparison, evidence-support, contrast, limitation-source, future-direction.",
+        "tip_intent": "Allowed intent labels: background, problem, theory, core-method, supporting-method, tool-resource, dataset, metric, baseline, result-evidence, limitation, future-work.",
+        "tip_claim_type": "Claim type describes what kind of target-paper claim is being traced: problem, method, dataset, evaluation, result, limitation, future-work, or contribution.",
+        "tip_context": "Context is the original local citation sentence or nearby text from the target paper. Keep the source language and do not translate it to the output language.",
+        "tip_confidence": "Confidence is a 0-1 evidence confidence score. It is not an AMiner match score or model probability.",
+        "tip_aminer": "AMiner metadata only enriches metadata, IDs, URLs, and candidate relationships. It cannot replace local citation-context evidence.",
+        "tip_source_traces": "Source traces connect target-paper claims to cited sources and must be supported by local citation contexts.",
+        "tip_steps": "Steps are the evidence links inside one source trace. Each step should link a citation_id, reference_id, source_role, intent, relation_type, evidence, and confidence.",
+        "tip_evidence": "Evidence is a short local citation-context anchor, not a full quoted passage or external metadata alone.",
+        "tip_reference": "Reference metadata identifies the cited work. AMiner fields can enrich metadata but do not prove citation intent.",
     },
     "zh": {
         "page_title": "论文来源追踪图谱",
@@ -91,6 +109,7 @@ I18N = {
         "intent": "意图",
         "role": "角色",
         "context": "上下文",
+        "claim_type": "Claim 类型",
         "summary": "总结",
         "steps": "步骤",
         "no_items": "暂无记录。",
@@ -99,6 +118,23 @@ I18N = {
         "instructions": "滚轮缩放，拖动画布平移，拖动节点调整位置，双击节点恢复自动布局。",
         "download_name": "citation_map_view.svg",
         "uncertain": "不确定",
+        "tip_radial": "径向图用于概览目标论文周围的引用意图分组。",
+        "tip_chain": "溯源链图按来源链展示 claim-to-source 关系。",
+        "tip_search": "可搜索引用标记、证据片段、参考文献标题、角色和 claim。",
+        "tip_filter": "筛选控件决定画布上显示哪些引用意图分组。",
+        "tip_fit": "适配屏幕用于完整鸟瞰，可能会缩小到不适合细读。",
+        "tip_reset": "重置布局会恢复自动布局、缩放和平移，并清除手动拖动的位置。",
+        "tip_export_svg": "导出当前 SVG 会保存 HTML 当前视图，不替代标准静态 SVG 产物。",
+        "tip_role": "角色是根据本地 citation context 推断出的被引文献作用。来源角色推荐值：foundation、method-origin、method-adaptation、dataset-source、metric-source、baseline-comparison、evidence-support、contrast、limitation-source、future-direction。",
+        "tip_intent": "允许的 intent 标签：background、problem、theory、core-method、supporting-method、tool-resource、dataset、metric、baseline、result-evidence、limitation、future-work。",
+        "tip_claim_type": "Claim 类型表示被追踪的是目标论文中的哪类 claim：problem、method、dataset、evaluation、result、limitation、future-work 或 contribution。",
+        "tip_context": "上下文是目标论文中的原始 citation sentence 或邻近原文片段，应按论文原语言保留；不要根据用户输出语言翻译。",
+        "tip_confidence": "置信度是 0-1 的证据置信度，不是 AMiner 匹配分，也不是模型概率。",
+        "tip_aminer": "AMiner 元数据仅用于补全 metadata、ID、URL 和候选关系，不能替代本地引用上下文证据。",
+        "tip_source_traces": "来源追踪把目标论文 claim 连接到被引来源，必须由本地 citation context 支撑。",
+        "tip_steps": "步骤是一条 source trace 内部的证据链接，应包含 citation_id、reference_id、source_role、intent、relation_type、evidence 和 confidence。",
+        "tip_evidence": "证据是简短的本地引用上下文锚点，不是完整长段引用，也不能只来自外部元数据。",
+        "tip_reference": "参考文献元数据用于识别被引工作；AMiner 字段可补全元数据，但不能证明引用意图。",
     },
 }
 
@@ -150,6 +186,90 @@ CANONICAL_GROUPS = [
         "chain_zh": "局限/资源链",
     },
 ]
+
+
+INTENT_HELP = {
+    "en": {
+        "background": "background: supplies field background or prior context; it does not directly provide this paper's method, data, or result.",
+        "problem": "problem: identifies a gap, limitation, missing coverage, or research problem that motivates the target paper.",
+        "theory": "theory: provides a conceptual, mathematical, or theoretical basis for the target paper's reasoning.",
+        "core-method": "core-method: supplies a direct source for the target paper's central method or algorithm.",
+        "supporting-method": "supporting-method: supplies an auxiliary method, annotation rule, preprocessing step, or implementation choice.",
+        "tool-resource": "tool-resource: supplies a tool, corpus, infrastructure resource, software, API, or external resource.",
+        "dataset": "dataset: supplies or contrasts a dataset, benchmark, annotation resource, or data source.",
+        "metric": "metric: supplies an evaluation metric, agreement measure, scoring rule, or measurement protocol.",
+        "baseline": "baseline: names a model, system, or method used as an experimental comparison baseline.",
+        "result-evidence": "result-evidence: supports or contextualizes a result, empirical finding, or performance claim.",
+        "limitation": "limitation: marks a known weakness, boundary, negative case, or caveat relevant to the target paper.",
+        "future-work": "future-work: motivates an application, extension, downstream use, or future research direction.",
+    },
+    "zh": {
+        "background": "background：提供领域背景或已有研究脉络，不直接作为本文方法、数据或结果证据。",
+        "problem": "problem：指出已有工作的缺口、限制、覆盖不足或本文要解决的问题。",
+        "theory": "theory：提供概念、数学或理论基础，用来支撑目标论文的论证。",
+        "core-method": "core-method：直接提供目标论文核心方法或算法来源。",
+        "supporting-method": "supporting-method：提供辅助方法、标注规则、预处理步骤或实现选择。",
+        "tool-resource": "tool-resource：提供工具、语料、基础设施资源、软件、API 或外部资源。",
+        "dataset": "dataset：提供或对比数据集、benchmark、标注资源或数据来源。",
+        "metric": "metric：提供评价指标、一致性指标、评分规则或测量协议。",
+        "baseline": "baseline：作为实验对比的模型、系统或方法基线。",
+        "result-evidence": "result-evidence：支撑或解释结果、经验发现或性能 claim。",
+        "limitation": "limitation：指出与目标论文相关的弱点、边界、负例或限制。",
+        "future-work": "future-work：说明应用场景、扩展方向、下游用途或未来研究方向。",
+    },
+}
+
+
+ROLE_HELP = {
+    "en": {
+        "foundation": "foundation: the cited work is a general foundation or background source for this claim.",
+        "method-origin": "method-origin: the cited work is the original source of a method used by the target paper.",
+        "method-adaptation": "method-adaptation: the target paper adapts or reuses a method, protocol, rule, or tool from this source.",
+        "dataset-source": "dataset-source: the cited work provides or defines a dataset, benchmark, or data resource.",
+        "metric-source": "metric-source: the cited work provides the metric, agreement measure, or evaluation protocol.",
+        "baseline-comparison": "baseline-comparison: the cited work is used as a model, method, or system baseline for comparison.",
+        "evidence-support": "evidence-support: the cited work supplies evidence that supports a target-paper claim.",
+        "contrast": "contrast: the cited work is used to show what is different, missing, or limited relative to the target paper.",
+        "limitation-source": "limitation-source: the cited work identifies or motivates a limitation or boundary condition.",
+        "future-direction": "future-direction: the cited work motivates downstream use, extension, or future research.",
+    },
+    "zh": {
+        "foundation": "foundation：该文献作为该 claim 的基础背景或领域来源。",
+        "method-origin": "method-origin：该文献是目标论文所用方法的原始来源。",
+        "method-adaptation": "method-adaptation：目标论文改造或复用了该来源中的方法、协议、规则或工具。",
+        "dataset-source": "dataset-source：该文献提供或定义数据集、benchmark 或数据资源。",
+        "metric-source": "metric-source：该文献提供评价指标、一致性指标或评测协议。",
+        "baseline-comparison": "baseline-comparison：该文献作为模型、方法或系统基线用于对比。",
+        "evidence-support": "evidence-support：该文献提供支撑目标论文 claim 的证据。",
+        "contrast": "contrast：该文献用于显示与目标论文相比的差异、缺失或限制。",
+        "limitation-source": "limitation-source：该文献指出或引出限制、边界条件或风险。",
+        "future-direction": "future-direction：该文献用于说明下游应用、扩展方向或未来研究。",
+    },
+}
+
+
+CLAIM_TYPE_HELP = {
+    "en": {
+        "problem": "problem: a claim about the gap, task need, or research problem.",
+        "method": "method: a claim about the method, workflow, annotation procedure, or system design.",
+        "dataset": "dataset: a claim about the dataset, benchmark, annotation set, or data construction.",
+        "evaluation": "evaluation: a claim about evaluation design, metrics, agreement, or validation.",
+        "result": "result: a claim about experimental findings or observed performance.",
+        "limitation": "limitation: a claim about limits, weak cases, data imbalance, or uncertainty.",
+        "future-work": "future-work: a claim about future extensions, downstream use, or next research steps.",
+        "contribution": "contribution: a general contribution claim when a more specific type is not appropriate.",
+    },
+    "zh": {
+        "problem": "problem：关于研究缺口、任务需求或问题定义的 claim。",
+        "method": "method：关于方法、流程、标注协议或系统设计的 claim。",
+        "dataset": "dataset：关于数据集、benchmark、标注集合或数据构建的 claim。",
+        "evaluation": "evaluation：关于评估设计、指标、一致性或验证方式的 claim。",
+        "result": "result：关于实验发现或性能结果的 claim。",
+        "limitation": "limitation：关于限制、薄弱类别、数据不均衡或不确定性的 claim。",
+        "future-work": "future-work：关于未来扩展、下游应用或下一步研究的 claim。",
+        "contribution": "contribution：当更具体类型不合适时使用的一般贡献 claim。",
+    },
+}
 
 
 RADIAL_MAX_PER_GROUP = 6
@@ -266,6 +386,60 @@ input[type="search"] {{
 }}
 .swatch {{ width: 14px; height: 14px; border-radius: 4px; border: 1px solid #0002; }}
 .muted {{ color: var(--muted); font-size: 12px; }}
+.label-help, .button-label {{
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}}
+.help-tip {{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 1px solid #9bb3ce;
+  background: #f8fbff;
+  color: var(--accent);
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 800;
+  cursor: help;
+}}
+.help-tip:focus {{
+  outline: 2px solid rgba(31, 95, 153, .32);
+  outline-offset: 2px;
+}}
+.tip-layer {{
+  position: fixed;
+  left: 0;
+  top: 0;
+  max-width: min(420px, calc(100vw - 24px));
+  padding: 10px 12px;
+  border-radius: 7px;
+  background: #172033;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, .24);
+  font-size: 12px;
+  line-height: 1.55;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity .08s ease;
+}}
+.tip-layer.visible {{
+  opacity: 1;
+  visibility: visible;
+}}
 .detail-card {{
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -280,6 +454,11 @@ input[type="search"] {{
   gap: 6px 8px;
   font-size: 13px;
   line-height: 1.35;
+}}
+.kv .muted {{
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
 }}
 .pill {{
   display: inline-block;
@@ -325,23 +504,23 @@ input[type="search"] {{
     <h2>{controls}</h2>
     <h3>{layout}</h3>
     <div class="seg">
-      <button id="layout-radial" class="active" type="button">{radial}</button>
-      <button id="layout-chain" type="button">{chain}</button>
+      <button id="layout-radial" class="active" type="button">{radial}</button><span class="help-tip" tabindex="0" aria-label="{tip_radial}" data-tip="{tip_radial}">!</span>
+      <button id="layout-chain" type="button">{chain}</button><span class="help-tip" tabindex="0" aria-label="{tip_chain}" data-tip="{tip_chain}">!</span>
     </div>
-    <h3>{search}</h3>
+    <h3><span class="label-help">{search}<span class="help-tip" tabindex="0" aria-label="{tip_search}" data-tip="{tip_search}">!</span></span></h3>
     <input id="search" type="search" placeholder="{search_placeholder}">
-    <h3>{filter}</h3>
+    <h3><span class="label-help">{filter}<span class="help-tip" tabindex="0" aria-label="{tip_filter}" data-tip="{tip_filter}">!</span></span></h3>
     <label class="toggle"><input id="all-groups" type="checkbox" checked><span></span><span>{all_groups}</span><span></span></label>
     <div class="group-list" id="group-list"></div>
     <h3>{zoom}</h3>
     <div class="seg">
       <button id="zoom-out" type="button">{zoom_out}</button>
       <button id="zoom-in" type="button">{zoom_in}</button>
-      <button id="fit" type="button">{fit}</button>
+      <button id="fit" type="button">{fit}</button><span class="help-tip" tabindex="0" aria-label="{tip_fit}" data-tip="{tip_fit}">!</span>
     </div>
     <div style="margin-top:8px" class="seg">
-      <button id="reset" type="button">{reset}</button>
-      <button id="export-svg" type="button">{export_svg}</button>
+      <button id="reset" type="button">{reset}</button><span class="help-tip" tabindex="0" aria-label="{tip_reset}" data-tip="{tip_reset}">!</span>
+      <button id="export-svg" type="button">{export_svg}</button><span class="help-tip" tabindex="0" aria-label="{tip_export_svg}" data-tip="{tip_export_svg}">!</span>
     </div>
     <p class="muted">{instructions}</p>
   </aside>
@@ -364,17 +543,22 @@ input[type="search"] {{
   <aside class="panel">
     <h2>{node_details}</h2>
     <div id="details" class="muted">{empty_detail}</div>
-    <h3>{source_traces}</h3>
+    <h3><span class="label-help">{source_traces}<span class="help-tip" tabindex="0" aria-label="{tip_source_traces}" data-tip="{tip_source_traces}">!</span></span></h3>
     <div id="traces"></div>
   </aside>
 </main>
+<div id="tip-layer" class="tip-layer" role="tooltip" aria-hidden="true"></div>
 <script id="graph-data" type="application/json">{graph_json}</script>
 <script>
 const UI = {ui_json};
 const GRAPH = JSON.parse(document.getElementById("graph-data").textContent);
+const INTENT_HELP = {intent_help_json};
+const ROLE_HELP = {role_help_json};
+const CLAIM_TYPE_HELP = {claim_type_help_json};
 const svg = document.getElementById("graph");
 const viewport = document.getElementById("viewport");
 const wrap = document.getElementById("canvas-wrap");
+const tipLayer = document.getElementById("tip-layer");
 const groupList = document.getElementById("group-list");
 const allGroups = document.getElementById("all-groups");
 const search = document.getElementById("search");
@@ -411,6 +595,65 @@ function esc(value) {{
     if (ch === '"') return "&quot;";
     return "&#39;";
   }});
+}}
+function tipText(key, value) {{
+  if (key === "intent" && value && INTENT_HELP[value]) return INTENT_HELP[value];
+  if (key === "role" && value && ROLE_HELP[value]) return ROLE_HELP[value];
+  if (key === "claim_type" && value && CLAIM_TYPE_HELP[value]) return CLAIM_TYPE_HELP[value];
+  const text = UI[`tip_${{key}}`];
+  return text || "";
+}}
+function tip(key, value) {{
+  const text = tipText(key, value);
+  if (!text) return "";
+  return `<span class="help-tip" tabindex="0" aria-label="${{esc(text)}}" data-tip="${{esc(text)}}">!</span>`;
+}}
+function labelWithTip(label, key, value) {{
+  return `<span class="label-help">${{esc(label)}}${{tip(key, value)}}</span>`;
+}}
+function showTip(el) {{
+  const text = el && el.getAttribute("data-tip");
+  if (!text) return;
+  tipLayer.textContent = text;
+  tipLayer.setAttribute("aria-hidden", "false");
+  tipLayer.classList.add("visible");
+  const rect = el.getBoundingClientRect();
+  const margin = 12;
+  const width = Math.min(420, window.innerWidth - margin * 2);
+  tipLayer.style.maxWidth = `${{width}}px`;
+  tipLayer.style.left = "0px";
+  tipLayer.style.top = "0px";
+  const layerRect = tipLayer.getBoundingClientRect();
+  let left = rect.left + rect.width / 2 - layerRect.width / 2;
+  left = clamp(left, margin, window.innerWidth - layerRect.width - margin);
+  let top = rect.top - layerRect.height - 10;
+  if (top < margin) top = rect.bottom + 10;
+  top = clamp(top, margin, window.innerHeight - layerRect.height - margin);
+  tipLayer.style.left = `${{left}}px`;
+  tipLayer.style.top = `${{top}}px`;
+}}
+function hideTip() {{
+  tipLayer.classList.remove("visible");
+  tipLayer.setAttribute("aria-hidden", "true");
+}}
+document.addEventListener("mouseover", event => {{
+  const el = event.target.closest && event.target.closest(".help-tip");
+  if (el) showTip(el);
+}});
+document.addEventListener("focusin", event => {{
+  const el = event.target.closest && event.target.closest(".help-tip");
+  if (el) showTip(el);
+}});
+document.addEventListener("mouseout", event => {{
+  if (event.target.closest && event.target.closest(".help-tip")) hideTip();
+}});
+document.addEventListener("focusout", event => {{
+  if (event.target.closest && event.target.closest(".help-tip")) hideTip();
+}});
+window.addEventListener("scroll", hideTip, true);
+window.addEventListener("resize", hideTip);
+function localContext(citation) {{
+  return citation.context_original || citation.citation_sentence || citation.context || "";
 }}
 function clamp(n, min, max) {{ return Math.max(min, Math.min(max, n)); }}
 function byId(id) {{ return document.getElementById(id); }}
@@ -723,38 +966,38 @@ function setLayout(next) {{
   focusReadable();
 }}
 function detailRows(rows) {{
-  return `<div class="kv">${{rows.map(([k, v]) => `<div class="muted">${{esc(k)}}</div><div>${{esc(v || "")}}</div>`).join("")}}</div>`;
+  return `<div class="kv">${{rows.map(([k, v, tipKey, tipValue]) => `<div class="muted">${{labelWithTip(k, tipKey, tipValue ?? v)}}</div><div>${{esc(v ?? "")}}</div>`).join("")}}</div>`;
 }}
 function showCitation(c) {{
   const ref = refs.get(c.reference_id);
   const traceBadges = (c.trace_ids || []).map(id => `<span class="pill">${{esc(id)}}</span>`).join("");
   let out = `<div class="detail-card">${{detailRows([
     [UI.marker, c.marker || c.citation_id],
-    [UI.intent, c.intent],
+    [UI.intent, c.intent, "intent", c.intent],
     [UI.section, c.section],
-    [UI.confidence, c.confidence],
-    [UI.role, c.cited_work_role || ""]
+    [UI.confidence, c.confidence, "confidence"],
+    [UI.role, c.cited_work_role || "", "role", c.cited_work_role]
   ])}}${{traceBadges}}</div>`;
-  out += `<div class="detail-card"><strong>${{esc(UI.evidence)}}</strong><p>${{esc(c.evidence || "")}}</p><strong>${{esc(UI.context)}}</strong><p>${{esc(c.context || c.citation_sentence || "")}}</p></div>`;
+  out += `<div class="detail-card"><strong>${{labelWithTip(UI.evidence, "evidence")}}</strong><p>${{esc(c.evidence || "")}}</p><strong>${{labelWithTip(UI.context, "context")}}</strong><p>${{esc(localContext(c))}}</p></div>`;
   if (ref) {{
-    out += `<div class="detail-card"><strong>${{esc(UI.reference)}}</strong><p>${{esc(ref.title || ref.marker || ref.reference_id)}}</p><p class="muted">${{esc((ref.authors || []).slice(0, 5).join(", "))}} ${{esc(ref.year || "")}}</p>${{ref.aminer_paper_id ? `<span class="badge">${{esc(UI.aminer)}}: ${{esc(ref.aminer_paper_id)}}</span>` : ""}}</div>`;
+    out += `<div class="detail-card"><strong>${{labelWithTip(UI.reference, "reference")}}</strong><p>${{esc(ref.title || ref.marker || ref.reference_id)}}</p><p class="muted">${{esc((ref.authors || []).slice(0, 5).join(", "))}} ${{esc(ref.year || "")}}</p>${{ref.aminer_paper_id ? `<span class="badge">${{labelWithTip(UI.aminer, "aminer")}}: ${{esc(ref.aminer_paper_id)}}</span>` : ""}}</div>`;
   }}
   details.innerHTML = out;
 }}
 function showTrace(trace) {{
-  const steps = (trace.source_steps || []).map(s => `<div class="detail-card"><span class="pill">${{esc(s.citation_id)}}</span><span class="pill">${{esc(s.source_role || "")}}</span><p>${{esc(s.evidence || "")}}</p></div>`).join("");
+  const steps = (trace.source_steps || []).map(s => `<div class="detail-card"><span class="pill">${{esc(s.citation_id)}}</span><span class="pill">${{labelWithTip(s.source_role || UI.role, "role", s.source_role)}}</span><p>${{esc(s.evidence || "")}}</p></div>`).join("");
   details.innerHTML = `<div class="detail-card">${{detailRows([
-    [UI.source_traces, trace.trace_id],
-    [UI.intent, trace.claim_type],
-    [UI.confidence, trace.confidence]
-  ])}}</div><div class="detail-card"><strong>${{esc(UI.summary)}}</strong><p>${{esc(trace.summary || trace.target_claim || "")}}</p></div><h3>${{esc(UI.steps)}}</h3>${{steps || `<p class="muted">${{esc(UI.no_items)}}</p>`}}`;
+    [UI.source_traces, trace.trace_id, "source_traces"],
+    [UI.claim_type, trace.claim_type, "claim_type", trace.claim_type],
+    [UI.confidence, trace.confidence, "confidence"]
+  ])}}</div><div class="detail-card"><strong>${{esc(UI.summary)}}</strong><p>${{esc(trace.summary || trace.target_claim || "")}}</p></div><h3>${{labelWithTip(UI.steps, "steps")}}</h3>${{steps || `<p class="muted">${{esc(UI.no_items)}}</p>`}}`;
 }}
 function showTarget() {{
   const p = GRAPH.paper || {{}};
   details.innerHTML = `<div class="detail-card">${{detailRows([
     [UI.target, p.title],
     [UI.year, p.year],
-    [UI.aminer, p.aminer_paper_id || ""]
+    [UI.aminer, p.aminer_paper_id || "", "aminer"]
   ])}}</div><div class="detail-card"><strong>${{esc(UI.summary)}}</strong><p>${{esc(p.abstract || "")}}</p></div>`;
 }}
 function handleNodeClick(id) {{
@@ -783,7 +1026,7 @@ function renderGroups() {{
 }}
 function renderTraces() {{
   const items = GRAPH.source_traces || [];
-  tracesEl.innerHTML = items.length ? items.map(t => `<div class="trace-item" data-trace="${{esc(t.trace_id)}}"><strong>${{esc(t.claim_id || t.trace_id)}}</strong><p class="muted">${{esc(t.target_claim || t.summary || "")}}</p><span class="pill">${{esc(t.claim_type || "")}}</span><span class="pill">${{(t.source_steps || []).length}} ${{esc(UI.steps)}}</span></div>`).join("") : `<p class="muted">${{esc(UI.no_items)}}</p>`;
+  tracesEl.innerHTML = items.length ? items.map(t => `<div class="trace-item" data-trace="${{esc(t.trace_id)}}"><strong>${{esc(t.claim_id || t.trace_id)}}</strong><p class="muted">${{esc(t.target_claim || t.summary || "")}}</p><span class="pill">${{labelWithTip(t.claim_type || UI.source_traces, "claim_type", t.claim_type)}}</span><span class="pill">${{(t.source_steps || []).length}} ${{labelWithTip(UI.steps, "steps")}}</span></div>`).join("") : `<p class="muted">${{esc(UI.no_items)}}</p>`;
   tracesEl.querySelectorAll("[data-trace]").forEach(el => el.addEventListener("click", () => {{
     const trace = traces.get(el.dataset.trace);
     if (trace) showTrace(trace);
@@ -1219,6 +1462,9 @@ def render_html(graph: dict[str, Any], language: str) -> str:
     graph_json = json.dumps(graph, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     ui_json = json.dumps(ui, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     groups_json = json.dumps(localized_groups(language), ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    intent_help_json = json.dumps(INTENT_HELP[language], ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    role_help_json = json.dumps(ROLE_HELP[language], ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
+    claim_type_help_json = json.dumps(CLAIM_TYPE_HELP[language], ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     html_lang = "zh-CN" if language == "zh" else "en"
     return HTML_TEMPLATE.format(
         html_lang=html_lang,
@@ -1226,6 +1472,9 @@ def render_html(graph: dict[str, Any], language: str) -> str:
         graph_json=graph_json,
         ui_json=ui_json,
         groups_json=groups_json,
+        intent_help_json=intent_help_json,
+        role_help_json=role_help_json,
+        claim_type_help_json=claim_type_help_json,
         radial_max_per_group=RADIAL_MAX_PER_GROUP,
         chain_max_per_group=CHAIN_MAX_PER_GROUP,
         **{key: html.escape(value, quote=True) for key, value in ui.items()},

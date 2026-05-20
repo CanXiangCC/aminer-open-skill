@@ -74,8 +74,8 @@ Required fields / 必需字段：
 | `unmatched_reference` | boolean | True when marker cannot be matched to a reference / citation marker 无法匹配参考文献时为 true |
 | `marker` | string | Citation marker in the text / 文中的 citation marker |
 | `section` | string | Section where citation appears / citation 出现的章节 |
-| `citation_sentence` | string | Sentence containing the citation / 包含 citation 的句子 |
-| `context` | string | Citation sentence plus local neighboring evidence / citation sentence 及其邻近证据 |
+| `citation_sentence` | string | Exact sentence containing the citation, preserved in the target paper's source language / 包含 citation 的原句，保留目标论文原文语言 |
+| `context` | string | Exact local citation sentence plus neighboring source-language text; do not translate / citation sentence 及其邻近原文片段，保留原文语言，不要翻译 |
 | `intent` | string | One allowed intent label / 一个允许的 intent label |
 | `confidence` | number | 0.0 to 1.0 confidence / 0.0 到 1.0 的置信度 |
 | `evidence` | string | Short grounded explanation in the output language / 使用输出语言撰写的简短证据解释 |

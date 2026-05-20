@@ -58,6 +58,8 @@ Build `source_traces[]` only when at least one local citation context supports t
 ### Citation Context Rules
 
 - Prefer citation sentences and adjacent context over abstract-level summaries.
+- Preserve `citation_sentence` and `context` in the target paper's original language. Do not translate, paraphrase, or localize them.
+- Use the output language only for explanation fields such as `evidence`, `intent_rationale`, `confidence_reason`, `summary`, and `notes`.
 - If a citation appears only in a table, figure caption, or noisy PDF extraction, mark the noise in `notes`.
 - If the cited title or reference entry cannot be matched reliably, use `unmatched_reference: true`.
 - Do not copy long source passages into `analysis.md`; summarize evidence and keep short anchors.
@@ -126,6 +128,8 @@ Source tracing 回答的问题是：哪些被引来源支撑、启发、提供�
 ### Citation Context 规则
 
 - 优先使用 citation sentence 和邻近上下文，而不是摘要级概括。
+- `citation_sentence` 和 `context` 必须保留目标论文原文语言，不要翻译、意译或按用户语言改写。
+- 只有 `evidence`、`intent_rationale`、`confidence_reason`、`summary` 和 `notes` 等解释性字段跟随输出语言。
 - 如果 citation 只出现在表格、图注或噪声 PDF 抽取结果中，在 `notes` 中说明噪声。
 - 如果被引标题或参考文献条目无法可靠匹配，使用 `unmatched_reference: true`。
 - 不要在 `analysis.md` 中复制长段原文；应概括证据并保留短锚点。

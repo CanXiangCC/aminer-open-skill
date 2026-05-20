@@ -63,6 +63,8 @@ Before reading the paper, extracting citations, checking `AMINER_API_KEY`, calli
 
 If the user already supplied one or both values, restate them as provisional and still ask for final confirmation. Stop until the user answers.
 
+If interactive confirmation is genuinely impossible, use the recommended defaults: `svg: both` and `aminer: on`. Still follow the high-cost confirmation rule before any AMiner call estimated at `¥5` or more; if `AMINER_API_KEY` is missing, skip AMiner enrichment and continue local analysis.
+
 ### Core Rules
 
 1. Use only supplied paper text, citation contexts, reference entries, user notes, or explicitly requested AMiner results as evidence.
@@ -70,11 +72,13 @@ If the user already supplied one or both values, restate them as provisional and
 3. AMiner enrichment is explicit opt-in only. Do not check `AMINER_API_KEY` unless requested.
 4. AMiner may enrich IDs, URLs, candidate reference matches, and external citation relationships, but it cannot replace local citation contexts or prove intent/source traces by itself.
 5. Preserve uncertainty; lower confidence when citation context, reference matching, or source role evidence is incomplete.
-6. If output files can be written, do not stop at a chat-only summary.
+6. Keep `citation_sentence` and `context` in the source language of the target paper. They are original evidence anchors, not localized explanations.
+7. Use the user's output language for `evidence`, `summary`, `notes`, Markdown report text, and visible SVG/HTML UI.
+8. If output files can be written, do not stop at a chat-only summary.
 
 ### AMiner Enrichment
 
-Treat AMiner as `off` by default. Enable it only for `aminer:on` or explicit wording such as `enhance with AMiner`, `use AMiner metadata`, `AMiner 增强`, `用 AMiner 补全`, `查 AMiner 引用链`, or `补全 paper_id`.
+When confirmation is possible, treat AMiner as `off` unless the user confirms `aminer: on` or explicitly writes `enhance with AMiner`, `use AMiner metadata`, `AMiner 增强`, `用 AMiner 补全`, `查 AMiner 引用链`, or `补全 paper_id`. When confirmation is genuinely impossible, the recommended fallback is `aminer: on`.
 
 When enabled:
 
@@ -122,6 +126,7 @@ Use only these labels unless the user explicitly extends the taxonomy:
 - Every citation has `intent`, `evidence`, `confidence`, and either `reference_id` or `unmatched_reference: true`.
 - Every intent label is in the allowed list.
 - Key citations trace back to a citation sentence or local context.
+- `citation_sentence` and `context` preserve the target paper's original language; only explanation fields are localized.
 - Every entity is supported by at least one citation.
 - Every source trace is grounded in at least one local citation context; AMiner metadata cannot be the sole support.
 - Generate `citation_map.html` and SVG maps with `scripts/render_html.py` after `json/graph/citation_graph.json` is written. HTML and SVG must use one visible language, the same canonical group labels, the same node ranking, and the same reduced-edge layout strategy.
@@ -171,6 +176,8 @@ json/extraction/*.json          # only when structured intermediates are saved
 
 如果用户已经给出其中一个或两个设置，先复述为暂定选择，再请求最终确认。用户回答前不要继续执行。
 
+如果确实无法进行交互确认，使用推荐默认值：`svg: both` 和 `aminer: on`。但预估 AMiner 成本达到或超过 `¥5` 时，仍必须先请求明确确认；如果缺少 `AMINER_API_KEY`，跳过 AMiner 增强并继续本地分析。
+
 ### 核心规则
 
 1. 只使用用户提供的论文文本、引用上下文、参考文献、用户笔记，或用户明确要求的 AMiner 结果作为证据。
@@ -178,11 +185,13 @@ json/extraction/*.json          # only when structured intermediates are saved
 3. AMiner 增强必须显式开启；未请求时不检查 `AMINER_API_KEY`。
 4. AMiner 只能补充 paper ID、URL、候选参考文献匹配和外部引用关系，不能替代本地 citation context，也不能单独证明 intent 或 source trace。
 5. 保留不确定性；当引用上下文、参考文献匹配或来源角色证据不完整时降低置信度。
-6. 如果可以写入文件，不要只给聊天摘要。
+6. `citation_sentence` 和 `context` 必须保留目标论文原文语言。它们是原始证据锚点，不是跟随用户语言改写的解释。
+7. `evidence`、`summary`、`notes`、Markdown 报告正文以及 SVG/HTML 可见 UI 文案跟随用户输出语言。
+8. 如果可以写入文件，不要只给聊天摘要。
 
 ### AMiner 增强
 
-默认 `aminer: off`。只有出现 `aminer:on` 或明确措辞时才开启，例如 `AMiner 增强`、`用 AMiner 补全`、`查 AMiner 引用链`、`补全 paper_id`、`enhance with AMiner`、`use AMiner metadata`。
+能够确认时，除非用户确认 `aminer: on` 或明确写出 `AMiner 增强`、`用 AMiner 补全`、`查 AMiner 引用链`、`补全 paper_id`、`enhance with AMiner`、`use AMiner metadata`，否则不启用 AMiner。确实无法确认时，推荐默认值为 `aminer: on`。
 
 开启后：
 
@@ -230,6 +239,7 @@ json/extraction/*.json          # only when structured intermediates are saved
 - 每条 citation 都有 `intent`、`evidence`、`confidence`，并且有 `reference_id` 或 `unmatched_reference: true`。
 - 每个 intent label 都属于允许的 12 类。
 - 关键引用能追溯到 citation sentence 或本地上下文。
+- `citation_sentence` 和 `context` 保留目标论文原文语言；只有解释性字段跟随用户语言。
 - 每个 entity 至少由一条 citation 支撑。
 - 每条 source trace 至少由一个本地 citation context 支撑；AMiner 元数据不能作为唯一支撑。
 - 中文 `citation_map_chain.svg` 使用 `问题链`、`方法链`、`数据链`、`基线链`、`局限/资源链`，不用 radial 分组标签替代。

@@ -45,6 +45,8 @@ Before reading the paper, checking `AMINER_API_KEY`, calling AMiner, or generati
 
 If `$ARGUMENTS` already contains `svg`, legacy `mode`, or `aminer`, restate the provisional values and ask for final confirmation. Stop until the user answers. Map legacy `mode: current` to `svg: radial`, `mode: example` to `svg: chain`, and `mode: all` to `svg: both`. If `svg` and `mode` conflict, ask the user to choose one. Treat `hybrid`, `interactive graph`, or `expandable knowledge graph` as a request for the standard `citation_map.html`, not as an SVG mode.
 
+If interactive confirmation is genuinely impossible, use the recommended defaults: `svg: both` and `aminer: on`. Keep the high-cost AMiner confirmation rule: ask before any estimated cost reaches `¥5` or more.
+
 ### 3. Parse Arguments
 
 Accept structured fields and natural language together:
@@ -66,9 +68,7 @@ If no PDF path, text path, pasted paper text, citation contexts, reference list,
 
 ### 5. AMiner Opt-In
 
-Default: `aminer: off`.
-
-Check `AMINER_API_KEY` only when `aminer: on` or the user explicitly requests AMiner enrichment. Never print the token. If the token is missing, skip AMiner enrichment, continue local analysis when local evidence exists, and record the skipped reason.
+Check `AMINER_API_KEY` only when `aminer: on`, the user explicitly requests AMiner enrichment, or interactive confirmation is genuinely impossible and the recommended `aminer: on` fallback is being used. Never print the token. If the token is missing, skip AMiner enrichment, continue local analysis when local evidence exists, and record the skipped reason.
 
 AMiner may enrich metadata, paper IDs, URLs, candidate reference matching, and external citation relationships. It must not be the sole evidence for citation intent or `source_traces[]`.
 
@@ -127,6 +127,8 @@ The renderer owns both SVG modes and the HTML views. Do not generate separate ad
 
 如果 `$ARGUMENTS` 已包含 `svg`、旧参数 `mode` 或 `aminer`，先复述为暂定值，再请求最终确认。用户回答前停止执行。旧参数 `mode: current` 映射为 `svg: radial`，`mode: example` 映射为 `svg: chain`，`mode: all` 映射为 `svg: both`。如果 `svg` 和 `mode` 冲突，必须请用户选择。`hybrid`、`interactive graph`、`expandable knowledge graph`、`交互图谱` 或 `可展开知识图谱` 表示需要标准产物 `citation_map.html`，不是 SVG 模式。
 
+如果确实无法进行交互确认，使用推荐默认值：`svg: both` 和 `aminer: on`。保留 AMiner 高成本确认规则：预估成本达到或超过 `¥5` 时必须先询问。
+
 ### 3. 解析参数
 
 同时接受结构化字段和自然语言：
@@ -148,9 +150,7 @@ The renderer owns both SVG modes and the HTML views. Do not generate separate ad
 
 ### 5. AMiner Opt-In
 
-默认：`aminer: off`。
-
-只有 `aminer: on` 或用户明确要求 AMiner 增强时，才检查 `AMINER_API_KEY`。绝不打印 token。如果缺少 token，跳过 AMiner 增强；在有本地证据时继续本地分析，并记录跳过原因。
+只有 `aminer: on`、用户明确要求 AMiner 增强，或确实无法交互确认并采用推荐 `aminer: on` fallback 时，才检查 `AMINER_API_KEY`。绝不打印 token。如果缺少 token，跳过 AMiner 增强；在有本地证据时继续本地分析，并记录跳过原因。
 
 AMiner 只能补充元数据、paper ID、URL、候选参考文献匹配和外部引用关系，不能作为 citation intent 或 `source_traces[]` 的唯一证据。
 

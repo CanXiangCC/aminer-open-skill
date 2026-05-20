@@ -120,10 +120,12 @@ Please trace the sources for this paper's main claims and generate analysis.md, 
 Use the slash-command entry when your host supports commands:
 
 ```text
-/paper-source-trace file: papers/demo.pdf output: outputs/paper-source-trace/demo svg: both template: no aminer: off
+/paper-source-trace file: papers/demo.pdf output: outputs/paper-source-trace/demo svg: both template: no aminer: on
 ```
 
-AMiner enrichment is explicit opt-in only:
+Recommended Paper Source Trace startup settings are `svg: both` and `aminer: on`. If interactive confirmation is genuinely impossible, use those defaults. If the AMiner token is missing, skip enrichment and continue local analysis.
+
+AMiner enrichment can also be requested explicitly:
 
 ```text
 /paper-source-trace file: papers/demo.pdf aminer: on
@@ -138,7 +140,7 @@ Without a file, pasted paper text, citation contexts, or references, the skill s
 - **Cost-control strategy**: use free/low-cost APIs to locate targets first, then call expensive detail APIs
 - **Free-first workflow**: use `aminer-free-academic` for discovery and screening before escalating to paid APIs
 - **Personalized recommendation**: use `aminer-daily-paper` to get paper recommendations by topics, scholar name, or AMiner user ID
-- **Paper source tracing**: use `paper-source-trace` or `/paper-source-trace` for local claim-centered source tracing, citation-intent extraction, `json/graph/citation_graph.json`, SVG, and HTML graph artifacts
+- **Paper source tracing**: use `paper-source-trace` or `/paper-source-trace` for local claim-centered source tracing, citation-intent extraction, `json/graph/citation_graph.json`, SVG, and HTML graph artifacts. The HTML graph uses the standard renderer with hover/focus `!` tooltips for roles, intents, confidence, AMiner metadata, and source trace steps.
 
 ## Directory Structure
 

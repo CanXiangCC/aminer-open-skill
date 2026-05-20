@@ -223,6 +223,7 @@ function Test-Evals {
         Add-Check "evals cover standard graph renderer" ($evalText -match "scripts/render_html\.py" -and $evalText -match "--svg both") "scripts/render_html.py --svg both"
         Add-Check "evals cover HTML interaction controls" ($evalText -match "zoom" -and $evalText -match "drag") "zoom and drag"
         Add-Check "evals cover unified SVG and HTML rendering" ($evalText -match "canonical groups" -and $evalText -match "reduced-edge|edge") "unified SVG/HTML visual contract"
+        Add-Check "evals cover HTML tooltip help" ($evalText -match "tooltip" -and $evalText -match "Recommended source_role values" -and $evalText -match "AMiner metadata only enriches metadata") "tooltip eval cases"
     }
     catch {
         Add-Check "evals.json parses" $false $_.Exception.Message
@@ -242,6 +243,9 @@ function Test-HtmlRenderer {
         Add-Check "graph renderer uses explicit quote escaping" ($rendererText -match 'return "&quot;"') "esc() quote branch"
         Add-Check "graph renderer wraps non-spaced text" ($rendererText -match "Array\.from\(raw\)" -and $rendererText -match "def text_parts") "CJK-friendly text wrapping"
         Add-Check "graph renderer supports SVG CLI" ($rendererText -match "--svg" -and $rendererText -match "render_svg") "--svg and render_svg"
+        Add-Check "graph renderer defines HTML help tooltips" ($rendererText -match "help-tip" -and $rendererText -match 'tabindex="0"' -and $rendererText -match "tip_role") "help-tip, tabindex, tip_role"
+        Add-Check "graph renderer explains source_role values" ($rendererText -match "Recommended source_role values" -and $rendererText -match "foundation" -and $rendererText -match "future-direction") "source_role tooltip values"
+        Add-Check "graph renderer explains AMiner metadata caveat" ($rendererText -match "AMiner metadata only enriches metadata" -and $rendererText -match "local citation-context evidence") "AMiner tooltip caveat"
 
         $python = Get-Command python -ErrorAction SilentlyContinue
         if ($null -eq $python) {
@@ -384,6 +388,8 @@ function Test-HtmlRenderer {
                 $zhLimitResourceChain = -join @([char]0x5C40, [char]0x9650, [char]0x2F, [char]0x8D44, [char]0x6E90, [char]0x94FE)
                 Add-Check "sample HTML has unified Chinese controls" ($htmlText -match [regex]::Escape($zhRadial) -and $htmlText -match [regex]::Escape($zhChain) -and $htmlText -match [regex]::Escape($zhReset)) "zh controls"
                 Add-Check "sample HTML embeds graph data" ($htmlText -match 'id="graph-data"' -and $htmlText -match "citation_graph\.json") "embedded JSON and subtitle"
+                Add-Check "sample HTML has help tooltip controls" ($htmlText -match "help-tip" -and $htmlText -match 'tabindex="0"' -and $htmlText -match "source_role") "help-tip controls"
+                Add-Check "sample HTML has AMiner tooltip caveat" ($htmlText -match "AMiner" -and $htmlText -match "metadata") "AMiner tooltip text"
                 $svgXmlOk = $true
                 try {
                     [xml]$null = $svgText

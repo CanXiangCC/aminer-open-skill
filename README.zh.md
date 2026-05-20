@@ -120,10 +120,12 @@ curl -X POST \
 如果宿主支持 slash command, 可以使用命令式入口:
 
 ```text
-/paper-source-trace file: papers/demo.pdf output: outputs/paper-source-trace/demo svg: both template: no aminer: off
+/paper-source-trace file: papers/demo.pdf output: outputs/paper-source-trace/demo svg: both template: no aminer: on
 ```
 
-AMiner 增强必须显式开启:
+Paper Source Trace 推荐启动设置为 `svg: both` 和 `aminer: on`。如果确实无法进行交互确认，使用这两个默认值。如果缺少 AMiner token，跳过增强并继续本地分析。
+
+也可以显式请求 AMiner 增强:
 
 ```text
 /paper-source-trace file: papers/demo.pdf aminer: on
@@ -138,7 +140,7 @@ AMiner 增强必须显式开启:
 - **按成本控制策略**：先免费/低价接口定位目标，再调用高价详情接口
 - **按免费入口走轻量链路**：先用 `aminer-free-academic` 完成发现、初筛和标准化，再决定是否升级
 - **个性化论文推荐**：用 `aminer-daily-paper` 按研究主题、学者姓名或 AMiner 用户 ID 获取论文推荐
-- **论文来源追踪**：用 `paper-source-trace` 或 `/paper-source-trace` 做本地 claim-centered source tracing、引用意图识别、`json/graph/citation_graph.json`、SVG 和 HTML 图谱产物
+- **论文来源追踪**：用 `paper-source-trace` 或 `/paper-source-trace` 做本地 claim-centered source tracing、引用意图识别、`json/graph/citation_graph.json`、SVG 和 HTML 图谱产物。HTML 图谱由标准渲染器生成，并为角色、意图、置信度、AMiner 元数据和 source trace steps 提供 hover/focus `!` 提示。
 
 ## 目录说明
 
