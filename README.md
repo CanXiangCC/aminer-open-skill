@@ -120,7 +120,7 @@ Please trace the sources for this paper's main claims and generate analysis.md, 
 Use the slash-command entry when your host supports commands:
 
 ```text
-/paper-source-trace file: papers/demo.pdf output: outputs/paper-source-trace/demo mode: all template: no aminer: off
+/paper-source-trace file: papers/demo.pdf output: outputs/paper-source-trace/demo svg: both template: no aminer: off
 ```
 
 AMiner enrichment is explicit opt-in only:
@@ -154,6 +154,7 @@ Without a file, pasted paper text, citation contexts, or references, the skill s
 - `skills/paper-source-trace/commands/paper-source-trace.md`: slash-command orchestration entry for `/paper-source-trace`
 - `skills/paper-source-trace/references/schema.md`: canonical citation graph schema saved as `json/graph/citation_graph.json`
 - `skills/paper-source-trace/references/visual.md`: SVG and HTML citation map layout rules
+- `skills/paper-source-trace/scripts/render_html.py`: standard graph renderer for stable `citation_map.html`, `citation_map.svg`, and `citation_map_chain.svg` output
 - `skills/paper-source-trace/README.md`: quick-start and usage guide for Paper Source Trace
 - `tools/check-paper-source-trace.ps1`: local self-check tool for structure, docs, schema, evals, and token status
 

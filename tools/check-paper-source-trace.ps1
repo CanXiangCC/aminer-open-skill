@@ -81,9 +81,29 @@ function Get-TokenRows {
     return $rows
 }
 
+function Get-LayoutOverlapCount {
+    param([object[]]$Nodes)
+
+    $count = 0
+    for ($i = 0; $i -lt $Nodes.Count; $i++) {
+        for ($j = $i + 1; $j -lt $Nodes.Count; $j++) {
+            $a = $Nodes[$i]
+            $b = $Nodes[$j]
+            $overlapX = [Math]::Max(0, [Math]::Min(($a.x + $a.w), ($b.x + $b.w)) - [Math]::Max($a.x, $b.x))
+            $overlapY = [Math]::Max(0, [Math]::Min(($a.y + $a.h), ($b.y + $b.h)) - [Math]::Max($a.y, $b.y))
+            if ($overlapX -gt 0 -and $overlapY -gt 0) {
+                $count++
+            }
+        }
+    }
+
+    return $count
+}
+
 function Test-Structure {
     Add-Check "Skill SKILL.md exists" (Test-Path (Join-RepoPath "skills\paper-source-trace\SKILL.md")) "skills\paper-source-trace\SKILL.md"
     Add-Check "Command entry exists" (Test-Path (Join-RepoPath "skills\paper-source-trace\commands\paper-source-trace.md")) "skills\paper-source-trace\commands\paper-source-trace.md"
+    Add-Check "HTML renderer exists" (Test-Path (Join-RepoPath "skills\paper-source-trace\scripts\render_html.py")) "skills\paper-source-trace\scripts\render_html.py"
     Add-Check "Old skill directory absent" (-not (Test-Path (Join-RepoPath "skills\paper-citation-map"))) "skills\paper-citation-map should not exist"
     Add-Check "Skill usage guide exists" (Test-Path (Join-RepoPath "skills\paper-source-trace\README.md")) "skills\paper-source-trace\README.md"
 }
@@ -200,9 +220,227 @@ function Test-Evals {
         Add-Check "evals cover aminer:on" ($prompts -match "aminer:on") "AMiner opt-in command prompt"
         Add-Check "evals cover json/graph output path" ($evalText -match "json/graph/citation_graph\.json") "json/graph/citation_graph.json"
         Add-Check "evals cover HTML graph output" ($evalText -match "citation_map\.html") "citation_map.html"
+        Add-Check "evals cover standard graph renderer" ($evalText -match "scripts/render_html\.py" -and $evalText -match "--svg both") "scripts/render_html.py --svg both"
+        Add-Check "evals cover HTML interaction controls" ($evalText -match "zoom" -and $evalText -match "drag") "zoom and drag"
+        Add-Check "evals cover unified SVG and HTML rendering" ($evalText -match "canonical groups" -and $evalText -match "reduced-edge|edge") "unified SVG/HTML visual contract"
     }
     catch {
         Add-Check "evals.json parses" $false $_.Exception.Message
+    }
+}
+
+function Test-HtmlRenderer {
+    $rendererPath = Join-RepoPath "skills\paper-source-trace\scripts\render_html.py"
+
+    if (-not (Test-Path $rendererPath)) {
+        Add-Check "HTML renderer validation" $false "scripts\render_html.py is missing"
+        return
+    }
+
+    try {
+        $rendererText = Get-Content -Raw -Encoding UTF8 $rendererPath
+        Add-Check "graph renderer uses explicit quote escaping" ($rendererText -match 'return "&quot;"') "esc() quote branch"
+        Add-Check "graph renderer wraps non-spaced text" ($rendererText -match "Array\.from\(raw\)" -and $rendererText -match "def text_parts") "CJK-friendly text wrapping"
+        Add-Check "graph renderer supports SVG CLI" ($rendererText -match "--svg" -and $rendererText -match "render_svg") "--svg and render_svg"
+
+        $python = Get-Command python -ErrorAction SilentlyContinue
+        if ($null -eq $python) {
+            Add-Check "HTML renderer Python compile" $false "python not found"
+            return
+        }
+
+        $syntaxOutput = & $python.Source -c "import ast, pathlib, sys; ast.parse(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'), filename=sys.argv[1])" $rendererPath 2>&1
+        Add-Check "HTML renderer Python syntax" ($LASTEXITCODE -eq 0) (($syntaxOutput | Out-String).Trim())
+
+        $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("paper-source-trace-check-" + [guid]::NewGuid().ToString("N"))
+        New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
+
+        try {
+            $graphDir = Join-Path $tempRoot "json\graph"
+            New-Item -ItemType Directory -Force -Path $graphDir | Out-Null
+            $graphPath = Join-Path $graphDir "citation_graph.json"
+            $htmlPath = Join-Path $tempRoot "citation_map.html"
+            $svgPath = Join-Path $tempRoot "citation_map.svg"
+            $chainSvgPath = Join-Path $tempRoot "citation_map_chain.svg"
+
+            $sample = @{
+                schema_version = "0.3.0"
+                paper = @{
+                    paper_id = "target-paper"
+                    title = "Sample Paper"
+                    year = 2026
+                }
+                references = @(
+                    @{
+                        reference_id = "ref-001"
+                        title = "Reference"
+                        authors = @("A")
+                        year = 2025
+                    }
+                )
+                citations = @(
+                    @{
+                        citation_id = "cit-001"
+                        reference_id = "ref-001"
+                        marker = "(A, 2025)"
+                        intent = "background"
+                        evidence = "Sample evidence for HTML rendering."
+                        confidence = 0.9
+                        trace_ids = @("trace-001")
+                    }
+                    @{
+                        citation_id = "cit-002"
+                        reference_id = "ref-001"
+                        marker = "(A, 2025)"
+                        intent = "core-method"
+                        evidence = "Method evidence for HTML rendering."
+                        confidence = 0.8
+                        trace_ids = @("trace-001")
+                    }
+                    @{
+                        citation_id = "cit-003"
+                        reference_id = "ref-001"
+                        marker = "(A, 2025)"
+                        intent = "dataset"
+                        evidence = "Dataset evidence for HTML rendering."
+                        confidence = 0.8
+                        trace_ids = @("trace-001")
+                    }
+                    @{
+                        citation_id = "cit-004"
+                        reference_id = "ref-001"
+                        marker = "(A, 2025)"
+                        intent = "baseline"
+                        evidence = "Baseline evidence for HTML rendering."
+                        confidence = 0.8
+                        trace_ids = @("trace-001")
+                    }
+                    @{
+                        citation_id = "cit-005"
+                        reference_id = "ref-001"
+                        marker = "(A, 2025)"
+                        intent = "limitation"
+                        evidence = "Limitation evidence for HTML rendering."
+                        confidence = 0.8
+                        trace_ids = @("trace-001")
+                    }
+                )
+                source_traces = @(
+                    @{
+                        trace_id = "trace-001"
+                        claim_id = "claim-001"
+                        target_claim = "Sample claim"
+                        claim_type = "contribution"
+                        summary = "Sample source trace."
+                        source_steps = @(
+                            @{
+                                citation_id = "cit-001"
+                                reference_id = "ref-001"
+                                source_role = "foundation"
+                                intent = "background"
+                                relation_type = "supports"
+                                evidence = "Sample evidence"
+                                confidence = 0.9
+                            }
+                        )
+                        confidence = 0.9
+                    }
+                )
+                visual_groups = @(
+                    @{
+                        group_id = "background"
+                        label = "Background"
+                        intent_filters = @("background")
+                        node_ids = @("cit-001")
+                        color = "#cf6f6f"
+                    }
+                )
+                metadata = @{
+                    output_language = "zh"
+                    source_trace = @{
+                        enabled = $true
+                        strategy = "claim-centered"
+                    }
+                }
+            }
+
+            $utf8NoBom = New-Object System.Text.UTF8Encoding -ArgumentList $false
+            [System.IO.File]::WriteAllText($graphPath, ($sample | ConvertTo-Json -Depth 20), $utf8NoBom)
+            $renderOutput = & $python.Source $rendererPath --graph $graphPath --output $htmlPath --svg both --svg-output $svgPath --chain-output $chainSvgPath --language auto 2>&1
+            $renderOk = ($LASTEXITCODE -eq 0) -and (Test-Path $htmlPath) -and (Test-Path $svgPath) -and (Test-Path $chainSvgPath)
+            Add-Check "HTML renderer sample render" $renderOk (($renderOutput | Out-String).Trim())
+
+            if ($renderOk) {
+                $htmlText = Get-Content -Raw -Encoding UTF8 $htmlPath
+                $svgText = Get-Content -Raw -Encoding UTF8 $svgPath
+                $chainSvgText = Get-Content -Raw -Encoding UTF8 $chainSvgPath
+                $zhRadial = -join @([char]0x5F84, [char]0x5411, [char]0x56FE)
+                $zhChain = -join @([char]0x6EAF, [char]0x6E90, [char]0x94FE, [char]0x56FE)
+                $zhReset = -join @([char]0x91CD, [char]0x7F6E, [char]0x5E03, [char]0x5C40)
+                $zhProblemChain = -join @([char]0x95EE, [char]0x9898, [char]0x94FE)
+                $zhMethodChain = -join @([char]0x65B9, [char]0x6CD5, [char]0x94FE)
+                $zhDataChain = -join @([char]0x6570, [char]0x636E, [char]0x94FE)
+                $zhBaselineChain = -join @([char]0x57FA, [char]0x7EBF, [char]0x94FE)
+                $zhLimitResourceChain = -join @([char]0x5C40, [char]0x9650, [char]0x2F, [char]0x8D44, [char]0x6E90, [char]0x94FE)
+                Add-Check "sample HTML has unified Chinese controls" ($htmlText -match [regex]::Escape($zhRadial) -and $htmlText -match [regex]::Escape($zhChain) -and $htmlText -match [regex]::Escape($zhReset)) "zh controls"
+                Add-Check "sample HTML embeds graph data" ($htmlText -match 'id="graph-data"' -and $htmlText -match "citation_graph\.json") "embedded JSON and subtitle"
+                $svgXmlOk = $true
+                try {
+                    [xml]$null = $svgText
+                    [xml]$null = $chainSvgText
+                }
+                catch {
+                    $svgXmlOk = $false
+                }
+                Add-Check "sample SVG files parse as XML" $svgXmlOk "citation_map.svg and citation_map_chain.svg"
+                Add-Check "sample chain SVG uses Chinese chain hubs" ($chainSvgText -match [regex]::Escape($zhProblemChain) -and $chainSvgText -match [regex]::Escape($zhMethodChain) -and $chainSvgText -match [regex]::Escape($zhDataChain) -and $chainSvgText -match [regex]::Escape($zhBaselineChain) -and $chainSvgText -match [regex]::Escape($zhLimitResourceChain)) "Chinese chain hub labels"
+                Add-Check "sample Chinese SVG avoids English UI labels" (-not ($chainSvgText -cmatch "Target Paper|Problem chain|Method chain|Data chain|Baseline chain|Limits/resources chain")) "no mixed English SVG labels"
+                $chainEdgeCount = ([regex]::Matches($chainSvgText, '<path class="edge"')).Count
+                Add-Check "sample chain SVG uses reduced edge count" ($chainEdgeCount -le 15) "$chainEdgeCount edge paths"
+
+                $radialRects = @([regex]::Matches($svgText, '<g class="node[^"]*">\s*<rect x="([0-9.]+)" y="([0-9.]+)" width="([0-9.]+)" height="([0-9.]+)"') | ForEach-Object {
+                    [PSCustomObject]@{
+                        x = [double]$_.Groups[1].Value
+                        y = [double]$_.Groups[2].Value
+                        w = [double]$_.Groups[3].Value
+                        h = [double]$_.Groups[4].Value
+                    }
+                })
+                $chainRects = @([regex]::Matches($chainSvgText, '<g class="node[^"]*">\s*<rect x="([0-9.]+)" y="([0-9.]+)" width="([0-9.]+)" height="([0-9.]+)"') | ForEach-Object {
+                    [PSCustomObject]@{
+                        x = [double]$_.Groups[1].Value
+                        y = [double]$_.Groups[2].Value
+                        w = [double]$_.Groups[3].Value
+                        h = [double]$_.Groups[4].Value
+                    }
+                })
+                $radialOverlapCount = Get-LayoutOverlapCount $radialRects
+                $chainOverlapCount = Get-LayoutOverlapCount $chainRects
+                Add-Check "sample SVG node layouts avoid overlap" (($radialOverlapCount + $chainOverlapCount) -eq 0) "radial=$radialOverlapCount chain=$chainOverlapCount"
+
+                $scripts = [regex]::Matches($htmlText, '(?s)<script(?![^>]*application/json)[^>]*>(.*?)</script>')
+                Add-Check "sample HTML has executable inline script" ($scripts.Count -gt 0) "$($scripts.Count) script block(s)"
+
+                $node = Get-Command node -ErrorAction SilentlyContinue
+                if (($null -ne $node) -and ($scripts.Count -gt 0)) {
+                    $jsPath = Join-Path $tempRoot "citation_map.inline.js"
+                    [System.IO.File]::WriteAllText($jsPath, $scripts[0].Groups[1].Value, $utf8NoBom)
+                    $nodeOutput = & $node.Source --check $jsPath 2>&1
+                    Add-Check "sample HTML JavaScript syntax" ($LASTEXITCODE -eq 0) (($nodeOutput | Out-String).Trim())
+                }
+                else {
+                    Add-Check "sample HTML JavaScript syntax" $true "node not found; skipped"
+                }
+            }
+        }
+        finally {
+            if (Test-Path $tempRoot) {
+                Remove-Item -LiteralPath $tempRoot -Recurse -Force
+            }
+        }
+    }
+    catch {
+        Add-Check "HTML renderer validation" $false $_.Exception.Message
     }
 }
 
@@ -234,6 +472,9 @@ function Test-DocsAndOldSlug {
     try {
         $visualText = Get-Content -Raw -Encoding UTF8 $visualPath
         Add-Check "visual reference defines HTML graph" ($visualText -match "citation_map\.html" -and $visualText -match "single-file") "citation_map.html single-file"
+        Add-Check "visual reference requires graph renderer" ($visualText -match "scripts/render_html\.py" -and $visualText -match "SVG" -and $visualText -match "HTML") "scripts/render_html.py for SVG and HTML"
+        Add-Check "visual reference defines HTML interaction controls" ($visualText -match "zoom" -and $visualText -match "drag") "zoom and drag"
+        Add-Check "visual reference defines reduced SVG edges" ($visualText -match "reduced" -and $visualText -match "cross-link") "reduced SVG edges"
     }
     catch {
         Add-Check "visual reference readable" $false $_.Exception.Message
@@ -329,6 +570,7 @@ Test-Structure
 Test-Marketplace
 Test-Schema
 Test-Evals
+Test-HtmlRenderer
 Test-DocsAndOldSlug
 Test-TextQuality
 

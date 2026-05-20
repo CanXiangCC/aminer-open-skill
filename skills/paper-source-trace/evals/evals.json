@@ -64,11 +64,12 @@
     {
       "id": 6,
       "prompt": "Generate a hybrid expandable knowledge graph for this paper's citations.",
-      "expected_output": "Use citation_map.html for the interactive graph. Do not invent a fake static hybrid SVG, but still produce json/graph/citation_graph.json and citation_map.svg as a static fallback when appropriate.",
+      "expected_output": "Treat hybrid as an interactive HTML graph request, not as an SVG mode. Use citation_map.html for the interactive graph. Do not invent a fake static hybrid SVG. If no SVG option is confirmed, ask for svg: radial, chain, or both.",
       "files": [],
       "expectations": [
         "Does not generate a fake hybrid SVG",
-        "Records hybrid as a reserved mode",
+        "Does not record hybrid as a formal SVG mode",
+        "Explains that citation_map.html handles interactive graph behavior",
         "Still provides json/graph/citation_graph.json",
         "Produces or describes citation_map.html as the interactive graph"
       ]
@@ -140,13 +141,13 @@
     },
     {
       "id": 12,
-      "prompt": "/paper-source-trace file: papers/demo.pdf output: outputs/paper-source-trace/demo mode: all template: no aminer: off",
+      "prompt": "/paper-source-trace file: papers/demo.pdf output: outputs/paper-source-trace/demo svg: both template: no aminer: off",
       "expected_output": "Treat the slash command as an orchestration entry. Read the skill workflow, use the provided file path as the input source when available, write standard artifacts to the requested output directory, save the graph as json/graph/citation_graph.json, generate both SVG modes when possible, generate one citation_map.html with view switching, and do not check AMINER_API_KEY because aminer is off.",
       "files": [],
       "expectations": [
         "Recognizes /paper-source-trace as a valid command entry",
-        "Parses file, output, mode, template, and aminer fields",
-        "Produces or describes analysis.md, json/graph/citation_graph.json, citation_map.svg, citation_map.html, and citation_map_example.svg when possible",
+        "Parses file, output, svg, template, and aminer fields",
+        "Produces or describes analysis.md, json/graph/citation_graph.json, citation_map.svg, citation_map.html, and citation_map_chain.svg when possible",
         "Does not use the fixed template because template is no",
         "Does not check AMINER_API_KEY and does not call AMiner APIs"
       ]
@@ -180,11 +181,11 @@
     {
       "id": 15,
       "prompt": "Please use Paper Source Trace on this extracted paper text. Keep the report in English and generate json/graph/citation_graph.json plus SVG/HTML maps.",
-      "expected_output": "Follow the English workflow section. Ask for startup confirmation of mode and aminer before analysis. When confirmed, produce English visible prose in analysis.md, SVG labels, HTML UI text, and final summary while keeping JSON keys, intent labels, relation types, and source roles in English.",
+      "expected_output": "Follow the English workflow section. Ask for startup confirmation of svg and aminer before analysis. When confirmed, produce English visible prose in analysis.md, SVG labels, HTML UI text, and final summary while keeping JSON keys, intent labels, relation types, and source roles in English.",
       "files": [],
       "expectations": [
         "Routes to the English Workflow section",
-        "Asks for mode and aminer confirmation before analysis",
+        "Asks for svg and aminer confirmation before analysis",
         "English visible output in analysis.md, SVG, HTML, and final prose",
         "json/graph/citation_graph.json keeps English keys and stable labels",
         "Does not check AMINER_API_KEY unless AMiner is explicitly enabled"
@@ -192,16 +193,82 @@
     },
     {
       "id": 16,
-      "prompt": "请使用 Paper Source Trace 分析这篇论文文本，mode: all，输出中文报告和中文图谱标签，但 JSON 字段保持英文。",
-      "expected_output": "Follow the 中文工作流 section. Ask for startup confirmation of mode and aminer before analysis. When confirmed, produce Chinese visible prose in analysis.md, SVG labels, HTML UI text, and final summary while keeping JSON keys, intent labels, relation types, and source roles in English. In mode: all, citation_map_example.svg uses the Chinese chain layout with 问题链、方法链、数据链、基线链、局限/资源链.",
+      "prompt": "请使用 Paper Source Trace 分析这篇论文文本，svg: both，输出中文报告和中文图谱标签，但 JSON 字段保持英文。",
+      "expected_output": "Follow the 中文工作流 section. Ask for startup confirmation of svg and aminer before analysis. When confirmed, produce Chinese visible prose in analysis.md, SVG labels, HTML UI text, and final summary while keeping JSON keys, intent labels, relation types, and source roles in English. With svg: both, citation_map_chain.svg uses the Chinese chain layout with 问题链、方法链、数据链、基线链、局限/资源链.",
       "files": [],
       "expectations": [
         "Routes to the 中文工作流 section",
-        "先确认 mode 和 aminer 再开始分析",
+        "先确认 svg 和 aminer 再开始分析",
         "analysis.md、SVG、HTML 和最终说明使用中文可见文本",
-        "mode: all 时 citation_map_example.svg 使用问题链、方法链、数据链、基线链、局限/资源链",
+        "svg: both 时 citation_map_chain.svg 使用问题链、方法链、数据链、基线链、局限/资源链",
         "json/graph/citation_graph.json 保持英文 keys 和稳定 labels",
         "未显式开启 AMiner 时不检查 AMINER_API_KEY"
+      ]
+    },
+    {
+      "id": 17,
+      "prompt": "/paper-source-trace file: papers/demo.pdf output: outputs/paper-source-trace/demo mode: all template: no aminer: off",
+      "expected_output": "Accept legacy mode: all as an alias for svg: both, mention the new preferred svg: both syntax, then follow the normal command workflow after startup confirmation.",
+      "files": [],
+      "expectations": [
+        "Maps mode: all to svg: both",
+        "Mentions svg: both as the preferred new syntax",
+        "Generates citation_map.svg and citation_map_chain.svg when graph data and SVG generation are available",
+        "Generates one citation_map.html with radial and chain view switching when graph data is available",
+        "Does not treat mode: all as a separate new SVG mode"
+      ]
+    },
+    {
+      "id": 18,
+      "prompt": "请用 Paper Source Trace 生成中文 citation_map.html，要求图谱节点不要重叠，并且可以缩放和拖动节点。",
+      "expected_output": "After json/graph/citation_graph.json is available, use scripts/render_html.py to generate citation_map.html. The Chinese HTML UI must use one unified template and Chinese labels, including 径向图, 溯源链图, 搜索, 筛选, 节点详情, 证据, 参考文献, 来源追踪, AMiner 元数据, 缩放, and 重置布局. It must include zoom, pan, draggable citation nodes, reset layout, search, filters, and source trace details.",
+      "files": [],
+      "expectations": [
+        "Uses scripts/render_html.py rather than ad hoc HTML",
+        "中文 HTML UI 不使用 current、example、Target Paper、Claim hub、Evidence 作为可见控件文案",
+        "包含缩放、平移、节点拖动和重置布局",
+        "保持单文件 HTML、内联 CSS、内联 JavaScript、内嵌 graph data",
+        "不依赖 CDN、外部脚本或本地 HTTP server"
+      ]
+    },
+    {
+      "id": 19,
+      "prompt": "Generate an English Paper Source Trace HTML graph from an existing citation_graph.json with a stable style.",
+      "expected_output": "Use scripts/render_html.py to generate citation_map.html from json/graph/citation_graph.json. The English HTML UI must use the unified template and English labels, including Radial, Chain, Search, Filter, Node details, Evidence, Reference, Source traces, AMiner metadata, Zoom, and Reset layout. It must not mix Chinese UI labels into English output.",
+      "files": [],
+      "expectations": [
+        "Uses scripts/render_html.py rather than ad hoc HTML",
+        "English HTML UI does not use 搜索、筛选、节点详情 as visible controls",
+        "Does not use current/example as HTML layout button labels",
+        "Includes zoom, pan, draggable citation nodes, reset layout, search, filters, and source trace details",
+        "Uses the same CSS and panel structure as other generated HTML maps"
+      ]
+    },
+    {
+      "id": 20,
+      "prompt": "请从已有 json/graph/citation_graph.json 生成中文 svg: both 和 citation_map.html，要求 SVG 与 HTML 风格一致、不要中英文混杂、线条少一些。",
+      "expected_output": "Use scripts/render_html.py with --svg both so citation_map.html, citation_map.svg, and citation_map_chain.svg share the same canonical groups, colors, language pack, node priority, text wrapping, overflow summaries, and reduced-edge layout. Chinese radial and chain labels must stay Chinese; chain hubs must be 问题链、方法链、数据链、基线链、局限/资源链.",
+      "files": [],
+      "expectations": [
+        "Uses one renderer command for HTML and both SVG outputs",
+        "SVG and HTML use the same canonical group colors and labels",
+        "中文 SVG/HTML 不出现 Target Paper、Problem chain、Evidence 作为可见提示",
+        "citation_map_chain.svg 使用问题链、方法链、数据链、基线链、局限/资源链",
+        "Static SVG reduces edge clutter and does not draw citation-to-citation cross-links or AMiner-only relation lines",
+        "Dense groups use +N overflow summaries while preserving complete records in json/graph/citation_graph.json"
+      ]
+    },
+    {
+      "id": 21,
+      "prompt": "Generate English radial and chain SVG maps plus citation_map.html from an existing citation_graph.json.",
+      "expected_output": "Use scripts/render_html.py with --svg both. The English SVG and HTML output must share canonical groups, colors, text wrapping, node ranking, and reduced-edge rules. English chain hubs must be Problem chain, Method chain, Data chain, Baseline chain, and Limits/resources chain.",
+      "files": [],
+      "expectations": [
+        "Uses scripts/render_html.py with --svg both",
+        "English SVG/HTML do not use 搜索、问题链、节点详情 as visible UI labels",
+        "Radial and chain layouts use deterministic generous spacing",
+        "Chain SVG uses only lightweight hub-to-citation and citation-to-target main edges",
+        "AMiner is shown only as metadata badge, not as evidence edges"
       ]
     }
   ]

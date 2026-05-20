@@ -30,7 +30,7 @@ Produce these artifacts when evidence and filesystem access allow:
 - `json/graph/citation_graph.json`: canonical machine-readable graph following `references/schema.md`.
 - `citation_map.svg`: static citation map when SVG generation is possible.
 - `citation_map.html`: single-file interactive graph when graph data is available.
-- `citation_map_example.svg`: only when visual mode is `all`.
+- `citation_map_chain.svg`: chain-style source trace SVG only when `svg: both`.
 - `citation_map_spec.md`: only when SVG generation has caveats or fails.
 
 Default output directory:
@@ -45,18 +45,20 @@ Preferred layout:
 analysis.md
 citation_map.svg
 citation_map.html
-citation_map_example.svg        # only when mode is all
+citation_map_chain.svg          # only when svg is both
 citation_map_spec.md            # only when SVG generation has caveats or fails
 json/graph/citation_graph.json
 json/aminer/*.json              # only when AMiner raw results are saved
 json/extraction/*.json          # only when structured intermediates are saved
 ```
 
+Legacy compatibility: if the user writes `mode: current`, treat it as `svg: radial`; `mode: example` as `svg: chain`; and `mode: all` as `svg: both`. If `svg` and `mode` are both supplied and conflict, ask the user to confirm the intended SVG output. `hybrid`, `interactive graph`, `expandable knowledge graph`, `交互图谱`, or `可展开知识图谱` means the user wants the standard `citation_map.html`; it is not an SVG mode and does not change the SVG choice.
+
 ### Startup Confirmation
 
 Before reading the paper, extracting citations, checking `AMINER_API_KEY`, calling AMiner, or generating SVG, ask the user to confirm:
 
-- SVG mode: `current`, `example`, `all`, or `hybrid`.
+- SVG output: `radial`, `chain`, or `both`.
 - AMiner enrichment: `on` or `off`.
 
 If the user already supplied one or both values, restate them as provisional and still ask for final confirmation. Stop until the user answers.
@@ -102,8 +104,9 @@ Use only these labels unless the user explicitly extends the taxonomy:
 9. If AMiner is enabled, enrich metadata without replacing local evidence.
 10. Write `json/graph/citation_graph.json` before visual artifacts.
 11. Write `analysis.md`; use `references/analysis_template.md` only for explicit template or fixed-format requests.
-12. Generate SVG and `citation_map.html` according to the confirmed mode and `references/visual.md`.
-13. Validate artifacts before the final reply.
+12. Generate `citation_map.html` and the confirmed SVG output with one renderer command: `scripts/render_html.py --graph <output>/json/graph/citation_graph.json --output <output>/citation_map.html --svg <radial|chain|both> --language auto`.
+13. Do not hand-write ad hoc SVG or HTML; both static SVG modes and the HTML `radial / chain` views must share the renderer layout, colors, language pack, text wrapping, node priority, and edge rules.
+14. Validate artifacts before the final reply.
 
 ### Reference Files
 
@@ -112,6 +115,7 @@ Use only these labels unless the user explicitly extends the taxonomy:
 - `references/prompts.md`: English and Chinese extraction/review prompts.
 - `references/visual.md`: SVG and HTML graph rules.
 - `references/analysis_template.md`: fixed report templates for explicit template mode.
+- `scripts/render_html.py`: standard graph renderer. Use it for `citation_map.html`, `citation_map.svg`, and `citation_map_chain.svg`; do not hand-write ad hoc SVG or HTML.
 
 ### Quality Checks
 
@@ -120,6 +124,8 @@ Use only these labels unless the user explicitly extends the taxonomy:
 - Key citations trace back to a citation sentence or local context.
 - Every entity is supported by at least one citation.
 - Every source trace is grounded in at least one local citation context; AMiner metadata cannot be the sole support.
+- Generate `citation_map.html` and SVG maps with `scripts/render_html.py` after `json/graph/citation_graph.json` is written. HTML and SVG must use one visible language, the same canonical group labels, the same node ranking, and the same reduced-edge layout strategy.
+- Static SVG should use only useful main edges, summarize dense groups with `+N`, and avoid citation-to-citation cross-links or AMiner-only relation lines.
 - `json/graph/citation_graph.json` remains complete even if Markdown, SVG, or HTML has caveats.
 
 ## 中文工作流
@@ -132,7 +138,7 @@ Use only these labels unless the user explicitly extends the taxonomy:
 - `json/graph/citation_graph.json`：遵循 `references/schema.md` 的规范机器可读图谱。
 - `citation_map.svg`：可生成时输出静态引用图谱。
 - `citation_map.html`：有图谱数据时输出单文件交互图谱。
-- `citation_map_example.svg`：仅在 visual mode 为 `all` 时输出。
+- `citation_map_chain.svg`：仅在 `svg: both` 时输出的链式来源追踪 SVG。
 - `citation_map_spec.md`：仅在 SVG 生成存在限制或失败时输出。
 
 默认输出目录：
@@ -147,18 +153,20 @@ outputs/paper-source-trace/<safe-paper-stem>/
 analysis.md
 citation_map.svg
 citation_map.html
-citation_map_example.svg        # only when mode is all
+citation_map_chain.svg          # only when svg is both
 citation_map_spec.md            # only when SVG generation has caveats or fails
 json/graph/citation_graph.json
 json/aminer/*.json              # only when AMiner raw results are saved
 json/extraction/*.json          # only when structured intermediates are saved
 ```
 
+旧参数兼容：如果用户写 `mode: current`，视为 `svg: radial`；`mode: example` 视为 `svg: chain`；`mode: all` 视为 `svg: both`。如果同时提供 `svg` 和 `mode` 且两者冲突，必须询问用户确认。`hybrid`、`interactive graph`、`expandable knowledge graph`、`交互图谱` 或 `可展开知识图谱` 表示用户需要标准产物 `citation_map.html`；它不是 SVG 模式，也不改变 SVG 选择。
+
 ### 启动确认
 
 在读取论文、抽取引用、检查 `AMINER_API_KEY`、调用 AMiner 或生成 SVG 之前，必须先请用户确认：
 
-- SVG 模式：`current`、`example`、`all` 或 `hybrid`。
+- SVG 输出：`radial`、`chain` 或 `both`。
 - AMiner 增强：`on` 或 `off`。
 
 如果用户已经给出其中一个或两个设置，先复述为暂定选择，再请求最终确认。用户回答前不要继续执行。
@@ -204,8 +212,9 @@ json/extraction/*.json          # only when structured intermediates are saved
 9. 如果启用 AMiner，只补充元数据，不替代本地证据。
 10. 先写入 `json/graph/citation_graph.json`，再生成可视化产物。
 11. 写入 `analysis.md`；只有用户明确要求模板或固定格式时才使用 `references/analysis_template.md`。
-12. 按确认的模式和 `references/visual.md` 生成 SVG 和 `citation_map.html`；中文 `example` 或 `all` SVG 必须使用 `问题链`、`方法链`、`数据链`、`基线链`、`局限/资源链` 的链式布局。
-13. 最终回复前验证产物。
+12. 用同一条渲染命令生成 `citation_map.html` 和已确认的 SVG 输出：`scripts/render_html.py --graph <output>/json/graph/citation_graph.json --output <output>/citation_map.html --svg <radial|chain|both> --language auto`。
+13. 不要临场手写 SVG 或 HTML；静态 SVG 两种模式与 HTML 的 `radial / chain` 视图必须共享渲染器布局、配色、语言包、换行、节点优先级和边线规则。
+14. 最终回复前验证产物。
 
 ### Reference Files
 
@@ -214,6 +223,7 @@ json/extraction/*.json          # only when structured intermediates are saved
 - `references/prompts.md`：中英文抽取与审查 prompts。
 - `references/visual.md`：SVG 和 HTML 图谱规则。
 - `references/analysis_template.md`：显式模板模式下使用的固定报告模板。
+- `scripts/render_html.py`：标准图谱渲染器。生成 `citation_map.html`、`citation_map.svg` 和 `citation_map_chain.svg` 时必须使用它，不要临场手写 SVG 或 HTML。
 
 ### 质量检查
 
@@ -222,5 +232,7 @@ json/extraction/*.json          # only when structured intermediates are saved
 - 关键引用能追溯到 citation sentence 或本地上下文。
 - 每个 entity 至少由一条 citation 支撑。
 - 每条 source trace 至少由一个本地 citation context 支撑；AMiner 元数据不能作为唯一支撑。
-- 中文 `citation_map_example.svg` 使用链式 hub 标签，不用 current 模式分组标签替代。
+- 中文 `citation_map_chain.svg` 使用 `问题链`、`方法链`、`数据链`、`基线链`、`局限/资源链`，不用 radial 分组标签替代。
+- 写入 `json/graph/citation_graph.json` 后，用 `scripts/render_html.py` 同时生成 HTML 和 SVG。HTML 与 SVG 必须使用单一可见语言、同一套 canonical group 标签、同一节点排序和同一减少边线策略。
+- 静态 SVG 只保留有用主线，密集分组用 `+N` 汇总，不画 citation-to-citation cross-link 或 AMiner-only 关系线。
 - 即使 Markdown、SVG 或 HTML 有限制，`json/graph/citation_graph.json` 仍必须完整。

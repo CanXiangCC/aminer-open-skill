@@ -120,7 +120,7 @@ curl -X POST \
 如果宿主支持 slash command, 可以使用命令式入口:
 
 ```text
-/paper-source-trace file: papers/demo.pdf output: outputs/paper-source-trace/demo mode: all template: no aminer: off
+/paper-source-trace file: papers/demo.pdf output: outputs/paper-source-trace/demo svg: both template: no aminer: off
 ```
 
 AMiner 增强必须显式开启:
@@ -154,6 +154,7 @@ AMiner 增强必须显式开启:
 - `skills/paper-source-trace/commands/paper-source-trace.md`：`/paper-source-trace` 命令式编排入口
 - `skills/paper-source-trace/references/schema.md`：引用图谱 JSON schema（保存为 `json/graph/citation_graph.json`）
 - `skills/paper-source-trace/references/visual.md`：SVG 和 HTML 引用图布局规则
+- `skills/paper-source-trace/scripts/render_html.py`：标准图谱渲染器，用于稳定生成 `citation_map.html`、`citation_map.svg` 和 `citation_map_chain.svg`
 - `skills/paper-source-trace/README.md`：Paper Source Trace 使用说明书
 - `tools/check-paper-source-trace.ps1`：结构、文档、schema、evals 和 token 状态自检工具
 

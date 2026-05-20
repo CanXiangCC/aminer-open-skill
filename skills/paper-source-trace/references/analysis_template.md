@@ -99,7 +99,7 @@ For key claims with reliable evidence, explain the reading path from target-pape
 | `json/graph/citation_graph.json` | Generated | Must parse as JSON; includes `source_traces[]` when trace evidence exists |
 | `citation_map.svg` | Generated / not generated | Static citation map |
 | `citation_map.html` | Generated / not generated | Single-file interactive graph |
-| `citation_map_example.svg` | Generated / not used | Only for `all` mode |
+| `citation_map_chain.svg` | Generated / not used | Only for `svg: both` |
 | `citation_map_spec.md` | Optional / not used | Fallback if SVG generation fails |
 ```
 
@@ -185,7 +185,7 @@ For key claims with reliable evidence, explain the reading path from target-pape
 | `json/graph/citation_graph.json` | 已生成 | 必须可解析为 JSON；有 trace 证据时包含 `source_traces[]` |
 | `citation_map.svg` | 已生成 / 未生成 | 静态引用图谱 |
 | `citation_map.html` | 已生成 / 未生成 | 单文件交互图谱 |
-| `citation_map_example.svg` | 已生成 / 未使用 | 仅用于 `all` 模式 |
+| `citation_map_chain.svg` | 已生成 / 未使用 | 仅用于 `svg: both` |
 | `citation_map_spec.md` | 可选 / 未使用 | SVG 生成失败时的降级说明 |
 ```
 
