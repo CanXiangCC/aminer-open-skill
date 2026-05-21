@@ -14,8 +14,8 @@ $ARGUMENTS
 
 ## Language Routing / 语言路由
 
-- If `$ARGUMENTS` or the conversation is mainly Chinese, follow **中文命令流程**.
-- Otherwise follow **English Command Flow**.
+- If `$ARGUMENTS` or the conversation is mainly Chinese, follow **中文命令流程** and read `${CLAUDE_PLUGIN_ROOT}/SKILL.zh.md`.
+- Otherwise follow **English Command Flow** and read `${CLAUDE_PLUGIN_ROOT}/SKILL.md`.
 - Parameter names stay English: `file`, `output`, `svg`, `template`, `aminer`; legacy `mode` is accepted only as an alias.
 - JSON keys, intent labels, relation types, and source roles stay English.
 - 如果 `$ARGUMENTS` 或当前对话主要是中文，使用 **中文命令流程**。
@@ -107,7 +107,7 @@ The renderer owns both SVG modes and the HTML views. Do not generate separate ad
 
 ### 1. 任务
 
-读取并遵循 `${CLAUDE_PLUGIN_ROOT}/SKILL.md`。这个命令是编排入口。生成 `citation_map.html` 和静态 SVG 图谱时必须使用 `${CLAUDE_PLUGIN_ROOT}/scripts/render_html.py` 标准渲染器，不要临场手写 SVG 或 HTML。
+读取并遵循 `${CLAUDE_PLUGIN_ROOT}/SKILL.zh.md`。这个命令是编排入口。生成 `citation_map.html` 和静态 SVG 图谱时必须使用 `${CLAUDE_PLUGIN_ROOT}/scripts/render_html.py` 标准渲染器，不要临场手写 SVG 或 HTML。
 
 证据允许时生成标准产物：
 

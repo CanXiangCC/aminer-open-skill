@@ -53,6 +53,8 @@ Recommended common headers:
 export AMINER_API_KEY="<YOUR_TOKEN>"
 ```
 
+Quick setup helpers: `tools/setup-aminer-token.cmd` for Windows, `tools/setup-aminer-token.sh` for macOS/Linux.
+
 For `aminer-deep-search`, also configure the OpenClaw LLM settings before running:
 
 - `llm.api_key`: required at runtime, but not listed as a hard install dependency

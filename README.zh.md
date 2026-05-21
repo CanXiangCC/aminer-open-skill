@@ -53,6 +53,8 @@ https://open.aminer.cn/open/board?tab=control
 export AMINER_API_KEY="<YOUR_TOKEN>"
 ```
 
+快速配置工具：Windows 使用 `tools/setup-aminer-token.cmd`，macOS/Linux 使用 `tools/setup-aminer-token.sh`。
+
 如果使用 `aminer-deep-search`，还需要在运行前配置 OpenClaw LLM：
 
 - `llm.api_key`：运行时需要检测，但不要作为硬性安装依赖写入 metadata
@@ -118,7 +120,7 @@ curl -X POST \
 - `skills/aminer-academic-search/scripts/aminer_client.py`：可选 Python 客户端
 - `skills/aminer-academic-search/references/api-catalog.md`：27 个 API 参数与路径速查
 - `skills/aminer-academic-search/evals/evals.json`：评测用例与测试样例
-- `skills/paper-source-trace/SKILL.md`：论文来源追踪工作流和 AMiner 增强边界
+- `skills/paper-source-trace/SKILL.zh.md`：论文来源追踪工作流和 AMiner 增强边界
 
 ## 注意事项
 
@@ -133,4 +135,4 @@ curl -X POST \
 - 免费 Skill 文档：`skills/aminer-free-academic/skill_zh.md`
 - 推荐 Skill 文档：`skills/aminer-daily-paper/SKILL.md`
 - 深度收集 Skill 文档：`skills/aminer-deep-search/SKILL.md`
-- 论文来源追踪 Skill 文档：`skills/paper-source-trace/SKILL.md`
+- 论文来源追踪 Skill 文档：`skills/paper-source-trace/SKILL.zh.md`

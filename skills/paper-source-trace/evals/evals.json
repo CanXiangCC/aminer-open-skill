@@ -181,10 +181,10 @@
     {
       "id": 15,
       "prompt": "Please use Paper Source Trace on this extracted paper text. Keep the report in English and generate json/graph/citation_graph.json plus SVG/HTML maps.",
-      "expected_output": "Follow the English workflow section. Ask for startup confirmation of svg and aminer before analysis. When confirmed, produce English visible prose in analysis.md, SVG labels, HTML UI text, and final summary while keeping JSON keys, intent labels, relation types, and source roles in English.",
+      "expected_output": "Follow skills/paper-source-trace/SKILL.md. Ask for startup confirmation of svg and aminer before analysis. When confirmed, produce English visible prose in analysis.md, SVG labels, HTML UI text, and final summary while keeping JSON keys, intent labels, relation types, and source roles in English.",
       "files": [],
       "expectations": [
-        "Routes to the English Workflow section",
+        "Routes to skills/paper-source-trace/SKILL.md",
         "Asks for svg and aminer confirmation before analysis",
         "English visible output in analysis.md, SVG, HTML, and final prose",
         "json/graph/citation_graph.json keeps English keys and stable labels",
@@ -194,10 +194,10 @@
     {
       "id": 16,
       "prompt": "请使用 Paper Source Trace 分析这篇论文文本，svg: both，输出中文报告和中文图谱标签，但 JSON 字段保持英文。",
-      "expected_output": "Follow the 中文工作流 section. Ask for startup confirmation of svg and aminer before analysis. When confirmed, produce Chinese visible prose in analysis.md, SVG labels, HTML UI text, and final summary while keeping JSON keys, intent labels, relation types, and source roles in English. With svg: both, citation_map_chain.svg uses the Chinese chain layout with 问题链、方法链、数据链、基线链、局限/资源链.",
+      "expected_output": "Follow skills/paper-source-trace/SKILL.zh.md. Ask for startup confirmation of svg and aminer before analysis. When confirmed, produce Chinese visible prose in analysis.md, SVG labels, HTML UI text, and final summary while keeping JSON keys, intent labels, relation types, and source roles in English. With svg: both, citation_map_chain.svg uses the Chinese chain layout with 问题链、方法链、数据链、基线链、局限/资源链.",
       "files": [],
       "expectations": [
-        "Routes to the 中文工作流 section",
+        "Routes to skills/paper-source-trace/SKILL.zh.md",
         "先确认 svg 和 aminer 再开始分析",
         "analysis.md、SVG、HTML 和最终说明使用中文可见文本",
         "svg: both 时 citation_map_chain.svg 使用问题链、方法链、数据链、基线链、局限/资源链",

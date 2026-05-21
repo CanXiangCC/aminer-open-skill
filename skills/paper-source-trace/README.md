@@ -1,8 +1,8 @@
 # Paper Source Trace
 
-`paper-source-trace` is one Skill with two language sections. Use the English instructions when the user writes in English or does not request Chinese. Use the Chinese instructions when the user mainly writes in Chinese or explicitly asks for Chinese output.
+`paper-source-trace` is one Skill with separate English and Chinese instruction files. Use `SKILL.md` when the user writes in English or does not request Chinese. Use `SKILL.zh.md` when the user mainly writes in Chinese or explicitly asks for Chinese output.
 
-`paper-source-trace` 是同一个 Skill 内的双语工作流。用户使用英文或未指定中文时使用英文说明；用户主要使用中文或明确要求中文输出时使用中文说明。
+`paper-source-trace` 是同一个 Skill 下的双语说明。用户使用英文或未指定中文时使用 `SKILL.md`；用户主要使用中文或明确要求中文输出时使用 `SKILL.zh.md`。
 
 ## English Quick Start
 
