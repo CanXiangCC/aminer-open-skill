@@ -1,10 +1,10 @@
 # Paper Source Trace
 
+English guide for `paper-source-trace`. For Chinese, see `README_zh.md`.
+
 `paper-source-trace` is one Skill with separate English and Chinese instruction files. Use `SKILL.md` when the user writes in English or does not request Chinese. Use `SKILL.zh.md` when the user mainly writes in Chinese or explicitly asks for Chinese output.
 
-`paper-source-trace` 是同一个 Skill 下的双语说明。用户使用英文或未指定中文时使用 `SKILL.md`；用户主要使用中文或明确要求中文输出时使用 `SKILL.zh.md`。
-
-## English Quick Start
+## Quick Start
 
 Use natural language:
 
@@ -20,7 +20,7 @@ Use the slash command:
 
 Before analysis begins, confirm `svg` and `aminer`. Recommended settings are `svg: both` and `aminer: on`; if interactive confirmation is genuinely impossible, use those recommended defaults. Legacy `mode: current|example|all` remains accepted as an alias for `svg: radial|chain|both`. If AMiner is on but the token is missing, skip enrichment and continue local analysis.
 
-### English Use Cases
+## Use Cases
 
 Use this Skill when a user provides a paper PDF, extracted paper text, citation contexts, or references and asks for:
 
@@ -32,7 +32,7 @@ Use this Skill when a user provides a paper PDF, extracted paper text, citation 
 - SVG and HTML citation maps;
 - optional AMiner metadata or citation-relation enrichment.
 
-### English Outputs
+## Outputs
 
 | Output | Description |
 | --- | --- |
@@ -45,69 +45,28 @@ Use this Skill when a user provides a paper PDF, extracted paper text, citation 
 
 SVG and HTML maps use the same fixed renderer, canonical groups, colors, language pack, node ranking, text wrapping, and reduced-edge layout. HTML also includes radial/chain switching, search, filters, zoom, pan, draggable citation nodes, reset layout, node details, source traces, and built-in hover/focus `!` tooltips for roles, intents, confidence, AMiner metadata, and source trace steps.
 
-### English AMiner Policy
+## AMiner Policy
 
 AMiner is optional. Local source tracing does not require an AMiner token or `AMINER_API_KEY`.
 
-AMiner enrichment is used only when explicitly requested with phrases such as `aminer:on`, `enhance with AMiner`, `use AMiner metadata`, `AMiner 增强`, or `用 AMiner 补全`.
+AMiner enrichment is used only when explicitly requested with phrases such as `aminer:on`, `enhance with AMiner`, or `use AMiner metadata`.
 
 When enabled, AMiner may enrich IDs, URLs, candidate references, and external cited-paper metadata. It must not replace local citation contexts or justify citation-intent labels or `source_traces[]` by itself.
 
-## 中文快速开始
+## Token Setup
 
-使用自然语言：
+The repository helpers below are intended for Claude Code, Codex, and other conversational Skill sessions. They configure `AMINER_API_KEY` for the local user environment used by those sessions.
 
-```text
-请围绕这篇论文的核心 claim 做来源追踪，识别引用意图，并生成 analysis.md、json/graph/citation_graph.json、citation_map.svg 和 citation_map.html。
-```
-
-使用 slash command：
-
-```text
-/paper-source-trace file: papers/demo.pdf output: outputs/paper-source-trace/demo svg: both template: no aminer: on
-```
-
-开始分析前必须确认 `svg` 和 `aminer`。推荐设置为 `svg: both` 和 `aminer: on`；如果确实无法交互确认，使用这两个推荐默认值。旧参数 `mode: current|example|all` 仍兼容，分别映射到 `svg: radial|chain|both`。如果 AMiner 开启但缺少 token，跳过增强并继续本地分析。
-
-### 中文使用场景
-
-当用户提供论文 PDF、抽取后的论文文本、引用上下文或参考文献，并要求以下任务时使用本 Skill：
-
-- 引用意图识别；
-- 围绕关键 claim 和贡献做来源追踪；
-- 实体与关系抽取；
-- 论文贡献图谱；
-- `json/graph/citation_graph.json`；
-- SVG 和 HTML 引用图谱；
-- 可选 AMiner 元数据或引用关系增强。
-
-### 中文产物
-
-| 产物 | 说明 |
-| --- | --- |
-| `analysis.md` | 使用用户输出语言撰写的报告，覆盖引用意图、claim-to-source trace、图谱解读和不确定性 |
-| `json/graph/citation_graph.json` | 稳定的机器可读图谱，key、intent label 和可选 `source_traces[]` 保持英文 |
-| `citation_map.svg` | 由 `scripts/render_html.py` 生成的静态径向图；`svg: chain` 时为链式图 |
-| `citation_map.html` | 有图谱数据时由 `scripts/render_html.py` 生成的单文件交互图谱 |
-| `citation_map_chain.svg` | 仅在 `svg: both` 时由 `scripts/render_html.py` 输出的链式来源追踪 SVG |
-| `citation_map_spec.md` | SVG 无法干净生成时的降级说明 |
-
-SVG 和 HTML 图谱使用同一个固定渲染器，共享 canonical groups、配色、语言包、节点排序、文字换行和减少边线布局。HTML 额外包含 radial/chain 布局切换、搜索、筛选、缩放、平移、可拖动 citation 节点、重置布局、节点详情、来源追踪，以及用于解释角色、意图、置信度、AMiner 元数据和 trace steps 的内置 hover/focus `!` 提示。
-
-### 中文 AMiner 规则
-
-AMiner 是可选增强。本地来源追踪不需要 AMiner token 或 `AMINER_API_KEY`。
-
-只有用户明确要求时才使用 AMiner，例如 `aminer:on`、`AMiner 增强`、`用 AMiner 补全`、`查 AMiner 引用链` 或 `enhance with AMiner`。
-
-AMiner 只能补充 ID、URL、候选参考文献和外部引用元数据，不能替代本地 citation context，也不能单独证明 citation intent 或 `source_traces[]`。
-
-## Token Setup / Token 配置
-
-On Windows, run the repository helper when AMiner enrichment is needed:
+On Windows, run:
 
 ```powershell
 .\tools\setup-aminer-token.cmd
+```
+
+On macOS/Linux, run:
+
+```bash
+./tools/setup-aminer-token.sh
 ```
 
 Check token status without printing the token:
@@ -116,13 +75,7 @@ Check token status without printing the token:
 .\tools\setup-aminer-token.ps1 -Status
 ```
 
-Clear the user-level token:
-
-```powershell
-.\tools\setup-aminer-token.ps1 -Clear
-```
-
-如果宿主环境使用 OpenClaw 风格配置，也可以在 Skill 外配置环境变量：
+They do not configure OpenClaw command runs, standalone CLI jobs, CI, scheduled jobs, or other command-run environments. Those environments must configure `AMINER_API_KEY` in their own runtime context. For OpenClaw-style configuration, configure the environment variable outside the Skill:
 
 ```bash
 openclaw config set env.vars.AMINER_API_KEY "<YOUR_TOKEN>"
@@ -130,18 +83,18 @@ openclaw config set env.vars.AMINER_API_KEY "<YOUR_TOKEN>"
 
 Never commit real tokens, screenshots containing tokens, or logs that print tokens.
 
-## Parameters / 参数
+## Parameters
 
-| Parameter | Values | Default | Description / 说明 |
+| Parameter | Values | Default | Description |
 | --- | --- | --- | --- |
-| `file` | PDF or text path | none | Input paper, extracted text, citation contexts, or reference list / 输入论文、文本、引用上下文或参考文献 |
-| `output` | output directory | `outputs/paper-source-trace/<safe-paper-stem>/` | Output root; JSON artifacts go under `json/graph/`, `json/aminer/`, and `json/extraction/` / 输出根目录 |
-| `svg` | `radial`, `chain`, `both` | confirm first; fallback `both` | Static SVG output / 静态 SVG 输出 |
-| `mode` | `current`, `example`, `all` | none | Legacy alias: `current -> radial`, `example -> chain`, `all -> both` / 旧别名 |
-| `template` | `yes`, `no` | `no` | Use fixed `analysis.md` template only when requested / 仅在明确要求时使用固定模板 |
-| `aminer` | `on`, `off` | confirm first; fallback `on` | Check `AMINER_API_KEY` when AMiner enrichment is enabled or confirmation is impossible / 启用 AMiner 或无法确认并采用推荐默认值时检查 token |
+| `file` | PDF or text path | none | Input paper, extracted text, citation contexts, or reference list |
+| `output` | output directory | `outputs/paper-source-trace/<safe-paper-stem>/` | Output root; JSON artifacts go under `json/graph/`, `json/aminer/`, and `json/extraction/` |
+| `svg` | `radial`, `chain`, `both` | confirm first; fallback `both` | Static SVG output |
+| `mode` | `current`, `example`, `all` | none | Legacy alias: `current -> radial`, `example -> chain`, `all -> both` |
+| `template` | `yes`, `no` | `no` | Use fixed `analysis.md` template only when requested |
+| `aminer` | `on`, `off` | confirm first; fallback `on` | Check `AMINER_API_KEY` when AMiner enrichment is enabled or confirmation is impossible |
 
-## References / 参考文件
+## References
 
 - `references/schema.md`: canonical `citation_graph.json` schema saved as `json/graph/citation_graph.json`.
 - `references/evidence_protocol.md`: evidence and uncertainty policy.

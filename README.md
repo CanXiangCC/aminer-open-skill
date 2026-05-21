@@ -34,28 +34,18 @@ This repository currently provides five skill flavors:
 
 ## Get Started in 3 Minutes
 
-### 1) Prepare a Token (Required)
+### 1) Configure AMiner Token
 
 Generate a Token in the AMiner Console:  
 https://open.aminer.cn/open/board?tab=control
-
-### 2) Pick a Call Style
-
-Use direct `curl` calls by default. A Python client is optional, not required.
-
-Recommended common headers:
-
-- `Authorization: ${AMINER_API_KEY}`
-- `X-Platform: openclaw`
-- `Content-Type: application/json;charset=utf-8` for POST requests
 
 ```bash
 export AMINER_API_KEY="<YOUR_TOKEN>"
 ```
 
-Quick setup helpers: `tools/setup-aminer-token.cmd` for Windows, `tools/setup-aminer-token.sh` for macOS/Linux.
+For Claude Code, Codex, and other conversational Skill sessions, you can use `tools/setup-aminer-token.cmd` on Windows or `tools/setup-aminer-token.sh` on macOS/Linux.
 
-For `aminer-deep-search`, also configure the OpenClaw LLM settings before running:
+For `aminer-deep-search`, also configure OpenClaw LLM settings before running:
 
 - `llm.api_key`: required at runtime, but not listed as a hard install dependency
 - `llm.model`: required unless `--models` is passed
@@ -63,7 +53,28 @@ For `aminer-deep-search`, also configure the OpenClaw LLM settings before runnin
 
 Do not hard-code provider-specific LLM tokens, base URLs, or model names in the skill.
 
-### 3) Run Examples
+### 2) Choose How to Use It
+
+- **Raw API calls**: call one AMiner endpoint directly with `curl` when the task is narrow and parameters are known.
+- **Fine-grained API actions**: when using a wrapper that supports it, use `--action raw` with `--api` and `--params` for a single endpoint.
+- **Task workflow**: use a Skill when the user wants complete results, such as scholar profiles, paper deep dives, or structured analysis.
+- **Cost-control strategy**: use free or low-cost APIs to locate targets first, then call expensive detail APIs only when needed.
+- **Free-first screening**: start with `aminer-free-academic` for discovery, normalization, and screening before escalating to paid APIs.
+- **Recommendations**: use `aminer-daily-paper` for paper recommendations by topics, scholar name, or AMiner user ID.
+- **Deep survey collection**: use `aminer-deep-search` or `/aminer-deep-search` for multi-round bibliography collection.
+- **Paper source tracing**: use `paper-source-trace` or `/paper-source-trace` for citation-intent analysis and claim-to-source tracing.
+
+### 3) Run API Examples
+
+Use direct `curl` calls by default. A Python client is optional, not required.
+
+After the token is available in the current runtime, run any of the examples below. GET requests only need the token and platform headers; POST requests also need `Content-Type`.
+
+Recommended common headers:
+
+- `Authorization: ${AMINER_API_KEY}`
+- `X-Platform: openclaw`
+- `Content-Type: application/json;charset=utf-8` for POST requests
 
 ```bash
 # Paper search
@@ -96,15 +107,13 @@ curl -X POST \
   -d '{"topics":["multimodal agents","tool-use"],"size":5}'
 ```
 
-## Common Usage Patterns
+### 4) Continue With a Skill
 
-- **Task-based workflow**: suitable for "give me complete results" needs (e.g., scholar_profile, paper_deep_dive)
-- **Fine-grained API calls**: suitable for "call just one API" needs (`--action raw` + `--api` + `--params`)
-- **Cost-control strategy**: use free/low-cost APIs to locate targets first, then call expensive detail APIs
-- **Free-first workflow**: use `aminer-free-academic` for discovery and screening before escalating to paid APIs
-- **Personalized recommendation**: use `aminer-daily-paper` to get paper recommendations by topics, scholar name, or AMiner user ID
-- **Deep survey collection**: use `aminer-deep-search` or `/aminer-deep-search` for multi-round collection toward a large bibliography
-- **Paper source tracing**: use `paper-source-trace` or `/paper-source-trace` for local citation-intent analysis and claim-to-source tracing, with optional AMiner metadata enrichment
+- Start with `aminer-free-academic` for lightweight discovery, entity normalization, and triage before paid calls.
+- Use `aminer-academic-search` for full API-backed academic analysis workflows across papers, scholars, institutions, venues, and patents.
+- Use `aminer-daily-paper` for personalized paper recommendations from topics, scholar names, or AMiner user IDs.
+- Use `aminer-deep-search` for survey-scale collection, keyword expansion, deduplication, and citation snowballing.
+- Use `paper-source-trace` for local paper source tracing, citation-intent analysis, and optional AMiner metadata enrichment.
 
 ## Directory Structure
 
@@ -121,10 +130,12 @@ curl -X POST \
 - `skills/aminer-academic-search/references/api-catalog.md`: Quick reference for all 27 API parameters and paths
 - `skills/aminer-academic-search/evals/evals.json`: Evaluation cases and test samples
 - `skills/paper-source-trace/SKILL.md`: Paper Source Trace workflow and AMiner enrichment boundary
+- `skills/paper-source-trace/README.md`: Paper Source Trace usage guide
 
 ## Notes
 
 - Do not continue calling APIs without a Token
+- `tools/setup-aminer-token.cmd` and `tools/setup-aminer-token.sh` are for Claude Code, Codex, and other conversational Skill sessions. OpenClaw command runs, standalone CLI jobs, CI, scheduled jobs, and other command-run environments must configure `AMINER_API_KEY` in their own runtime context.
 - The client has built-in timeout retry and partial fallback strategies to improve request stability
 - Some APIs are billed; confirm the scenario before scaling up calls
 
@@ -136,3 +147,4 @@ curl -X POST \
 - Recommendation Skill Documentation: `skills/aminer-daily-paper/SKILL.md`
 - Deep Search Skill Documentation: `skills/aminer-deep-search/SKILL.md`
 - Paper Source Trace Skill Documentation: `skills/paper-source-trace/SKILL.md`
+- Paper Source Trace Usage Guide: `skills/paper-source-trace/README.md`
