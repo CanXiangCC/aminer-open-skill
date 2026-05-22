@@ -10,3 +10,10 @@ build/
 .venv/
 venv/
 *.log
+
+# Local secrets and generated runtime files
+*.local.yaml
+config.local.yaml
+config.yaml
+outputs/
+skills/*/outputs/

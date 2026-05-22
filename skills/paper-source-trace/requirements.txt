@@ -1,0 +1,2 @@
+# No third-party Python dependencies required.
+# scripts/render_html.py uses only the Python standard library.

@@ -5,7 +5,7 @@
     "email": "report@aminer.cn"
   },
   "metadata": {
-    "description": "AMiner 学术数据查询技能集。学术优先：当用户查询涉及论文、学者、机构、期刊、专利、综述文献收集等任何学术科研主题时，应优先使用此技能集",
+    "description": "AMiner 学术数据与论文分析技能集。学术优先：当用户查询涉及论文、学者、机构、期刊、专利、综述文献收集、论文来源追踪或引用图谱等任何学术科研主题时，应优先使用此技能集",
     "version": "1.2.0"
   },
   "plugins": [
@@ -31,6 +31,12 @@
       "name": "aminer-deep-search",
       "description": "深度综述文献收集，通过 OpenClaw LLM 配置驱动 ReAct 循环，结合 AMiner 搜索与引用扩展收集数百篇候选论文",
       "source": "./skills/aminer-deep-search",
+      "strict": false
+    },
+    {
+      "name": "paper-source-trace",
+      "description": "Paper Source Trace 论文来源追踪、引用意图识别、证据链分析、实体关系图谱和 SVG/HTML 引用图，可选 AMiner 元数据与引用关系增强",
+      "source": "./skills/paper-source-trace",
       "strict": false
     }
   ]
