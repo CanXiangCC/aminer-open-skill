@@ -27,20 +27,21 @@ $ARGUMENTS
 
 Run the checks below in order. **Any failed check stops the flow — do not run the script.**
 
-1. Check `AMINER_API_KEY` is set:
+1. Check both auth env vars are set:
 
    ```bash
    [ -z "${AMINER_API_KEY+x}" ] && echo "AMINER_API_KEY missing" || echo "AMINER_API_KEY exists"
+   [ -z "${AMINER_USER_ID+x}" ] && echo "AMINER_USER_ID missing" || echo "AMINER_USER_ID exists"
    ```
 
-   If missing, tell the user to get a token from https://open.aminer.cn and `export AMINER_API_KEY=<token>`. Never echo the token value.
+   If either is missing, tell the user to get the signing secret (`API Keys`) and user id (`Account`) from https://open.aminer.cn, then `export` both. Never echo the AMINER_API_KEY value.
 
-2. Check Python dependency:
+2. Check Python dependencies:
 
    ```bash
    python3 - <<'PY'
    import importlib.util
-   missing = [name for name in ("requests",) if importlib.util.find_spec(name) is None]
+   missing = [name for name in ("requests", "jwt") if importlib.util.find_spec(name) is None]
    print("Missing: " + ", ".join(missing) if missing else "Python dependencies exist")
    PY
    ```
@@ -94,9 +95,10 @@ Add flags only for values the user explicitly provided:
 Stdout is JSON (the unwrapped record from `data[0]`). Show the user:
 
 - `job_id`
-- `total`, `has_hallucination`, `hallucination_ratio`
-- A short table built from `counts_by_status` (or top-level `REAL` / `LIKELY_REAL` / `NEEDS_REVIEW` / `LIKELY_FAKE` / `FAKE` counts)
-- `urls.report` / `urls.result` if present, noting they may expire after `url_expire_seconds`
+- `summary.total`, `summary.overall.has_hallucination`, `summary.overall.hallucination_ratio`
+- A short table built from `summary.overall.counts_by_status` (REAL / LIKELY_REAL / NEEDS_REVIEW / LIKELY_FAKE / FAKE)
+- Optionally the author-side numbers (`author_conflict_ratio`, `counts_by_author_status`) when present
+- `urls.report` / `urls.result` if present, noting they expire in `url_expire_seconds` seconds
 - The path written when `--output` was used
 
 If the gateway returned a non-200 `code` or the script exited with an error, surface the error verbatim. Do not invent verdicts.
@@ -107,20 +109,21 @@ If the gateway returned a non-200 `code` or the script exited with an error, sur
 
 依次执行下列检查，**任何一项失败立即停止，不要运行脚本。**
 
-1. 检查 `AMINER_API_KEY` 是否已设置：
+1. 检查 `AMINER_API_KEY` 和 `AMINER_USER_ID` 是否都已设置：
 
    ```bash
    [ -z "${AMINER_API_KEY+x}" ] && echo "AMINER_API_KEY missing" || echo "AMINER_API_KEY exists"
+   [ -z "${AMINER_USER_ID+x}" ] && echo "AMINER_USER_ID missing" || echo "AMINER_USER_ID exists"
    ```
 
-   缺失则提示用户到 https://open.aminer.cn 申请 token，然后 `export AMINER_API_KEY=<token>`。**禁止回显 token 值。**
+   任一缺失则提示用户到 https://open.aminer.cn 取签名密钥（`API Keys`）和用户 ID（`账号资料`），然后 `export` 两个变量。**禁止回显 AMINER_API_KEY 的值。**
 
 2. 检查 Python 依赖：
 
    ```bash
    python3 - <<'PY'
    import importlib.util
-   missing = [name for name in ("requests",) if importlib.util.find_spec(name) is None]
+   missing = [name for name in ("requests", "jwt") if importlib.util.find_spec(name) is None]
    print("Missing: " + ", ".join(missing) if missing else "Python dependencies exist")
    PY
    ```
@@ -174,9 +177,10 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify_pdf.py" \
 脚本的 stdout 是 JSON（已拆掉网关信封，即 `data[0]` 这个记录）。向用户展示：
 
 - `job_id`
-- `total`、`has_hallucination`、`hallucination_ratio`
-- 基于 `counts_by_status`（或顶层 `REAL` / `LIKELY_REAL` / `NEEDS_REVIEW` / `LIKELY_FAKE` / `FAKE` 计数）的状态小表
-- 响应里的 `urls.report` / `urls.result`，需要附注会在 `url_expire_seconds` 后过期
+- `summary.total`、`summary.overall.has_hallucination`、`summary.overall.hallucination_ratio`
+- 基于 `summary.overall.counts_by_status` 的状态小表（REAL / LIKELY_REAL / NEEDS_REVIEW / LIKELY_FAKE / FAKE）
+- 可选：作者侧数字（`author_conflict_ratio`、`counts_by_author_status`）
+- 响应里的 `urls.report` / `urls.result`，需要附注会在 `url_expire_seconds` 秒后过期
 - 如果用了 `--output`，告诉用户落盘路径
 
 如果网关 `code` 非 200，或者脚本以错误退出，**原样汇报错误**，禁止伪造核验结论。

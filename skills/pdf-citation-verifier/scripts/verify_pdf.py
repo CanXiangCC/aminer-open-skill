@@ -10,8 +10,15 @@ Both endpoints return the AMiner gateway envelope:
 `upload`  -> data is an object: {"job_id": "verify_..."}
 `result`  -> data is a list with one element: [{"is_finish": bool, ...}]
 
-It reads the auth token from `AMINER_API_KEY` and the (optional) base URL
-override from `PDF_CITATION_VERIFIER_BASE_URL`.
+Auth follows the AMiner platform spec: the user holds an API key (HMAC-SHA256
+signing secret) plus a user_id, and signs a short-lived JWT per process run
+that is placed in the Authorization header. The signing secret is never sent
+on the wire; only the freshly signed JWT is.
+
+Environment variables:
+    AMINER_API_KEY                  -- the HMAC-SHA256 signing secret
+    AMINER_USER_ID                  -- the AMiner user id embedded in the JWT
+    PDF_CITATION_VERIFIER_BASE_URL  -- optional gateway base URL override
 """
 
 from __future__ import annotations
@@ -22,23 +29,37 @@ import os
 import re
 import sys
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+import jwt  # PyJWT
 import requests
 
 DEFAULT_BASE_URL = "https://datacenter.aminer.cn/gateway/open_platform"
 UPLOAD_PATH = "/api/v3/paper/citation/verify/upload"
 RESULT_PATH = "/api/v3/paper/citation/result"
 JOB_ID_PATTERN = re.compile(r"^verify_\d{8}T\d{6}Z_[0-9a-f]{8}$")
+JWT_TTL_SECONDS = 120 * 60  # 2 hours, per AMiner platform example
 
 
 def _resolve_base_url() -> str:
     return os.environ.get("PDF_CITATION_VERIFIER_BASE_URL", DEFAULT_BASE_URL).rstrip("/")
 
 
-def _auth_headers(api_key: str) -> dict[str, str]:
-    return {"Authorization": api_key}
+def _sign_jwt(api_key: str, user_id: str) -> str:
+    """Sign an HS256 JWT using AMINER_API_KEY as the secret. Per AMiner docs."""
+    now = datetime.now(tz=timezone.utc)
+    payload = {
+        "user_id": user_id,
+        "exp": now + timedelta(seconds=JWT_TTL_SECONDS),
+        "timestamp": now.timestamp(),
+    }
+    return jwt.encode(payload, api_key, algorithm="HS256")
+
+
+def _auth_headers(token: str) -> dict[str, str]:
+    return {"Authorization": token}
 
 
 def _unwrap_gateway(body: dict[str, Any], *, context: str) -> Any:
@@ -58,7 +79,7 @@ def _unwrap_gateway(body: dict[str, Any], *, context: str) -> Any:
 def upload_pdf(
     pdf_path: Path,
     *,
-    api_key: str,
+    token: str,
     base_url: str,
     max_refs: int,
     strict: bool,
@@ -70,14 +91,14 @@ def upload_pdf(
         data = {"max_refs": str(max_refs), "strict": "true" if strict else "false"}
         resp = requests.post(
             url,
-            headers=_auth_headers(api_key),
+            headers=_auth_headers(token),
             files=files,
             data=data,
             timeout=request_timeout,
         )
 
     if resp.status_code == 401:
-        raise SystemExit("ERROR: 401 unauthorized — check AMINER_API_KEY.")
+        raise SystemExit("ERROR: 401 unauthorized — check AMINER_API_KEY / AMINER_USER_ID.")
     if resp.status_code == 413:
         raise SystemExit("ERROR: 413 PDF too large (server cap, default 50 MB).")
     if resp.status_code == 429:
@@ -98,14 +119,14 @@ def upload_pdf(
 def fetch_result(
     job_id: str,
     *,
-    api_key: str,
+    token: str,
     base_url: str,
     request_timeout: int,
 ) -> dict[str, Any]:
     url = f"{base_url}{RESULT_PATH}"
     resp = requests.get(
         url,
-        headers=_auth_headers(api_key),
+        headers=_auth_headers(token),
         params={"job_id": job_id},
         timeout=request_timeout,
     )
@@ -137,7 +158,7 @@ def fetch_result(
 def poll_result(
     job_id: str,
     *,
-    api_key: str,
+    token: str,
     base_url: str,
     poll_interval: float,
     overall_timeout: int,
@@ -148,7 +169,7 @@ def poll_result(
     while True:
         record = fetch_result(
             job_id,
-            api_key=api_key,
+            token=token,
             base_url=base_url,
             request_timeout=request_timeout,
         )
@@ -163,7 +184,7 @@ def poll_result(
         if time.monotonic() >= deadline:
             raise SystemExit(
                 f"ERROR: timed out after {overall_timeout}s waiting for job {job_id}. "
-                f"Last status: {status}. You can keep polling manually with --no-wait + --job-id."
+                f"Last status: {status}. You can keep polling manually with --job-id."
             )
         time.sleep(poll_interval)
 
@@ -221,10 +242,18 @@ def main() -> int:
     args = parser.parse_args()
 
     api_key = os.environ.get("AMINER_API_KEY")
+    user_id = os.environ.get("AMINER_USER_ID")
     if not api_key:
         print(
-            "ERROR: AMINER_API_KEY is not set. Get a token from https://open.aminer.cn and "
-            "export it before running this skill.",
+            "ERROR: AMINER_API_KEY is not set. Get the signing secret from "
+            "https://open.aminer.cn (API Keys) and export it before running.",
+            file=sys.stderr,
+        )
+        return 2
+    if not user_id:
+        print(
+            "ERROR: AMINER_USER_ID is not set. Find your user id in the AMiner "
+            "console (Account) and export it before running.",
             file=sys.stderr,
         )
         return 2
@@ -238,6 +267,7 @@ def main() -> int:
         return 2
 
     base_url = _resolve_base_url()
+    token = _sign_jwt(api_key, user_id)
 
     if args.job_id:
         if not JOB_ID_PATTERN.match(args.job_id):
@@ -256,7 +286,7 @@ def main() -> int:
 
         job_id = upload_pdf(
             pdf_path,
-            api_key=api_key,
+            token=token,
             base_url=base_url,
             max_refs=args.max_refs,
             strict=args.strict,
@@ -280,7 +310,7 @@ def main() -> int:
     else:
         payload = poll_result(
             job_id,
-            api_key=api_key,
+            token=token,
             base_url=base_url,
             poll_interval=args.poll_interval,
             overall_timeout=args.timeout,

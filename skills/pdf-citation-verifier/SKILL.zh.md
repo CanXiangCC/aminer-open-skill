@@ -38,35 +38,45 @@ metadata:
 网关返回统一信封 `{"code": 200, "success": true, "msg": "", "data": ..., "log_id": "..."}`，脚本会自动拆掉这层再输出。
 
 - `POST /api/v3/paper/citation/verify/upload` 的 `data` 是对象：`{"job_id": "verify_..."}`。
-- `GET /api/v3/paper/citation/result?job_id=...` 的 `data` 是只含一个元素的数组，元素里有顶层字段 `is_finish`、`has_hallucination`、`hallucination_ratio`、`total`、`counts_by_status`、`summary`、`urls`、`report`、`result` 等。
+- `GET /api/v3/paper/citation/result?job_id=...` 的 `data` 是只含一个元素的数组，元素里有顶层字段 `is_finish`、`summary`、`urls`、`url_expire_seconds`。`summary.total` 是核验数，`summary.overall` 包含 `has_hallucination`、`hallucination_ratio`、`counts_by_status`，以及作者侧检查（`counts_by_author_status`、`counts_by_author_list_status`）。
 
 Skill 返回这个记录加上 `job_id`，用户后续可凭 `job_id` 再次查询。
+
+## 鉴权模型
+
+网关**不接受**长期静态 token。按 AMiner 平台文档，用户手上有两样东西，客户端每次运行时**自己签**一个短期 JWT：
+
+1. **`AMINER_API_KEY`**——AMiner 控制台 `API Keys` 模块申请的 HMAC-SHA256 签名密钥。一般是 16 字符；PyJWT 会警告"小于 RFC 7518 建议的 32 字节"，这是 AMiner 派发密钥的正常长度，可以忽略。
+2. **`AMINER_USER_ID`**——AMiner 控制台 `账号资料` 中的用户 ID。不是密钥，会写进 JWT payload。
+
+`scripts/verify_pdf.py` 启动时签一个 2 小时有效期的 HS256 JWT 放进 `Authorization` 头。签名密钥**始终留在进程内**，不会上行。
 
 ## 文件结构
 
 - `SKILL.md` / `SKILL.zh.md`——英文 / 中文 Skill 定义（本文件）。
 - `commands/pdf-citation-verifier.md`——slash command 入口。
-- `scripts/verify_pdf.py`——HTTP 客户端：上传 → 轮询 → 拆封信封后打印结果记录。
-- `requirements.txt`——Python 依赖（`requests`）。
+- `scripts/verify_pdf.py`——HTTP 客户端：签 JWT → 上传 → 轮询 → 拆封信封后打印结果记录。
+- `requirements.txt`——Python 依赖（`requests`、`PyJWT`）。
 
 ## Pre-flight 检查
 
 在执行脚本前必须先过下面三项；任何一项失败立即停止并告知用户。
 
-**1. AMINER_API_KEY**
+**1. AMINER_API_KEY 和 AMINER_USER_ID**
 
 ```bash
 [ -z "${AMINER_API_KEY+x}" ] && echo "AMINER_API_KEY missing" || echo "AMINER_API_KEY exists"
+[ -z "${AMINER_USER_ID+x}" ] && echo "AMINER_USER_ID missing" || echo "AMINER_USER_ID exists"
 ```
 
-缺失则停止，引导用户到 https://open.aminer.cn 获取 Token，然后 `export AMINER_API_KEY=<token>`。**任何输出中都不得打印 token 的值。**
+任一缺失则停止，引导用户到 https://open.aminer.cn 申请签名密钥（`API Keys`）和取用户 ID（`账号资料`），并 `export` 两个变量。**任何输出中都不得打印 AMINER_API_KEY 的值。** `AMINER_USER_ID` 虽然不是密钥，也应当从用户自己的环境读取。
 
 **2. Python 依赖**
 
 ```bash
 python3 - <<'PY'
 import importlib.util
-missing = [name for name in ("requests",) if importlib.util.find_spec(name) is None]
+missing = [name for name in ("requests", "jwt") if importlib.util.find_spec(name) is None]
 print("Missing: " + ", ".join(missing) if missing else "Python dependencies exist")
 PY
 ```
@@ -130,26 +140,28 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify_pdf.py" \
 
 | 变量 | 是否必需 | 用途 |
 | --- | --- | --- |
-| `AMINER_API_KEY` | 是 | 写入请求头 `Authorization` 的 JWT。 |
+| `AMINER_API_KEY` | 是 | HMAC-SHA256 签名密钥。脚本用它本地签 2 小时的 JWT，密钥本身**不会**上行。 |
+| `AMINER_USER_ID` | 是 | AMiner 用户 ID，写入 JWT 的 `user_id` claim。不是密钥。 |
 | `PDF_CITATION_VERIFIER_BASE_URL` | 否 | 覆盖网关 base URL，默认 `https://datacenter.aminer.cn/gateway/open_platform`。 |
 
 ## 运行约束
 
 - **绝对不要**以任何方式打印、日志或回显 `AMINER_API_KEY` 的值。
 - **绝对不要**伪造核验结果。脚本失败或超时时，原样汇报错误，不得自行编造。
-- 响应中的 `urls`、`report`、`result`、`pdf` 都是服务端产物，多半是带有效期 `url_expire_seconds` 的预签名链接。不要谎称这些路径在用户本机存在；需要本地 JSON 副本时用 `--output`。
+- 响应中的 `urls.pdf`、`urls.report`、`urls.result` 都是服务端临时产物，仅在 `url_expire_seconds` 秒内有效（通常 300 秒）。不要谎称这些路径在用户本机存在；需要本地 JSON 副本时用 `--output`。
 - 注意单用户活跃作业上限（服务端超出会返回 429）。出现 429 时停下并告知用户先等已提交的作业完成。
-- 任何 `LIKELY_FAKE` / `FAKE` 都只是"需要人工复核"的信号，不是终审。展示结果时尽量带上 `counts_by_status` 与逐条原因（若响应包含）。
+- 任何 `LIKELY_FAKE` / `FAKE` 都只是"需要人工复核"的信号，不是终审。展示结果时尽量带上 `summary.overall.counts_by_status` 和作者侧计数（`counts_by_author_status`、`counts_by_author_list_status`）。
 
 ## 结果展示
 
 脚本返回后，至少向用户呈现：
 
 - `job_id`
-- `total`（核验的引用数量）
-- `has_hallucination`、`hallucination_ratio`
-- 基于 `counts_by_status` 的状态计数小表（REAL / LIKELY_REAL / NEEDS_REVIEW / LIKELY_FAKE / FAKE 等）
-- 响应里的 `urls.report` / `urls.result` 链接，需要附注会在 `url_expire_seconds` 后过期
+- `summary.total`（核验的引用数量）
+- `summary.overall.has_hallucination`、`summary.overall.hallucination_ratio`
+- 基于 `summary.overall.counts_by_status` 的状态计数小表（REAL / LIKELY_REAL / NEEDS_REVIEW / LIKELY_FAKE / FAKE）
+- 可选：作者侧数字（`author_conflict_ratio`、`counts_by_author_status`）
+- 响应里的 `urls.report` / `urls.result` 链接，需要附注会在 `url_expire_seconds` 秒后过期
 - 完整 JSON 要么 `--output` 落盘，要么直接回显给用户，不要静默丢弃。
 
-如果 `is_finish` 为 `true` 且 `status` / `msg` 指示失败，把信息告知用户并建议重试。
+如果 `is_finish` 为 `true` 且记录里含错误指示，把信息告知用户并建议重试。
