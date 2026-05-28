@@ -59,7 +59,7 @@ Accept structured fields and natural language together:
 | `job-id` | `verify_YYYYMMDDTHHMMSSZ_<8hex>` | – | Fetch result for an existing job instead of uploading |
 | `max-refs` | 1-100 | 50 | Max references to verify (upload only) |
 | `strict` | yes / no | no | Stricter FAKE judgement (upload only) |
-| `no-wait` | yes / no | no | Submit only, don't poll (upload only) |
+| `no-wait` | yes / no | no | With `pdf`: submit and return `job_id` without polling. With `job-id`: single fetch, no polling loop. |
 | `timeout` | seconds | 600 | Overall polling timeout |
 | `output` | path | – | Optional JSON output path |
 
@@ -139,7 +139,7 @@ If the gateway returned a non-200 `code` or the script exited with an error, sur
 | `job-id` | `verify_YYYYMMDDTHHMMSSZ_<8hex>` | – | 不重新上传，只查已提交作业 |
 | `max-refs` | 1-100 | 50 | 最多核验多少条参考文献（仅上传时有效） |
 | `strict` | yes / no | no | 是否启用更严格的 FAKE 判定（仅上传时有效） |
-| `no-wait` | yes / no | no | 仅提交不轮询（仅上传时有效） |
+| `no-wait` | yes / no | no | 与 `pdf` 连用：仅提交不轮询；与 `job-id` 连用：单次查询不循环。 |
 | `timeout` | 秒 | 600 | 轮询总超时 |
 | `output` | 路径 | – | 可选的 JSON 落地路径 |
 

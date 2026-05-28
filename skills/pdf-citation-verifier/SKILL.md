@@ -120,7 +120,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify_pdf.py" \
 | `--job-id` | – | Skip upload and just fetch the result for an existing job. |
 | `--max-refs` | 50 | Server hard cap is 100. |
 | `--strict` | off | Stricter FAKE judgement on partial matches. |
-| `--no-wait` | off | Submit job and return `job_id` without polling. |
+| `--no-wait` | off | With `--pdf`: submit and return `job_id` without polling. With `--job-id`: single fetch, return immediately without looping. |
 | `--timeout` | 600 | Overall polling timeout in seconds. |
 | `--poll-interval` | 5 | Seconds between result polls. |
 | `--request-timeout` | 120 | Per-HTTP-request timeout. |

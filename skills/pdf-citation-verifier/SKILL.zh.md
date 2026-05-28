@@ -120,7 +120,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify_pdf.py" \
 | `--job-id` | – | 不上传，只拉已有作业的结果。 |
 | `--max-refs` | 50 | 服务端硬上限 100。 |
 | `--strict` | 关闭 | 开启后对部分匹配会更严格地判 FAKE。 |
-| `--no-wait` | 关闭 | 只提交作业并返回 `job_id`，不轮询。 |
+| `--no-wait` | 关闭 | 与 `--pdf` 连用：仅提交作业并返回 `job_id`，不轮询；与 `--job-id` 连用：单次查询后立即返回，不进入轮询循环。 |
 | `--timeout` | 600 | 轮询的整体超时（秒）。 |
 | `--poll-interval` | 5 | 两次轮询之间的间隔（秒）。 |
 | `--request-timeout` | 120 | 单次 HTTP 请求超时（秒）。 |

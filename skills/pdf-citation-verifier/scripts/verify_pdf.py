@@ -109,6 +109,11 @@ def fetch_result(
         params={"job_id": job_id},
         timeout=request_timeout,
     )
+    if resp.status_code == 429:
+        raise SystemExit(
+            "ERROR: 429 too many active jobs for this user (server cap). "
+            "Wait for prior jobs to finish before polling again."
+        )
     if resp.status_code >= 400:
         raise SystemExit(
             f"ERROR: polling failed with HTTP {resp.status_code}: {resp.text[:300]}"
@@ -259,8 +264,19 @@ def main() -> int:
         )
         print(f"[upload] accepted job_id={job_id}", file=sys.stderr)
 
-    if args.no_wait and not args.job_id:
-        payload: dict[str, Any] = {"job_id": job_id, "is_finish": False, "status": "submitted"}
+    if args.no_wait:
+        if args.job_id:
+            # --job-id + --no-wait: single status check, return immediately regardless of is_finish
+            payload = fetch_result(
+                job_id,
+                api_key=api_key,
+                base_url=base_url,
+                request_timeout=args.request_timeout,
+            )
+            payload.setdefault("job_id", job_id)
+        else:
+            # --pdf + --no-wait: just uploaded, return job_id without polling
+            payload: dict[str, Any] = {"job_id": job_id, "is_finish": False, "status": "submitted"}
     else:
         payload = poll_result(
             job_id,
