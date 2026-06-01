@@ -91,15 +91,16 @@ Add flags only for values the user explicitly provided:
 
 ### 4. Present the Result
 
-Stdout is JSON (the unwrapped record from `data[0]`). Show the user:
+Stdout is JSON (the unwrapped record from `data[0]`, plus an auto-inlined `details` field when `is_finish=true`). Show the user:
 
 - `job_id`
 - `total`, `has_hallucination`, `hallucination_ratio`
 - A short table built from `counts_by_status` (or top-level `REAL` / `LIKELY_REAL` / `NEEDS_REVIEW` / `LIKELY_FAKE` / `FAKE` counts)
+- If `details.records[]` is present, list each FAKE / LIKELY_FAKE / NEEDS_REVIEW record's `title`, `first_author`, `year`, `key_reasons` — auto-fetched from `urls.result`, so the user does not have to follow the 5-minute OSS link
 - `urls.report` / `urls.result` if present, noting they may expire after `url_expire_seconds`
 - The path written when `--output` was used
 
-If the gateway returned a non-200 `code` or the script exited with an error, surface the error verbatim. Do not invent verdicts.
+If the gateway returned a non-200 `code`, the script exited with an error, or the payload contains `details_fetch_error`, surface the error verbatim. Do not invent verdicts.
 
 ## 中文命令流程
 
@@ -171,12 +172,13 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify_pdf.py" \
 
 ### 4. 展示结果
 
-脚本的 stdout 是 JSON（已拆掉网关信封，即 `data[0]` 这个记录）。向用户展示：
+脚本的 stdout 是 JSON（已拆掉网关信封，即 `data[0]` 这个记录；`is_finish=true` 时还会自动注入 `details` 字段）。向用户展示：
 
 - `job_id`
 - `total`、`has_hallucination`、`hallucination_ratio`
 - 基于 `counts_by_status`（或顶层 `REAL` / `LIKELY_REAL` / `NEEDS_REVIEW` / `LIKELY_FAKE` / `FAKE` 计数）的状态小表
+- 如果 `details.records[]` 存在，逐条列出 FAKE / LIKELY_FAKE / NEEDS_REVIEW 的 `title`、`first_author`、`year`、`key_reasons`（来自自动拉取的 `urls.result`），用户就不必去点 5 分钟过期的 OSS 链接
 - 响应里的 `urls.report` / `urls.result`，需要附注会在 `url_expire_seconds` 后过期
 - 如果用了 `--output`，告诉用户落盘路径
 
-如果网关 `code` 非 200，或者脚本以错误退出，**原样汇报错误**，禁止伪造核验结论。
+如果网关 `code` 非 200、脚本以错误退出，或 payload 里出现 `details_fetch_error`，**原样汇报错误**，禁止伪造核验结论。

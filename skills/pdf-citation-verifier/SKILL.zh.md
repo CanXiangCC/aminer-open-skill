@@ -39,6 +39,7 @@ metadata:
 
 - `POST /api/v3/paper/citation/verify/upload` 的 `data` 是对象：`{"job_id": "verify_..."}`。
 - `GET /api/v3/paper/citation/result?job_id=...` 的 `data` 是只含一个元素的数组，元素里有顶层字段 `is_finish`、`has_hallucination`、`hallucination_ratio`、`total`、`counts_by_status`、`summary`、`urls`、`report`、`result` 等。
+- 一旦脚本看到 `is_finish: true`，会**自动 GET `urls.result`**（逐条引用 JSON）合并进返回 payload 的 `details` 字段——这样一个 `--output` 文件里同时有 summary 和每条记录的 `status` / `confidence` / `title` / `first_author` / `key_reasons` / `top_match`，用户不必在 5 分钟内去点 OSS 链接。
 
 Skill 返回这个记录加上 `job_id`，用户后续可凭 `job_id` 再次查询。
 
@@ -149,7 +150,10 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify_pdf.py" \
 - `total`（核验的引用数量）
 - `has_hallucination`、`hallucination_ratio`
 - 基于 `counts_by_status` 的状态计数小表（REAL / LIKELY_REAL / NEEDS_REVIEW / LIKELY_FAKE / FAKE 等）
+- 如果 `details.records[]` 存在（自动从 `urls.result` 拉的），逐条列出 FAKE / LIKELY_FAKE / NEEDS_REVIEW 的 `title`、`first_author`、`year`、`key_reasons`，省得用户去点会过期的 OSS 链接
 - 响应里的 `urls.report` / `urls.result` 链接，需要附注会在 `url_expire_seconds` 后过期
 - 完整 JSON 要么 `--output` 落盘，要么直接回显给用户，不要静默丢弃。
+
+如果 details 自动拉取失败，payload 会带一个 `details_fetch_error` 字段——把错误告诉用户并建议在 `url_expire_seconds` 秒内自行 GET `urls.result`。
 
 如果 `is_finish` 为 `true` 且 `status` / `msg` 指示失败，把信息告知用户并建议重试。
