@@ -168,6 +168,25 @@ def poll_result(
         time.sleep(poll_interval)
 
 
+def _enrich_with_details(payload: dict[str, Any], *, request_timeout: int) -> None:
+    """If urls.result is present, GET the detailed JSON and inline it under payload['details'].
+
+    OSS URLs expire in ~5 minutes, so we fetch immediately. Failure is logged
+    but never fatal — the caller still has the summary in `payload`.
+    """
+    result_url = (payload.get("urls") or {}).get("result")
+    if not result_url:
+        return
+    try:
+        resp = requests.get(result_url, timeout=request_timeout)
+        resp.raise_for_status()
+        payload["details"] = resp.json()
+        print(f"[details] inlined {len(resp.content)} bytes from urls.result", file=sys.stderr)
+    except Exception as exc:
+        payload["details_fetch_error"] = f"{type(exc).__name__}: {exc}"
+        print(f"[details] WARN: could not fetch urls.result: {exc}", file=sys.stderr)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Submit a PDF to pdf-citation-verifier and print the verification result."
@@ -287,6 +306,9 @@ def main() -> int:
             request_timeout=args.request_timeout,
         )
         payload.setdefault("job_id", job_id)
+
+    if payload.get("is_finish") is True:
+        _enrich_with_details(payload, request_timeout=args.request_timeout)
 
     if args.output:
         out_path = Path(args.output).expanduser()

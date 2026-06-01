@@ -39,6 +39,7 @@ Each call to the gateway returns the standard envelope `{"code": 200, "success":
 
 - `POST /api/v3/paper/citation/verify/upload` returns `data: {"job_id": "verify_..."}`.
 - `GET /api/v3/paper/citation/result?job_id=...` returns `data: [<record>]` where the single record has top-level fields like `is_finish`, `has_hallucination`, `hallucination_ratio`, `total`, `counts_by_status`, `summary`, `urls`, `report`, `result`.
+- Whenever the script sees `is_finish: true`, it also auto-downloads `urls.result` (the per-reference JSON) and inlines it as `details` on the returned payload — so a single `--output` file contains both the summary and every record's `status` / `confidence` / `title` / `first_author` / `key_reasons` / `top_match`, with no need to follow the 5-minute OSS link.
 
 The skill returns that record plus the `job_id` so the user can re-poll later.
 
@@ -149,7 +150,10 @@ After the script returns, summarize the result for the user with at minimum:
 - `total` (number of references verified)
 - `has_hallucination`, `hallucination_ratio`
 - A short table built from `counts_by_status` (REAL / LIKELY_REAL / NEEDS_REVIEW / LIKELY_FAKE / FAKE / etc.)
+- If `details.records[]` is present (auto-fetched from `urls.result`), list each FAKE / LIKELY_FAKE / NEEDS_REVIEW record's `title`, `first_author`, `year`, and `key_reasons` so the user does not have to follow the 5-minute OSS link
 - Any `urls.report` / `urls.result` links from the response, with a note that they may expire after `url_expire_seconds`
 - The full JSON should be either saved (via `--output`) or echoed back to the user, never silently dropped.
+
+If the inline details fetch failed, the payload carries a `details_fetch_error` string — surface it and tell the user to GET `urls.result` themselves before `url_expire_seconds` runs out.
 
 If `is_finish` is `true` and a `status` / `msg` field signals failure, report it and suggest re-running.
