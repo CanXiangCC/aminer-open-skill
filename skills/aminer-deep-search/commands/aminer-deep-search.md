@@ -29,22 +29,22 @@ If missing, stop and tell the user to set `AMINER_API_KEY`. Do not call the scri
 Verify the LLM key:
 
 ```bash
-if [ -z "$(printenv 'llm.api_key')" ]; then
+if [ -z "${LLM_API_KEY:-$(printenv 'llm.api_key')}" ]; then
   echo "LLM API key missing"
 else
   echo "LLM API key exists"
 fi
 ```
 
-If missing and `$ARGUMENTS` does not include `--api-key`, stop and ask the user to configure OpenClaw `llm.api_key` or pass `--api-key`. Never print the key.
+If missing and `$ARGUMENTS` does not include `--api-key`, stop and ask the user to set `LLM_API_KEY` (or legacy `llm.api_key`), or pass `--api-key`. Never print the key.
 
 Verify the LLM model:
 
 ```bash
-[ -z "$(printenv 'llm.model')" ] && echo "LLM model missing" || echo "LLM model exists"
+[ -z "${LLM_MODEL:-$(printenv 'llm.model')}" ] && echo "LLM model missing" || echo "LLM model exists"
 ```
 
-If missing and `$ARGUMENTS` does not include `--models`, stop and ask the user to configure OpenClaw `llm.model` or pass `--models`.
+If missing and `$ARGUMENTS` does not include `--models`, stop and ask the user to set `LLM_MODEL` (or legacy `llm.model`), or pass `--models`.
 
 Verify the Python dependencies:
 
@@ -71,7 +71,7 @@ Extract:
 - `max-tool-calls`: optional ordinary tool-call budget, default 20.
 - `max-rounds`: optional controller round budget, default 50.
 - `include-abstracts`: optional boolean flag.
-- `api-key`, `base-url`, `models`: optional LLM CLI overrides when OpenClaw does not inject `llm.api_key`, `llm.base_url`, or `llm.model`.
+- `api-key`, `base-url`, `models`: optional LLM CLI overrides when no `LLM_API_KEY` / `LLM_BASE_URL` / `LLM_MODEL` (legacy: `llm.api_key`, `llm.base_url`, `llm.model`) is provided.
 
 If the topic is absent or too vague, ask the user to provide a concrete research topic.
 
