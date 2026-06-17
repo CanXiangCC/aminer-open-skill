@@ -49,31 +49,53 @@ If `AMINER_API_KEY` is missing, stop and ask the user to provide or set it. Neve
 
 ## LLM Configuration
 
-The LLM can use OpenClaw-provided settings or a user-provided OpenAI-compatible endpoint:
+The LLM can use OpenClaw-provided settings or a user-provided OpenAI-compatible endpoint. The skill reads the following environment variables (the underscore-style names are recommended; the dotted legacy names are still accepted for backward compatibility):
 
-- `llm.api_key`: LLM API key. Check at runtime and prompt if neither OpenClaw nor the user supplies a key.
-- `llm.base_url`: LLM base URL. Optional when OpenClaw provides a default; otherwise pass `--base-url`.
-- `llm.model`: LLM model name. Required unless `--models` is passed.
+- `LLM_API_KEY` (legacy: `llm.api_key`): LLM API key. Check at runtime and prompt if neither OpenClaw nor the user supplies a key.
+- `LLM_BASE_URL` (legacy: `llm.base_url`): LLM base URL. Optional when OpenClaw provides a default; otherwise pass `--base-url`.
+- `LLM_MODEL` (legacy: `llm.model`): LLM model name. Required unless `--models` is passed.
+
+Underscore-style names are recommended because POSIX shells (bash/zsh) do not allow `.` in variable names, so `export llm.api_key=...` will fail with `not a valid identifier`. Use the underscore names with `export`, or fall back to `env "llm.api_key=..." python ...` for the legacy names.
 
 Before running, check whether an LLM key is available:
 
 ```bash
-if [ -z "$(printenv 'llm.api_key')" ]; then
+if [ -z "${LLM_API_KEY:-$(printenv 'llm.api_key')}" ]; then
   echo "LLM API key missing"
 else
   echo "LLM API key exists"
 fi
 ```
 
-If no LLM key is available, stop and ask the user to configure OpenClaw `llm.api_key` or pass `--api-key`. Never print the key. Do not hard-code provider-specific tokens or base URLs in this skill.
+If no LLM key is available, stop and ask the user to set `LLM_API_KEY` (or legacy `llm.api_key`), or pass `--api-key`. Never print the key. Do not hard-code provider-specific tokens or base URLs in this skill.
 
 Check whether an LLM model is available:
 
 ```bash
-[ -z "$(printenv 'llm.model')" ] && echo "LLM model missing" || echo "LLM model exists"
+[ -z "${LLM_MODEL:-$(printenv 'llm.model')}" ] && echo "LLM model missing" || echo "LLM model exists"
 ```
 
-If no LLM model is available, ask the user to configure OpenClaw `llm.model` or pass `--models`. There is no provider-specific default model list.
+If no LLM model is available, ask the user to set `LLM_MODEL` (or legacy `llm.model`), or pass `--models`. There is no provider-specific default model list.
+
+### Quick setup examples
+
+```bash
+# Recommended: underscore-style env vars (works with `export`)
+export LLM_API_KEY="sk-xxx"
+export LLM_BASE_URL="https://api.deepseek.com/v1"
+export LLM_MODEL="deepseek-chat"
+export AMINER_API_KEY="xxx"
+python3 react_agent.py --topic "your research topic"
+```
+
+```bash
+# Legacy dotted names still work via `env` (cannot use `export`)
+env "llm.api_key=sk-xxx" \
+    "llm.base_url=https://api.deepseek.com/v1" \
+    "llm.model=deepseek-chat" \
+    "AMINER_API_KEY=xxx" \
+    python3 react_agent.py --topic "your research topic"
+```
 
 ## Environment Setup
 
@@ -107,9 +129,9 @@ python3 react_agent.py \
 
 Useful options:
 
-- `--api-key`: LLM API key. Defaults to `llm.api_key`.
-- `--base-url`: LLM base URL. Defaults to `llm.base_url`.
-- `--models`: model fallback list. Required unless `llm.model` is configured.
+- `--api-key`: LLM API key. Defaults to `LLM_API_KEY` (legacy: `llm.api_key`).
+- `--base-url`: LLM base URL. Defaults to `LLM_BASE_URL` (legacy: `llm.base_url`).
+- `--models`: model fallback list. Required unless `LLM_MODEL` (legacy: `llm.model`) is configured.
 - `--timeout`: per-model-call timeout in seconds. Default is 300.
 - `--target-size`: desired final paper count. Default is 400.
 - `--include-abstracts`: include abstracts in the final saved JSON when available.
@@ -119,7 +141,7 @@ The script prints the final JSON list and saves a copy under `outputs/`.
 ## Operating Rules
 
 1. Use this skill only for deep collection workflows. For one-off lookup or normal AMiner Q&A, route to the simpler AMiner skills.
-2. Do not expose `llm.api_key` or `AMINER_API_KEY`.
+2. Do not expose `LLM_API_KEY` (legacy `llm.api_key`) or `AMINER_API_KEY`.
 3. Keep model/tool-call budgets under control; default `--max-tool-calls 20` and `--max-rounds 50`.
 4. If AMiner returns too few papers, report the actual collected count instead of inventing missing papers.
 5. If a run is likely to be expensive or long, tell the user the planned topic, model, timeout, max tool calls, and output location before starting.

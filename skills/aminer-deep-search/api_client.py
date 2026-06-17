@@ -27,7 +27,7 @@ class APIClient:
     ) -> None:
         if not api_key:
             raise ValueError(
-                "LLM API key is required. Use OpenClaw llm.api_key or pass --api-key."
+                "LLM API key is required. Set env LLM_API_KEY (legacy: llm.api_key) or pass --api-key."
             )
 
         self.base_url = base_url
@@ -59,7 +59,7 @@ class APIClient:
     ) -> tuple[Response, bool]:
         models = list(model_list or self.MODEL_NAME_LIST)
         if not models:
-            raise ValueError("LLM model is required. Set OpenClaw llm.model or pass --models.")
+            raise ValueError("LLM model is required. Set env LLM_MODEL (legacy: llm.model) or pass --models.")
         for model in models:
             try:
                 print(f"Trying model: {model}")

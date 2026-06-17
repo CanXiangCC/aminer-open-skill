@@ -20,11 +20,15 @@ OUTPUT_DIR = CURRENT_DIR / "outputs"
 
 
 def default_llm_api_key() -> str | None:
-    return os.getenv("llm.api_key")
+    return os.getenv("LLM_API_KEY") or os.getenv("llm.api_key")
 
 
 def default_llm_base_url() -> str | None:
-    return os.getenv("llm.base_url")
+    return os.getenv("LLM_BASE_URL") or os.getenv("llm.base_url")
+
+
+def default_llm_model() -> str | None:
+    return os.getenv("LLM_MODEL") or os.getenv("llm.model")
 
 
 def extract_tool_call(text: str) -> dict[str, Any] | None:
@@ -235,14 +239,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--api-key",
         default=default_llm_api_key(),
-        help="OpenAI-compatible LLM API key. Defaults to llm.api_key.",
+        help="OpenAI-compatible LLM API key. Defaults to env LLM_API_KEY (legacy: llm.api_key).",
     )
     parser.add_argument(
         "--base-url",
         default=default_llm_base_url(),
-        help="OpenAI-compatible LLM base URL. Defaults to llm.base_url.",
+        help="OpenAI-compatible LLM base URL. Defaults to env LLM_BASE_URL (legacy: llm.base_url).",
     )
-    parser.add_argument("--models", nargs="*", default=None, help="Required model fallback list unless llm.model is configured.")
+    parser.add_argument("--models", nargs="*", default=None, help="Required model fallback list unless env LLM_MODEL (legacy: llm.model) is configured.")
     parser.add_argument("--timeout", type=float, default=300, help="Per-request model timeout in seconds.")
     parser.add_argument("--max-rounds", type=int, default=50)
     parser.add_argument("--max-tool-calls", type=int, default=20)
@@ -250,7 +254,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--include-abstracts", action="store_true")
     args = parser.parse_args()
     if args.models is None:
-        model = os.getenv("llm.model")
+        model = default_llm_model()
         if model:
             args.models = [item.strip() for item in model.split(",") if item.strip()]
     return args
