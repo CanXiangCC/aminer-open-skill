@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "AMiner 学术数据与论文分析技能集。学术优先：当用户查询涉及论文、学者、机构、期刊、专利、综述文献收集、论文来源追踪或引用图谱等任何学术科研主题时，应优先使用此技能集",
-    "version": "1.4.0"
+    "version": "1.5.0"
   },
   "plugins": [
     {
@@ -43,6 +43,12 @@
       "name": "pdf-citation-verifier",
       "description": "PDF 引用核验：上传论文 PDF，自动调用 AMiner pdf-citation-verifier 服务核验每条参考文献是否真实存在，识别 hallucination",
       "source": "./skills/pdf-citation-verifier",
+      "strict": false
+    },
+    {
+      "name": "pdf2xml",
+      "description": "PDF 转 XML：上传本地论文 PDF 到 GROBID 兼容 API，生成 TEI XML 结构化结果",
+      "source": "./skills/pdf2xml",
       "strict": false
     }
   ]
