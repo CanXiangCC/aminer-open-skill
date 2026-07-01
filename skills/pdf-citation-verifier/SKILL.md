@@ -154,6 +154,31 @@ After the script returns, summarize the result for the user with at minimum:
 - Any `urls.report` / `urls.result` links from the response, with a note that they may expire after `url_expire_seconds`
 - The full JSON should be either saved (via `--output`) or echoed back to the user, never silently dropped.
 
+## Local Non-Reference Filter
+
+When `is_finish=true` and `details.records[]` is present, perform a local agent review before presenting the final summary. This review uses the current Claude Code/Codex agent only; do not call another LLM API, do not ask for an extra key, and do not send records back to the server.
+
+Filter conservatively. Remove only records that are clearly not bibliography references, such as body-text contamination, figure/table/stage/evaluation prose, appendix or section headings, page headers/footers, page numbers, captions, or non-citation narrative sentences. Do **not** remove a record merely because its status is `FAKE`, `LIKELY_FAKE`, or `NEEDS_REVIEW`, because AMiner has no match, or because metadata is incomplete. Ambiguous records stay in `filtered_records`.
+
+Use only these record fields for the review: `id`, `status`, `confidence`, `title`, `first_author`, `year`, `raw`, `key_reasons`, and `top_match`. Prioritize `raw`; use `title` and `key_reasons` only as supporting signals.
+
+Produce an auditable filtered payload:
+
+- Preserve the original service payload unchanged.
+- Add `llm_filter` only to records removed by the local review:
+  - `is_reference: false`
+  - `reason: "<short reason>"`
+  - `confidence: <0.0-1.0>`
+- Add `filtered_records` containing all retained records.
+- Add `removed_non_reference_records` containing removed records with their `llm_filter`.
+- Add `filtered_summary` recomputed only from `filtered_records`:
+  - `total`
+  - `counts_by_status`
+  - `has_hallucination`
+  - `hallucination_ratio = (FAKE + LIKELY_FAKE) / total`, or `0` when total is `0`
+
+If the user supplied `--output path.json`, write the filtered payload next to it as `path.filtered.json` (for example, `result.json` -> `result.filtered.json`). If the output path has no `.json` suffix, append `.filtered.json`. If no `--output` was used, do not create a new file; present the filtered summary and removed records in the final answer.
+
 If the inline details fetch failed, the payload carries a `details_fetch_error` string — surface it and tell the user to GET `urls.result` themselves before `url_expire_seconds` runs out.
 
 If `is_finish` is `true` and a `status` / `msg` field signals failure, report it and suggest re-running.

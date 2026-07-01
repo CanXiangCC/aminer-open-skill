@@ -154,6 +154,31 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify_pdf.py" \
 - 响应里的 `urls.report` / `urls.result` 链接，需要附注会在 `url_expire_seconds` 后过期
 - 完整 JSON 要么 `--output` 落盘，要么直接回显给用户，不要静默丢弃。
 
+## 本地 Non-Reference 筛查
+
+当 `is_finish=true` 且存在 `details.records[]` 时，在最终展示前必须做一轮本地 agent 审阅。这个审阅只使用当前 Claude Code/Codex 宿主 agent；不要调用额外 LLM API，不要要求用户提供额外 key，也不要把筛查结果回传服务端。
+
+筛查必须保守。只剔除明显不是 bibliography reference 的记录，例如正文污染、figure/table/stage/evaluation 叙述、appendix 或 section heading、页眉页脚、页码、图表 caption、非引用类叙述句。不要因为记录是 `FAKE`、`LIKELY_FAKE`、`NEEDS_REVIEW`，不要因为 AMiner 查不到，也不要因为元数据不完整就判为非 ref。模糊记录一律保留在 `filtered_records`。
+
+筛查只能使用这些字段：`id`、`status`、`confidence`、`title`、`first_author`、`year`、`raw`、`key_reasons`、`top_match`。优先看 `raw`；`title` 和 `key_reasons` 只作为辅助信号。
+
+生成可审计的 filtered payload：
+
+- 保留原始服务端 payload 不变。
+- 仅给被剔除的记录添加 `llm_filter`：
+  - `is_reference: false`
+  - `reason: "<简短原因>"`
+  - `confidence: <0.0-1.0>`
+- 新增 `filtered_records`，包含所有保留记录。
+- 新增 `removed_non_reference_records`，包含被剔除记录及其 `llm_filter`。
+- 新增 `filtered_summary`，只基于 `filtered_records` 重算：
+  - `total`
+  - `counts_by_status`
+  - `has_hallucination`
+  - `hallucination_ratio = (FAKE + LIKELY_FAKE) / total`，如果 `total=0` 则为 `0`
+
+如果用户传了 `--output path.json`，把 filtered payload 写到同目录的 `path.filtered.json`（例如 `result.json` -> `result.filtered.json`）。如果 output 路径没有 `.json` 后缀，就追加 `.filtered.json`。如果没有使用 `--output`，不要创建新文件；只在最终回答中展示 filtered summary 和被剔除记录。
+
 如果 details 自动拉取失败，payload 会带一个 `details_fetch_error` 字段——把错误告诉用户并建议在 `url_expire_seconds` 秒内自行 GET `urls.result`。
 
 如果 `is_finish` 为 `true` 且 `status` / `msg` 指示失败，把信息告知用户并建议重试。
