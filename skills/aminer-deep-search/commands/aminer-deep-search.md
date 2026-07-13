@@ -1,6 +1,6 @@
 ---
 description: AMiner deep multi-round paper collection for survey references
-argument-hint: [research topic | topic: ... target-size: 400]
+argument-hint: "[research topic | topic: ... target-size: 400]"
 allowed-tools: Read, Bash, Glob, Grep
 ---
 

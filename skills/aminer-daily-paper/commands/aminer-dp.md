@@ -1,6 +1,6 @@
 ---
 description: AMiner 个性化论文推荐 — 按主题或学者画像
-argument-hint: [topics: 主题1, 主题2 | scholar: 姓名 org: 机构 | 自然语言]
+argument-hint: "[topics: 主题1, 主题2 | scholar: 姓名 org: 机构 | 自然语言]"
 allowed-tools: Read, Bash, Glob, Grep
 ---
 

@@ -1,6 +1,6 @@
 ---
 description: Paper Source Trace 论文来源追踪与引用意图分析
-argument-hint: [file: <pdf-or-text-path> output: <output-dir> svg: radial|chain|both template: yes|no aminer: on|off | legacy mode: current|example|all | natural language | 自然语言]
+argument-hint: "[file: <pdf-or-text-path> output: <output-dir> svg: radial|chain|both template: yes|no aminer: on|off | legacy mode: current|example|all | natural language | 自然语言]"
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 ---
 
