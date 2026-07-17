@@ -152,6 +152,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify_pdf.py" \
 - 基于 `counts_by_status` 的状态计数小表（REAL / LIKELY_REAL / NEEDS_REVIEW / LIKELY_FAKE / FAKE 等）
 - 如果 `details.records[]` 存在（自动从 `urls.result` 拉的），逐条列出 FAKE / LIKELY_FAKE / NEEDS_REVIEW 的 `title`、`first_author`、`year`、`key_reasons`，省得用户去点会过期的 OSS 链接
 - 响应里的 `urls.report` / `urls.result` 链接，需要附注会在 `url_expire_seconds` 后过期
+- 若存在 `website_records[]`，逐条列出 `raw` 前 80 字符、可达 URL 与原始 `status`；然后展示 `website_summary`（`total_website_citations`、`adjusted_hallucination_ratio`）。明确说明：`adjusted_hallucination_ratio` 排除了网站型引用，原始 `hallucination_ratio` 仍保留在 payload 顶层
 - 完整 JSON 要么 `--output` 落盘，要么直接回显给用户，不要静默丢弃。
 
 ## 本地 Non-Reference 筛查
@@ -182,3 +183,54 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify_pdf.py" \
 如果 details 自动拉取失败，payload 会带一个 `details_fetch_error` 字段——把错误告诉用户并建议在 `url_expire_seconds` 秒内自行 GET `urls.result`。
 
 如果 `is_finish` 为 `true` 且 `status` / `msg` 指示失败，把信息告知用户并建议重试。
+
+## URL / 网站型引用二次核验
+
+在 Non-Reference 筛查完成、`filtered_records` 就绪之后，再跑一遍**网站型引用识别**——即那种指向真实网页的引用（RFC、blog、GitHub README、标准规范文档、产品主页），而不是期刊 / 会议论文。AMiner SearchPro 以学术论文为主，这类引用即便 URL 完全有效，也常被判成 `LIKELY_REAL / NEEDS_REVIEW / LIKELY_FAKE / FAKE`。这一步把它们单独标出来，让用户能区分"伪造的学术引用"与"合法的网站型引用"。
+
+覆盖范围：
+
+- 只处理 `filtered_records`，不处理 `removed_non_reference_records`。
+- 只考虑 `status` 为 `LIKELY_REAL / NEEDS_REVIEW / LIKELY_FAKE / FAKE` 的记录（跳过 `REAL`）。
+- 仅从 `raw` 字段抽 URL，正则用 `https?://[^\s<>"'()]+` 之类保守写法。同一条记录内去重。
+- `raw` 里没有 URL 的记录直接跳过，不加任何字段。
+
+探测规则（使用宿主 agent 的 WebFetch；**不得**调用外部 LLM API，**不得**索要额外 key）：
+
+- HTTP 2xx 或 3xx（最多 3 次跳转）→ `reachable`。
+- 其他状态码 / 超时 / DNS 失败 → `unreachable`。
+- 401 / 403 → `unreachable_paywalled`（**不**算 reachable）。
+- 跳过解析到 `localhost` 或私网 IP 的 URL（10/8、172.16/12、192.168/16、169.254/16、::1、fc00::/7）。
+- 单个 URL 超时 15 秒。同一条记录最多探 3 个 URL；如果超过，把 `url_probe_truncated: true` 挂在该记录上，只探前 3 个。
+- 绝对不得伪造 HTTP 响应。WebFetch 失败时如实记 `unreachable`，把错误信息原样填进 `reason`。
+- 不要把 record 数据发到 URL 所在主机以外的任何第三方服务。
+
+对每一条含 URL 的记录，挂上 `url_verification`：
+
+```json
+"url_verification": {
+  "urls": ["<url1>", "<url2>"],
+  "reachable_urls": ["<url1>"],
+  "is_website_citation": true,
+  "reason": "<简短原因>",
+  "url_probe_truncated": false
+}
+```
+
+只要至少一个 URL `reachable`，`is_website_citation` 就为 `true`。
+
+在返回 payload 顶层新增两个字段：
+
+- `website_records`：所有 `is_website_citation: true` 的记录。**不**修改其原始 `status`——WEBSITE 分类只存在于 agent 视角，服务端判定保留以便审计。
+- `website_summary`：
+  - `total_website_citations`：N（即 `website_records` 的长度）
+  - `from_status`：`{ "LIKELY_REAL": a, "NEEDS_REVIEW": b, "LIKELY_FAKE": c, "FAKE": d }`
+  - `adjusted_hallucination_ratio`：`(FAKE_count + LIKELY_FAKE_count − c − d) / max(filtered_total − N, 1)`
+  - `note`：`"WEBSITE citations excluded from academic-hallucination ratio."`
+
+落盘约定（对齐 Non-Reference 筛查）：
+
+- 用户传了 `--output path.json` 时，同目录再写一份 `path.website_verified.json`（与 `path.filtered.json` 并列）。如果输出路径没有 `.json` 后缀，追加 `.website_verified.json`。
+- 没有 `--output` 时，不新建文件；只在最终回答中呈现。
+
+**不要**修改服务端返回的 `hallucination_ratio` 与 `counts_by_status`。所有网站感知的统计只放在 `website_summary` 里。

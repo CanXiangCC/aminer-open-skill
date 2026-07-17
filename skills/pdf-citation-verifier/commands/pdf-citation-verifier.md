@@ -97,6 +97,7 @@ Stdout is JSON (the unwrapped record from `data[0]`, plus an auto-inlined `detai
 - `total`, `has_hallucination`, `hallucination_ratio`
 - A short table built from `counts_by_status` (or top-level `REAL` / `LIKELY_REAL` / `NEEDS_REVIEW` / `LIKELY_FAKE` / `FAKE` counts)
 - If `details.records[]` is present, list each FAKE / LIKELY_FAKE / NEEDS_REVIEW record's `title`, `first_author`, `year`, `key_reasons` — auto-fetched from `urls.result`, so the user does not have to follow the 5-minute OSS link
+- If the payload contains `website_records[]` (from the URL / Website Citation Re-verification pass in SKILL.md), also list each website-type entry with its reachable URL and original `status`, and show `website_summary` (`total_website_citations`, `adjusted_hallucination_ratio`)
 - `urls.report` / `urls.result` if present, noting they may expire after `url_expire_seconds`
 - The path written when `--output` was used
 
@@ -178,6 +179,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify_pdf.py" \
 - `total`、`has_hallucination`、`hallucination_ratio`
 - 基于 `counts_by_status`（或顶层 `REAL` / `LIKELY_REAL` / `NEEDS_REVIEW` / `LIKELY_FAKE` / `FAKE` 计数）的状态小表
 - 如果 `details.records[]` 存在，逐条列出 FAKE / LIKELY_FAKE / NEEDS_REVIEW 的 `title`、`first_author`、`year`、`key_reasons`（来自自动拉取的 `urls.result`），用户就不必去点 5 分钟过期的 OSS 链接
+- 如果 payload 里有 `website_records[]`（来自 SKILL.md 中"URL / 网站型引用二次核验"步骤），逐条列出网站型引用及其可达 URL 与原始 `status`，并展示 `website_summary`（`total_website_citations`、`adjusted_hallucination_ratio`）
 - 响应里的 `urls.report` / `urls.result`，需要附注会在 `url_expire_seconds` 后过期
 - 如果用了 `--output`，告诉用户落盘路径
 
