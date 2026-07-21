@@ -6,7 +6,7 @@ contact: report@aminer.cn
 description: >
   Activate this skill when the user wants deep, multi-round academic paper collection for a survey or literature review using AMiner data and a ReAct-style LLM controller.
   Use this skill for broad topic exploration, survey bibliography construction, automatic keyword search plus backward-reference snowballing, and collecting hundreds of candidate papers with AMiner IDs and titles.
-  This skill calls an OpenAI-compatible chat model to decide tool calls, and uses AMiner keyword search plus paper reference APIs as tools. It is not intended for simple single-paper lookup or lightweight recommendations; use aminer-free-academic or aminer-daily-paper for those simpler tasks.
+  The controller can be the model already running this skill or an optional external OpenAI-compatible chat model. It uses AMiner keyword search plus paper reference APIs as tools. This skill is not intended for simple single-paper lookup or lightweight recommendations; use aminer-free-academic or aminer-daily-paper for those simpler tasks.
 metadata:
   {
     "openclaw":
@@ -22,7 +22,7 @@ metadata:
 
 # AMiner Deep Search
 
-ReAct-style survey paper collection using OpenAI-compatible model calls and AMiner search/reference APIs.
+ReAct-style survey paper collection using the backing model or an external OpenAI-compatible model with AMiner search/reference APIs.
 
 Use this skill when the user asks to collect papers for a research topic, build a large literature list, run citation snowballing, or prepare survey references.
 
@@ -110,7 +110,7 @@ conda activate "$(pwd)/.conda"
 PIP_CACHE_DIR="$(pwd)/.pip_cache" python3 -m pip install -r requirements.txt
 ```
 
-Any compatible Python 3 environment may run the script as long as it has `openai` and `requests`.
+Backing-model mode only requires `requests`. External-LLM mode requires both `openai` and `requests`.
 
 ## Execution
 
@@ -157,12 +157,12 @@ Iterate: expand queries, prioritize high-quality seeds, snowball references, ded
 2. Do not expose `LLM_API_KEY` (legacy `llm.api_key`) or `AMINER_API_KEY`.
 3. Keep model/tool-call budgets under control; default `--max-tool-calls 20` and `--max-rounds 50`.
 4. If AMiner returns too few papers, report the actual collected count instead of inventing missing papers.
-5. If a run is likely to be expensive or long, tell the user the planned topic, model, timeout, max tool calls, and output location before starting.
+5. If a run is likely to be expensive or long, tell the user the planned topic, controller mode, external model when applicable, timeout, max tool calls, and output location before starting.
 
 ## File Map
 
-- `react_agent.py`: ReAct loop and CLI.
-- `api_client.py`: OpenAI-compatible client with model fallback.
+- `react_agent.py`: external-LLM ReAct loop and CLI.
+- `api_client.py`: OpenAI-compatible client with external model fallback.
 - `prompt.py`: paper-collection system prompt.
 - `search.py`: AMiner keyword search and paper detail normalization.
 - `citation.py`: AMiner reference expansion.

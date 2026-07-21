@@ -57,6 +57,11 @@ def _fetch_search_page(
         return []
 
 
+def _is_within_end_year(item: dict[str, Any], end_year: int) -> bool:
+    paper_year = _utils.safe_int(item.get("year"), 0)
+    return not paper_year or paper_year <= end_year
+
+
 def aminer_pro_search(
     query: str,
     use_topic: bool = True,
@@ -65,16 +70,39 @@ def aminer_pro_search(
     offset: int = 0,
     order: str | None = None,
 ) -> list[dict[str, Any]]:
-    # Paginate pages of up to SEARCH_PAGE_SIZE until `size` items are collected.
+    """Search papers while preserving the legacy end-year and offset semantics."""
     target = max(1, int(size))
-    start_page = max(0, int(offset)) // SEARCH_PAGE_SIZE + 1
+    normalized_offset = max(0, int(offset))
+    end_year = int(year) if year else None
+
+    # Without a local year filter, jump directly to the page containing the
+    # requested offset. With a year filter, scan from page one because offset
+    # applies to the filtered result set, as it did in the previous API.
+    if end_year is None:
+        page = normalized_offset // SEARCH_PAGE_SIZE + 1
+        remaining_offset = normalized_offset % SEARCH_PAGE_SIZE
+    else:
+        page = 1
+        remaining_offset = normalized_offset
+
     items: list[dict[str, Any]] = []
-    page = start_page
     while len(items) < target:
-        page_items = _fetch_search_page(query, page=page, size=SEARCH_PAGE_SIZE, order=order)
-        if not page_items:
+        raw_page_items = _fetch_search_page(query, page=page, size=SEARCH_PAGE_SIZE, order=order)
+        if not raw_page_items:
             break
+
+        page_items = raw_page_items
+        if end_year is not None:
+            page_items = [item for item in raw_page_items if _is_within_end_year(item, end_year)]
+
+        if remaining_offset:
+            skipped = min(remaining_offset, len(page_items))
+            page_items = page_items[skipped:]
+            remaining_offset -= skipped
+
         items.extend(page_items)
+        if len(raw_page_items) < SEARCH_PAGE_SIZE:
+            break
         page += 1
     return items[:target]
 

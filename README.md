@@ -8,7 +8,7 @@ This repository currently provides four skill flavors:
 - `aminer-academic-search`: full version with 27 APIs and 6 analysis workflows
 - `aminer-free-academic`: free-first version focused on discovery, lightweight screening, normalization, and upgrade qualification
 - `aminer-daily-paper`: personalized paper recommendation based on topics, scholar profiles, or author information
-- `aminer-deep-search`: LLM-controlled ReAct loop for deep survey-style paper collection and citation snowballing
+- `aminer-deep-search`: host- or external-LLM-controlled deep survey collection and citation snowballing
 
 ## What These Skills Do in One Line
 
@@ -50,11 +50,12 @@ Recommended common headers:
 export AMINER_API_KEY="<YOUR_TOKEN>"
 ```
 
-For `aminer-deep-search`, also configure the OpenClaw LLM settings before running:
+`aminer-deep-search` supports two controller modes:
 
-- `llm.api_key`: required at runtime, but not listed as a hard install dependency
-- `llm.model`: required unless `--models` is passed
-- `llm.base_url`: optional when OpenClaw provides a default; otherwise pass `--base-url`
+- **Backing-model mode (default without an LLM key):** Claude Code, Codex, OpenClaw, or the other model running the Skill drives `search.py` and `citation.py` directly. No additional LLM credentials are required.
+- **External-LLM mode:** `react_agent.py` drives the loop using `LLM_API_KEY` (legacy: `llm.api_key`) and `LLM_MODEL` (legacy: `llm.model`, or pass `--models`). `LLM_BASE_URL` (legacy: `llm.base_url`) is optional for providers that need a custom endpoint.
+
+LLM credentials are optional for the Skill, but `react_agent.py` still requires them when run directly.
 
 Do not hard-code provider-specific LLM tokens, base URLs, or model names in the skill.
 
