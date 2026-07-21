@@ -1,0 +1,301 @@
+{
+  "skill_name": "paper-source-trace",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have pasted extracted text from a paper, including its reference list. Please identify citation intents and create a citation map. Do not use AMiner.",
+      "expected_output": "Run local evidence-first citation analysis only. Write analysis.md, json/graph/citation_graph.json, citation_map.svg, and citation_map.html when graph data is available. Do not check AMINER_API_KEY and do not call AMiner APIs.",
+      "files": [],
+      "expectations": [
+        "Treats local paper text and citation contexts as the only evidence",
+        "Does not call AMiner APIs",
+        "Produces or describes the standard artifact set including SVG and HTML graphs",
+        "json/graph/citation_graph.json uses English keys and allowed intent labels"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "请根据这篇论文文本做引用意图识别，生成中文 analysis.md 和 citation_graph.json。",
+      "expected_output": "Use the unified skill. The report, evidence explanations, SVG labels, and HTML UI text should be Chinese, while JSON keys and intent labels remain English.",
+      "files": [],
+      "expectations": [
+        "Chinese user-facing report language",
+        "English JSON keys",
+        "Allowed 12 intent labels only",
+        "Every citation includes intent, evidence, confidence, and reference linkage or unmatched_reference=true"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Use AMiner enrichment to supplement paper_id, URLs, and citation relationships for this target paper. My token is configured in AMINER_API_KEY.",
+      "expected_output": "Because AMiner enrichment is explicitly requested, check for AMINER_API_KEY and plan/use the shortest viable API chain. Record AMiner metadata under metadata.aminer_enrichment and output a cost summary.",
+      "files": [],
+      "expectations": [
+        "Checks token existence without printing token",
+        "Uses or plans paper_search/paper_search_pro, paper_detail, paper_relation, and paper_info as needed",
+        "Does not treat AMiner metadata as local citation-context evidence",
+        "Includes cost summary and enrichment caveats"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "请用 AMiner 补全这篇论文的引用链，但我还没有配置 token。",
+      "expected_output": "Explain that AMiner enrichment cannot run without AMINER_API_KEY, do not call APIs, and continue local citation-intent analysis if paper text or citation contexts are available.",
+      "files": [],
+      "expectations": [
+        "Reports AMINER_API_KEY is missing without exposing secrets",
+        "Does not call AMiner APIs",
+        "Continues local analysis when local evidence exists",
+        "Records enrichment skipped or unavailable in output notes"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Use the standard template / 固定结构 to produce a citation-intent report for this paper.",
+      "expected_output": "Read references/analysis_template.md and follow the fixed section order. Do not force missing evidence into template rows. The output checklist should use json/graph/citation_graph.json and include citation_map.html.",
+      "files": [],
+      "expectations": [
+        "Uses the fixed template only because the user explicitly requested it",
+        "Keeps required sections and tables",
+        "Writes no-evidence rows as no reliable evidence / 未发现可靠证据",
+        "Still produces json/graph/citation_graph.json"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Generate a hybrid expandable knowledge graph for this paper's citations.",
+      "expected_output": "Treat hybrid as an interactive HTML graph request, not as an SVG mode. Use citation_map.html for the interactive graph. Do not invent a fake static hybrid SVG. If no SVG option is confirmed, ask for svg: radial, chain, or both.",
+      "files": [],
+      "expectations": [
+        "Does not generate a fake hybrid SVG",
+        "Does not record hybrid as a formal SVG mode",
+        "Explains that citation_map.html handles interactive graph behavior",
+        "Still provides json/graph/citation_graph.json",
+        "Produces or describes citation_map.html as the interactive graph"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Trace the source lineage for this paper's main method claims. I want to know which cited works the claims depend on, adapt, or contrast with.",
+      "expected_output": "Run local claim-centered source tracing. Produce the standard artifacts and include source_traces[] in json/graph/citation_graph.json when local citation contexts support the traces.",
+      "files": [],
+      "expectations": [
+        "Keeps analysis.md and json/graph/citation_graph.json as the standard outputs",
+        "Identifies target-paper claims from supplied paper text",
+        "Links each source trace to citation_id and reference_id when available",
+        "Uses source_role values such as foundation, method-origin, method-adaptation, or contrast",
+        "Does not use AMiner unless explicitly requested"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "请围绕论文的核心贡献做来源追踪，说明每个 claim 是由哪些引用上下文支撑、继承或对比出来的。",
+      "expected_output": "Generate Chinese claim-to-source trace explanations in analysis.md and citation_map.html while keeping json/graph/citation_graph.json keys, intent labels, relation types, and source_role values in English.",
+      "files": [],
+      "expectations": [
+        "Chinese source-trace explanations in analysis.md",
+        "English JSON keys and source_role values",
+        "source_traces[] appears when local citation evidence supports it",
+        "Each source step has citation_id, reference_id, source_role, intent, relation_type, evidence, and confidence",
+        "Lowers confidence for weak or noisy citation contexts"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "Use AMiner enrichment to match paper IDs, but build the source trace only from the PDF citation contexts.",
+      "expected_output": "Because AMiner enrichment is explicitly requested, check AMINER_API_KEY and record metadata, but source_traces[] must be grounded in local citation contexts rather than AMiner-only links.",
+      "files": [],
+      "expectations": [
+        "AMiner is explicit opt-in and token existence is checked without printing secrets",
+        "metadata.aminer_enrichment records the enrichment chain and cost summary",
+        "metadata.source_trace records claim-centered trace coverage",
+        "AMiner IDs and URLs do not justify source_role or intent by themselves",
+        "Cost confirmation rule still applies at estimated cost >= ¥5"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "This paper claims a surprising result, but the pasted text has no citation sentence for that claim. Please still trace the source.",
+      "expected_output": "Do not fabricate a source trace. State that no reliable source trace was found for that claim and preserve the uncertainty in analysis.md and json/graph/citation_graph.json notes.",
+      "files": [],
+      "expectations": [
+        "Does not invent citations, references, or source steps",
+        "Uses No reliable source trace found or 未发现可靠溯源证据 as appropriate",
+        "Records missing source-trace evidence in coverage notes",
+        "Still preserves ordinary citation-intent analysis for available evidence",
+        "Does not report unsupported traces as high confidence"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "Validate that the Paper Source Trace JSON follows the current schema.",
+      "expected_output": "Use schema version 0.3.0 for json/graph/citation_graph.json. Verify citations still satisfy existing required fields and source_traces[] source_steps link back to citation_id and reference_id when available.",
+      "files": [],
+      "expectations": [
+        "schema_version is 0.3.0",
+        "Existing citation, reference, entity, relation, and visual_groups fields remain compatible",
+        "source_traces[] is optional but valid when present",
+        "metadata.source_trace.strategy is claim-centered when source tracing is performed",
+        "The 12 citation intent labels are unchanged"
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "/paper-source-trace file: papers/demo.pdf output: outputs/paper-source-trace/demo svg: both template: no aminer: off",
+      "expected_output": "Treat the slash command as an orchestration entry. Read the skill workflow, use the provided file path as the input source when available, write standard artifacts to the requested output directory, save the graph as json/graph/citation_graph.json, generate both SVG modes when possible, generate one citation_map.html with view switching, and do not check AMINER_API_KEY because aminer is off.",
+      "files": [],
+      "expectations": [
+        "Recognizes /paper-source-trace as a valid command entry",
+        "Parses file, output, svg, template, and aminer fields",
+        "Produces or describes analysis.md, json/graph/citation_graph.json, citation_map.svg, citation_map.html, and citation_map_chain.svg when possible",
+        "Does not use the fixed template because template is no",
+        "Does not check AMINER_API_KEY and does not call AMiner APIs"
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "/paper-source-trace",
+      "expected_output": "If no paper file, pasted text, citation contexts, or reference list are available in the conversation, ask the user to provide input. Do not fabricate analysis.md, json/graph/citation_graph.json, citations, references, claims, source_traces, SVG content, or HTML content.",
+      "files": [],
+      "expectations": [
+        "Recognizes /paper-source-trace as a valid command entry",
+        "Detects missing input evidence",
+        "Asks for a PDF, extracted paper text, citation contexts, or reference list",
+        "Does not invent artifacts or analysis results",
+        "Does not check AMINER_API_KEY by default"
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "/paper-source-trace file: papers/demo.pdf aminer:on 请用中文输出 analysis.md, 但如果没有 token 就继续本地分析。",
+      "expected_output": "Because aminer:on explicitly requests AMiner enrichment, check whether AMINER_API_KEY exists without printing it. If missing, skip AMiner enrichment, continue local evidence-first analysis when the input file or text is available, and record the skipped enrichment reason.",
+      "files": [],
+      "expectations": [
+        "Parses aminer:on as explicit AMiner opt-in",
+        "Checks token existence without printing the token value",
+        "Skips AMiner calls when AMINER_API_KEY is missing",
+        "Continues local citation intent and source tracing when local evidence is available",
+        "Chinese analysis.md language with English JSON keys and labels"
+      ]
+    },
+    {
+      "id": 15,
+      "prompt": "Please use Paper Source Trace on this extracted paper text. Keep the report in English and generate json/graph/citation_graph.json plus SVG/HTML maps.",
+      "expected_output": "Follow skills/paper-source-trace/SKILL.md. Ask for startup confirmation of svg and aminer before analysis. When confirmed, produce English visible prose in analysis.md, SVG labels, HTML UI text, and final summary while keeping JSON keys, intent labels, relation types, and source roles in English.",
+      "files": [],
+      "expectations": [
+        "Routes to skills/paper-source-trace/SKILL.md",
+        "Asks for svg and aminer confirmation before analysis",
+        "English visible output in analysis.md, SVG, HTML, and final prose",
+        "json/graph/citation_graph.json keeps English keys and stable labels",
+        "Does not check AMINER_API_KEY unless AMiner is explicitly enabled"
+      ]
+    },
+    {
+      "id": 16,
+      "prompt": "请使用 Paper Source Trace 分析这篇论文文本，svg: both，输出中文报告和中文图谱标签，但 JSON 字段保持英文。",
+      "expected_output": "Follow skills/paper-source-trace/SKILL.zh.md. Ask for startup confirmation of svg and aminer before analysis. When confirmed, produce Chinese visible prose in analysis.md, SVG labels, HTML UI text, and final summary while keeping JSON keys, intent labels, relation types, and source roles in English. With svg: both, citation_map_chain.svg uses the Chinese chain layout with 问题链、方法链、数据链、基线链、局限/资源链.",
+      "files": [],
+      "expectations": [
+        "Routes to skills/paper-source-trace/SKILL.zh.md",
+        "先确认 svg 和 aminer 再开始分析",
+        "analysis.md、SVG、HTML 和最终说明使用中文可见文本",
+        "svg: both 时 citation_map_chain.svg 使用问题链、方法链、数据链、基线链、局限/资源链",
+        "json/graph/citation_graph.json 保持英文 keys 和稳定 labels",
+        "未显式开启 AMiner 时不检查 AMINER_API_KEY"
+      ]
+    },
+    {
+      "id": 17,
+      "prompt": "/paper-source-trace file: papers/demo.pdf output: outputs/paper-source-trace/demo mode: all template: no aminer: off",
+      "expected_output": "Accept legacy mode: all as an alias for svg: both, mention the new preferred svg: both syntax, then follow the normal command workflow after startup confirmation.",
+      "files": [],
+      "expectations": [
+        "Maps mode: all to svg: both",
+        "Mentions svg: both as the preferred new syntax",
+        "Generates citation_map.svg and citation_map_chain.svg when graph data and SVG generation are available",
+        "Generates one citation_map.html with radial and chain view switching when graph data is available",
+        "Does not treat mode: all as a separate new SVG mode"
+      ]
+    },
+    {
+      "id": 18,
+      "prompt": "请用 Paper Source Trace 生成中文 citation_map.html，要求图谱节点不要重叠，并且可以缩放和拖动节点。",
+      "expected_output": "After json/graph/citation_graph.json is available, use scripts/render_html.py to generate citation_map.html. The Chinese HTML UI must use one unified template and Chinese labels, including 径向图, 溯源链图, 搜索, 筛选, 节点详情, 证据, 参考文献, 来源追踪, AMiner 元数据, 缩放, and 重置布局. It must include zoom, pan, draggable citation nodes, reset layout, search, filters, and source trace details.",
+      "files": [],
+      "expectations": [
+        "Uses scripts/render_html.py rather than ad hoc HTML",
+        "中文 HTML UI 不使用 current、example、Target Paper、Claim hub、Evidence 作为可见控件文案",
+        "包含缩放、平移、节点拖动和重置布局",
+        "保持单文件 HTML、内联 CSS、内联 JavaScript、内嵌 graph data",
+        "不依赖 CDN、外部脚本或本地 HTTP server"
+      ]
+    },
+    {
+      "id": 19,
+      "prompt": "Generate an English Paper Source Trace HTML graph from an existing citation_graph.json with a stable style.",
+      "expected_output": "Use scripts/render_html.py to generate citation_map.html from json/graph/citation_graph.json. The English HTML UI must use the unified template and English labels, including Radial, Chain, Search, Filter, Node details, Evidence, Reference, Source traces, AMiner metadata, Zoom, and Reset layout. It must not mix Chinese UI labels into English output.",
+      "files": [],
+      "expectations": [
+        "Uses scripts/render_html.py rather than ad hoc HTML",
+        "English HTML UI does not use 搜索、筛选、节点详情 as visible controls",
+        "Does not use current/example as HTML layout button labels",
+        "Includes zoom, pan, draggable citation nodes, reset layout, search, filters, and source trace details",
+        "Uses the same CSS and panel structure as other generated HTML maps"
+      ]
+    },
+    {
+      "id": 20,
+      "prompt": "请从已有 json/graph/citation_graph.json 生成中文 svg: both 和 citation_map.html，要求 SVG 与 HTML 风格一致、不要中英文混杂、线条少一些。",
+      "expected_output": "Use scripts/render_html.py with --svg both so citation_map.html, citation_map.svg, and citation_map_chain.svg share the same canonical groups, colors, language pack, node priority, text wrapping, overflow summaries, and reduced-edge layout. Chinese radial and chain labels must stay Chinese; chain hubs must be 问题链、方法链、数据链、基线链、局限/资源链.",
+      "files": [],
+      "expectations": [
+        "Uses one renderer command for HTML and both SVG outputs",
+        "SVG and HTML use the same canonical group colors and labels",
+        "中文 SVG/HTML 不出现 Target Paper、Problem chain、Evidence 作为可见提示",
+        "citation_map_chain.svg 使用问题链、方法链、数据链、基线链、局限/资源链",
+        "Static SVG reduces edge clutter and does not draw citation-to-citation cross-links or AMiner-only relation lines",
+        "Dense groups use +N overflow summaries while preserving complete records in json/graph/citation_graph.json"
+      ]
+    },
+    {
+      "id": 21,
+      "prompt": "Generate English radial and chain SVG maps plus citation_map.html from an existing citation_graph.json.",
+      "expected_output": "Use scripts/render_html.py with --svg both. The English SVG and HTML output must share canonical groups, colors, text wrapping, node ranking, and reduced-edge rules. English chain hubs must be Problem chain, Method chain, Data chain, Baseline chain, and Limits/resources chain.",
+      "files": [],
+      "expectations": [
+        "Uses scripts/render_html.py with --svg both",
+        "English SVG/HTML do not use 搜索、问题链、节点详情 as visible UI labels",
+        "Radial and chain layouts use deterministic generous spacing",
+        "Chain SVG uses only lightweight hub-to-citation and citation-to-target main edges",
+        "AMiner is shown only as metadata badge, not as evidence edges"
+      ]
+    },
+    {
+      "id": 22,
+      "prompt": "请从已有 json/graph/citation_graph.json 生成中文 citation_map.html，并在角色、意图、AMiner 元数据和来源追踪步骤旁加入悬浮提示。",
+      "expected_output": "Use scripts/render_html.py to generate the Chinese citation_map.html. The HTML must include unified ! tooltip circles with hover and keyboard focus support. Tooltip text must be Chinese, include 来源角色推荐值 and AMiner 元数据仅用于补全, and explain that source traces require local citation context evidence.",
+      "files": [],
+      "expectations": [
+        "Uses scripts/render_html.py rather than ad hoc tooltip HTML",
+        "HTML contains ! tooltip controls with tabindex or equivalent keyboard focus support",
+        "中文提示包含来源角色推荐值和固定 source_role 推荐值列表",
+        "中文 AMiner 提示说明 AMiner 元数据仅用于补全，不能替代本地引用上下文证据",
+        "中文 tooltip 不混用 English UI tooltip text such as Recommended source_role values"
+      ]
+    },
+    {
+      "id": 23,
+      "prompt": "Generate an English citation_map.html with help tooltips for Role, Intent, Confidence, AMiner metadata, Source traces, Steps, Fit screen, Reset layout, Export SVG, and Filter.",
+      "expected_output": "Use scripts/render_html.py to generate the English citation_map.html. The HTML must include unified ! tooltip circles with hover and keyboard focus support. Tooltip text must be English, include Recommended source_role values and AMiner metadata only enriches metadata, and explain that confidence is evidence confidence rather than an AMiner match score or model probability.",
+      "files": [],
+      "expectations": [
+        "Uses scripts/render_html.py rather than ad hoc tooltip HTML",
+        "HTML contains ! tooltip controls with tabindex or equivalent keyboard focus support",
+        "English tooltip includes Recommended source_role values and the source_role list",
+        "English AMiner tooltip says AMiner metadata only enriches metadata and cannot replace local citation-context evidence",
+        "English tooltip output does not use 中文 UI 提示 such as 来源角色推荐值"
+      ]
+    }
+  ]
+}

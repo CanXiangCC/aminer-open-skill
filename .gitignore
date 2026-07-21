@@ -1,0 +1,23 @@
+.DS_Store
+.idea/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.env
+.venv/
+venv/
+*.log
+
+# Local secrets and generated runtime files
+*.local.yaml
+config.local.yaml
+config.yaml
+outputs/
+skills/*/outputs/
+
+# Personal research notes (not part of the shared skill code)
+docs/
+CONTRIBUTING.zh.md
