@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import sys
+from datetime import datetime, timezone
 from typing import Any, Sequence
 
 import requests
@@ -12,6 +14,7 @@ AMINER_SEARCH_URL = "https://datacenter.aminer.cn/gateway/open_platform/api/pape
 
 # The search endpoint caps `size` at 10 per page, so larger requests are paginated.
 SEARCH_PAGE_SIZE = 10
+MAX_SEARCH_PAGES = 20
 
 
 def _auth_headers() -> dict[str, str]:
@@ -62,6 +65,10 @@ def _is_within_end_year(item: dict[str, Any], end_year: int) -> bool:
     return not paper_year or paper_year <= end_year
 
 
+def _current_utc_year() -> int:
+    return datetime.now(timezone.utc).year
+
+
 def aminer_pro_search(
     query: str,
     use_topic: bool = True,
@@ -69,31 +76,31 @@ def aminer_pro_search(
     size: int = 20,
     offset: int = 0,
     order: str | None = None,
+    max_pages: int = MAX_SEARCH_PAGES,
 ) -> list[dict[str, Any]]:
     """Search papers while preserving the legacy end-year and offset semantics."""
     target = max(1, int(size))
     normalized_offset = max(0, int(offset))
-    end_year = int(year) if year else None
+    end_year = int(year) if year else _current_utc_year()
+    page_budget = max(1, int(max_pages))
 
-    # Without a local year filter, jump directly to the page containing the
-    # requested offset. With a year filter, scan from page one because offset
-    # applies to the filtered result set, as it did in the previous API.
-    if end_year is None:
-        page = normalized_offset // SEARCH_PAGE_SIZE + 1
-        remaining_offset = normalized_offset % SEARCH_PAGE_SIZE
-    else:
-        page = 1
-        remaining_offset = normalized_offset
+    # The Open Platform endpoint does not honor end_year. Scan from page one
+    # and apply offset after local filtering to preserve the previous API's
+    # semantics, but cap the number of HTTP requests per logical search.
+    page = 1
+    remaining_offset = normalized_offset
 
     items: list[dict[str, Any]] = []
-    while len(items) < target:
+    pages_fetched = 0
+    reached_last_page = False
+    while len(items) < target and pages_fetched < page_budget:
         raw_page_items = _fetch_search_page(query, page=page, size=SEARCH_PAGE_SIZE, order=order)
+        pages_fetched += 1
         if not raw_page_items:
+            reached_last_page = True
             break
 
-        page_items = raw_page_items
-        if end_year is not None:
-            page_items = [item for item in raw_page_items if _is_within_end_year(item, end_year)]
+        page_items = [item for item in raw_page_items if _is_within_end_year(item, end_year)]
 
         if remaining_offset:
             skipped = min(remaining_offset, len(page_items))
@@ -102,8 +109,16 @@ def aminer_pro_search(
 
         items.extend(page_items)
         if len(raw_page_items) < SEARCH_PAGE_SIZE:
+            reached_last_page = True
             break
         page += 1
+
+    if len(items) < target and not reached_last_page and pages_fetched >= page_budget:
+        print(
+            f"AMiner search page budget exhausted after {page_budget} pages; "
+            f"returning {len(items)} of {target} requested papers.",
+            file=sys.stderr,
+        )
     return items[:target]
 
 
@@ -113,9 +128,18 @@ def search_papers(
     size: int = 20,
     year: int | None = None,
     order: str | None = None,
+    max_pages: int = MAX_SEARCH_PAGES,
 ) -> list[dict[str, Any]]:
     size = max(1, min(int(size), 20))
-    raw_items = aminer_pro_search(query, use_topic=True, year=year, size=size, offset=0, order=order)
+    raw_items = aminer_pro_search(
+        query,
+        use_topic=True,
+        year=year,
+        size=size,
+        offset=0,
+        order=order,
+        max_pages=max_pages,
+    )
     if not raw_items:
         return []
 
@@ -185,11 +209,29 @@ def _main() -> None:
     )
     parser.add_argument("--query", required=True, help="Search keyword / query.")
     parser.add_argument("--size", type=int, default=20, help="Number of papers to return (max 20).")
+    parser.add_argument(
+        "--year",
+        type=int,
+        default=None,
+        help="Inclusive publication end year (default: current UTC year).",
+    )
     parser.add_argument("--order", default=None, help="Optional sort: year or n_citation.")
+    parser.add_argument(
+        "--max-pages",
+        type=int,
+        default=MAX_SEARCH_PAGES,
+        help=f"Maximum AMiner result pages to scan (default {MAX_SEARCH_PAGES}).",
+    )
     parser.add_argument("--include-abstracts", action="store_true")
     args = parser.parse_args()
 
-    papers = search_papers(args.query, size=args.size, order=args.order)
+    papers = search_papers(
+        args.query,
+        size=args.size,
+        year=args.year,
+        order=args.order,
+        max_pages=args.max_pages,
+    )
     print(json.dumps([_compact(p, include_abstract=args.include_abstracts) for p in papers], ensure_ascii=False, indent=2))
 
 
