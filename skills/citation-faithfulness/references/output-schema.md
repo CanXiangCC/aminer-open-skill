@@ -3,14 +3,14 @@
 This skill is **agent-driven** — there is no script and no stdout JSON. Its "return value" is the report the agent produces at stage **S5**, in two forms:
 
 1. **On-screen presentation** — a human-readable summary + table shown to the user (see SKILL.md → Output Presentation).
-2. **Full JSON report** — the complete machine-readable object, written to the `output` path when the user supplies one, and otherwise held by the agent to build the presentation from.
+2. **Full JSON report** — the complete machine-readable object, **always** written to the `output` path; when the user supplies no path, default to `citation-faithfulness-<pdf-stem>.json` in the current working directory. The presentation is rendered from this object.
 
 This file defines the shape of that JSON object so the return value is stable and consumable by other tools.
 
 本 skill 是 **agent 驱动**——没有脚本、没有 stdout JSON。它的"返回值"就是 agent 在 **S5** 阶段产出的报告，两种形态：
 
 1. **屏幕展示** —— 给用户看的可读汇总 + 表格（见 SKILL.zh.md → 结果展示）。
-2. **完整 JSON 报告** —— 完整的机器可读对象；用户给了 `output` 就写到该路径，否则 agent 据它生成展示。
+2. **完整 JSON 报告** —— 完整的机器可读对象；**必写**到 `output` 路径，用户没给路径时默认写到当前工作目录的 `citation-faithfulness-<pdf文件名>.json`。屏幕展示由该对象渲染。
 
 本文件定义该 JSON 对象的结构，使返回值稳定、可被其他工具消费。
 
@@ -123,6 +123,6 @@ Language rule / 语言规则: `citation_sentence` and `evidence` stay in the **s
 
 ## What the user sees vs. what is returned / 用户所见 vs. 返回
 
-- **Always shown**: the `summary` block, then a per-claim table for every non-`SUPPORTED` item, then the `NOT_SUPPORTED` / `NOT_IN_SOURCE` findings in full with their `evidence`. / **必展示**：`summary` 块 → 每个非 `SUPPORTED` 项的逐条表 → `NOT_SUPPORTED`/`NOT_IN_SOURCE` 的完整发现及 `evidence`。
-- **Written to `output`** (if given): the entire top-level object above. / **写入 `output`**（若给）：上面整个顶层对象。
+- **Always shown**: the `summary` block, then the **full record** of every non-`SUPPORTED` item (`citation_sentence` · cited work · verdict · `retrieval_level` · `confidence` · `evidence` · `reason` · `notes`), severity-ordered with `NOT_SUPPORTED` / `NOT_IN_SOURCE` first. `SUPPORTED` items may be shown as counts only. / **必展示**：`summary` 块 → 每个非 `SUPPORTED` 项的**完整记录**（`citation_sentence`·被引工作·判定·`retrieval_level`·`confidence`·`evidence`·`reason`·`notes`），按严重度排序、`NOT_SUPPORTED`/`NOT_IN_SOURCE` 在前；`SUPPORTED` 项可只报计数。
+- **Written to `output`** (always; default `citation-faithfulness-<pdf-stem>.json` in the current working directory): the entire top-level object above. / **写入 `output`**（必写；默认当前工作目录下的 `citation-faithfulness-<pdf文件名>.json`）：上面整个顶层对象。
 - **Never**: fabricated verdicts or evidence. A source that could not be read is `UNVERIFIABLE` with empty `evidence`. / **绝不**：编造判定或证据。读不到的原文判 `UNVERIFIABLE`、`evidence` 留空。

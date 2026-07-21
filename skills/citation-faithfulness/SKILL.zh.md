@@ -1,6 +1,6 @@
 ---
 name: citation-faithfulness
-version: 1.0.0
+version: 1.1.0
 author: AMiner
 contact: report@aminer.cn
 description: >
@@ -129,7 +129,7 @@ metadata:
 
 ### S5 — 出报告
 
-给逐条表 + 汇总。问题项按严重度排序：`NOT_SUPPORTED` 与 `NOT_IN_SOURCE` 在前，然后 `PARTIALLY_SUPPORTED`，再 `UNVERIFIABLE`，最后 `SUPPORTED`。见结果展示。
+先给汇总，然后**完整输出每一个非 `SUPPORTED` 项的全部内容**，按严重度排序：`NOT_SUPPORTED` 与 `NOT_IN_SOURCE` 在前，然后 `PARTIALLY_SUPPORTED`，再 `UNVERIFIABLE`。完整 JSON 报告**必须**写到 `output` 路径（用户没给路径时默认写到当前工作目录，见参数）。见结果展示。
 
 ## 参数（来自自然语言或 `/citation-faithfulness`）
 
@@ -138,7 +138,7 @@ metadata:
 | `pdf` | PDF 绝对路径 | 必填 | 要核查的论文 |
 | `scope` | `all` / `specific-only` / `refs:1,12,23` | `all` | `all` = 每处正文引用；`specific-only` = 只查事实/数字/结果类声称；`refs:...` = 只查这些参考文献编号 |
 | `max-refs` | 整数 | 无 | 检索的去重原文数上限（成本护栏） |
-| `output` | 路径 | – | 同时把完整 JSON 报告写到此处 |
+| `output` | 路径 | `./citation-faithfulness-<pdf文件名>.json` | 完整 JSON 报告的写出路径。**必写**——用户没给路径时，默认写到当前工作目录、按 PDF 文件名命名。 |
 
 用户默认选**全覆盖**。论文参考很多、在意成本时，主动提供 `specific-only` 或 `max-refs`。
 
@@ -160,11 +160,13 @@ metadata:
 - 检索覆盖：多少篇达到 `full_text`、多少 `abstract_only`、多少 `not_found`——让用户知道核查到多深。
 - 若覆盖较浅，加一句诚实说明（如"40 篇里 18 篇仅摘要；其正文级声称为 UNVERIFIABLE，并非已核实通过"）。
 
-**逐条表**（至少覆盖每个非 `SUPPORTED` 项）：
-`claim_id` · 章节 · 声称（简写）· 被引工作 · 判定 · `retrieval_level` · `confidence` · 证据引句 · 理由。
+**每个非 `SUPPORTED` 项完整输出**——不是只给一行表格。对每条 `NOT_SUPPORTED` / `NOT_IN_SOURCE` / `PARTIALLY_SUPPORTED` / `UNVERIFIABLE`，按严重度顺序（`NOT_SUPPORTED` 与 `NOT_IN_SOURCE` 在前，它们是可行动的发现）打出完整块：
+`claim_id` · 章节 · 判定 · `retrieval_level` · `confidence`，随后是完整的 `citation_sentence`（论文原语言）、被引工作、`evidence` 证据引句（原文语言；未取到要明说）、`reason` 理由、以及 `notes`。不许截断、不许一笔带过——用户必须不打开 JSON 就能独立评判每条被标记的引用。
 
-**然后**：先完整列出 `NOT_SUPPORTED` / `NOT_IN_SOURCE` 项及其证据引句，因为这些才是可行动的发现。若给了 `output`，把完整 JSON 写过去并告知用户路径。
+**`SUPPORTED` 项**只报计数（必要时附几条亮点简述）；其完整记录保留在 JSON 里。
+
+**然后**：**必须**把完整 JSON 报告写到 `output` 路径——用户没给路径时，写到当前工作目录、命名为 `citation-faithfulness-<pdf文件名>.json`——并告知用户路径。这是强制步骤，不以用户是否索要为条件。
 
 ## 返回值
 
-报告汇总为单个 JSON 对象，定义见 `references/output-schema.md`——顶层含 `paper` / `run` / `summary` / `claims[]` / `flagged` / `skipped`，每处被核查引用对应一条声称记录。该对象即写入 `output` 的内容，屏幕展示也由它渲染。严格遵循该 schema 的字段名、枚举值与不变式，使返回值跨运行稳定。
+报告汇总为单个 JSON 对象，定义见 `references/output-schema.md`——顶层含 `paper` / `run` / `summary` / `claims[]` / `flagged` / `skipped`，每处被核查引用对应一条声称记录。该对象**必写**入 `output`（默认：当前工作目录下的 `citation-faithfulness-<pdf文件名>.json`），屏幕展示也由它渲染。严格遵循该 schema 的字段名、枚举值与不变式，使返回值跨运行稳定。

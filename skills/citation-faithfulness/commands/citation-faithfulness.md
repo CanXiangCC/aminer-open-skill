@@ -37,7 +37,7 @@ $ARGUMENTS
 | `pdf` | absolute PDF path | required | Paper to check |
 | `scope` | `all` / `specific-only` / `refs:1,12,23` | `all` | Which citations to check |
 | `max-refs` | integer | none | Cap unique sources retrieved (cost guard) |
-| `output` | path | – | Also write the full JSON report here |
+| `output` | path | `./citation-faithfulness-<pdf-stem>.json` | Full JSON report path. **Always written**; defaults to the current working directory, named after the PDF |
 
 If `pdf` is missing or the path does not exist, stop and ask. If `scope: all` on a reference-heavy paper, warn about cost (~1 web retrieval per unique source) and offer `specific-only` or `max-refs` before starting.
 
@@ -58,9 +58,8 @@ Honor `max-refs` and `scope`. List, don't silently drop, anything skipped.
 Follow the Output Presentation section of `SKILL.md`:
 
 - Summary: title, total in-text citations, unique sources checked, verdict counts, retrieval coverage (`full_text` / `abstract_only` / `not_found`), and an honesty note if coverage was shallow.
-- Per-claim table for every non-`SUPPORTED` item: `claim_id` · section · claim · cited work · verdict · `retrieval_level` · `confidence` · evidence quote · reason.
-- List `NOT_SUPPORTED` / `NOT_IN_SOURCE` findings in full first (these are actionable), framed as flags for human review, not final accusations.
-- If `output` was given, write the complete JSON and report the path.
+- **Full record for every non-`SUPPORTED` item** (severity-ordered, `NOT_SUPPORTED` / `NOT_IN_SOURCE` first, framed as flags for human review, not final accusations): `claim_id` · section · verdict · `retrieval_level` · `confidence` · full `citation_sentence` · cited work · evidence quote · reason · notes. Do not truncate; `SUPPORTED` items may be counts only.
+- **Always** write the complete JSON report — to the user-given `output` path, or by default `citation-faithfulness-<pdf-stem>.json` in the current working directory — and report the path.
 
 ## 中文命令流程
 
@@ -80,7 +79,7 @@ Follow the Output Presentation section of `SKILL.md`:
 | `pdf` | PDF 绝对路径 | 必填 | 要核查的论文 |
 | `scope` | `all` / `specific-only` / `refs:1,12,23` | `all` | 核查哪些引用 |
 | `max-refs` | 整数 | 无 | 检索的去重原文数上限（成本护栏） |
-| `output` | 路径 | – | 同时把完整 JSON 报告写到此处 |
+| `output` | 路径 | `./citation-faithfulness-<pdf文件名>.json` | 完整 JSON 报告路径。**必写**；用户没给时默认写到当前工作目录、按 PDF 文件名命名 |
 
 `pdf` 缺失或路径不存在就停下追问。若对参考很多的论文用 `scope: all`，先提醒成本（每篇去重原文约 1 次联网检索）并提供 `specific-only` 或 `max-refs`，再开始。
 
@@ -101,6 +100,5 @@ Follow the Output Presentation section of `SKILL.md`:
 按 `SKILL.zh.md` 的"结果展示"节：
 
 - 汇总：标题、正文引用总数、核查的去重原文数、各档计数、检索覆盖（`full_text` / `abstract_only` / `not_found`），覆盖较浅时加一句诚实说明。
-- 逐条表覆盖每个非 `SUPPORTED` 项：`claim_id` · 章节 · 声称 · 被引工作 · 判定 · `retrieval_level` · `confidence` · 证据引句 · 理由。
-- 先完整列出 `NOT_SUPPORTED` / `NOT_IN_SOURCE` 发现（可行动项），并说明这是待人工复核的标记、非最终指控。
-- 若给了 `output`，写出完整 JSON 并告知路径。
+- **每个非 `SUPPORTED` 项完整输出**（按严重度排序，`NOT_SUPPORTED` / `NOT_IN_SOURCE` 在前，并说明这是待人工复核的标记、非最终指控）：`claim_id` · 章节 · 判定 · `retrieval_level` · `confidence` · 完整 `citation_sentence` · 被引工作 · 证据引句 · 理由 · notes。不许截断；`SUPPORTED` 项可只报计数。
+- **必须**写出完整 JSON 报告——写到用户给的 `output` 路径，用户没给时默认写到当前工作目录的 `citation-faithfulness-<pdf文件名>.json`——并告知路径。

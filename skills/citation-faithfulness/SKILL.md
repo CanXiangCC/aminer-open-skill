@@ -1,6 +1,6 @@
 ---
 name: citation-faithfulness
-version: 1.0.0
+version: 1.1.0
 author: AMiner
 contact: report@aminer.cn
 description: >
@@ -129,7 +129,7 @@ Apply `references/rubric.md`. For each claim, compare `claim_text` against the r
 
 ### S5 — Report
 
-Present a per-claim table and a summary. Sort flagged items by severity: `NOT_SUPPORTED` and `NOT_IN_SOURCE` first, then `PARTIALLY_SUPPORTED`, then `UNVERIFIABLE`, then `SUPPORTED`. See Output Presentation.
+Present a summary, then the **full record of every non-`SUPPORTED` claim**, sorted by severity: `NOT_SUPPORTED` and `NOT_IN_SOURCE` first, then `PARTIALLY_SUPPORTED`, then `UNVERIFIABLE`. **Always** write the complete JSON report to the `output` path (defaults to the current working directory — see Parameters). See Output Presentation.
 
 ## Parameters (from natural language or `/citation-faithfulness`)
 
@@ -138,7 +138,7 @@ Present a per-claim table and a summary. Sort flagged items by severity: `NOT_SU
 | `pdf` | absolute PDF path | required | The paper to check |
 | `scope` | `all` / `specific-only` / `refs:1,12,23` | `all` | `all` = every in-text citation; `specific-only` = only fact/number/result claims; `refs:...` = only these reference numbers |
 | `max-refs` | integer | none | Cap the number of unique sources retrieved (cost guard) |
-| `output` | path | – | Also write the full JSON report here |
+| `output` | path | `./citation-faithfulness-<pdf-stem>.json` | Where the full JSON report is written. **Always written**: when the user gives no path, default to the current working directory, named after the PDF's basename. |
 
 The user chose **full coverage** by default. Offer `specific-only` or `max-refs` when a paper has many references and cost matters.
 
@@ -160,11 +160,13 @@ Lead with a summary, then the detail table.
 - Retrieval coverage: how many sources reached `full_text` vs `abstract_only` vs `not_found` — so the user knows how deep the check went.
 - A one-line honesty note if coverage was shallow (e.g. "18/40 sources were abstract-only; body-level claims there are UNVERIFIABLE, not cleared").
 
-**Per-claim table** (at minimum for every non-`SUPPORTED` item):
-`claim_id` · section · the claim (short) · cited work · verdict · `retrieval_level` · `confidence` · evidence quote · reason.
+**Every non-`SUPPORTED` item, in full** — not just a table row. For each `NOT_SUPPORTED` / `NOT_IN_SOURCE` / `PARTIALLY_SUPPORTED` / `UNVERIFIABLE` claim, print a complete block, in severity order (`NOT_SUPPORTED` and `NOT_IN_SOURCE` first — those are the actionable findings):
+`claim_id` · section · verdict · `retrieval_level` · `confidence`, followed by the full `citation_sentence` (paper's original language), the cited work, the `evidence` quote (source's original language; state explicitly when nothing was retrieved), the `reason`, and any `notes`. Do not truncate or summarize these blocks away — the user must be able to judge every flagged citation without opening the JSON.
 
-**Then**: list the `NOT_SUPPORTED` / `NOT_IN_SOURCE` items in full first, with their evidence quotes, since those are the actionable findings. If `output` was given, write the complete JSON there and tell the user the path.
+**`SUPPORTED` items** may be reported as counts plus a short list of highlights; their full records live in the JSON.
+
+**Then**: **always** write the complete JSON report to the `output` path — when the user gave none, write `citation-faithfulness-<pdf-stem>.json` into the current working directory — and tell the user the path. This step is mandatory, not conditional on the user asking for it.
 
 ## Return Value
 
-The report is assembled as a single JSON object defined in `references/output-schema.md` — top-level `paper` / `run` / `summary` / `claims[]` / `flagged` / `skipped`, with a per-claim record for each checked citation. That object is what gets written to `output`, and the on-screen presentation is rendered from it. Follow the schema's field names, enumerations, and invariants exactly so the return value stays stable across runs.
+The report is assembled as a single JSON object defined in `references/output-schema.md` — top-level `paper` / `run` / `summary` / `claims[]` / `flagged` / `skipped`, with a per-claim record for each checked citation. That object is **always** written to `output` (default: `citation-faithfulness-<pdf-stem>.json` in the current working directory), and the on-screen presentation is rendered from it. Follow the schema's field names, enumerations, and invariants exactly so the return value stays stable across runs.
