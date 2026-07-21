@@ -1,6 +1,6 @@
 ---
 description: Verify whether the references in a paper PDF are real, using AMiner pdf-citation-verifier
-argument-hint: [pdf: <pdf-path> | job-id: <verify_...> max-refs: <1-100> strict: yes|no no-wait: yes|no output: <json-path> | 自然语言]
+argument-hint: "[pdf: <pdf-path> | job-id: <verify_...> max-refs: <1-100> strict: yes|no no-wait: yes|no output: <json-path> | 自然语言]"
 allowed-tools: Read, Write, Bash, Glob
 ---
 
