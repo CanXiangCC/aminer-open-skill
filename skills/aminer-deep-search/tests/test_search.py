@@ -101,6 +101,15 @@ class AminerProSearchTests(unittest.TestCase):
         self.assertEqual(fetch.call_count, 3)
         self.assertIn("page budget exhausted after 3 pages", error_output.getvalue())
 
+    def test_explicit_use_topic_emits_compatibility_warning(self) -> None:
+        with (
+            patch.object(search, "_fetch_search_page", return_value=[paper(0)]),
+            self.assertWarnsRegex(FutureWarning, "use_topic is unsupported"),
+        ):
+            results = search.aminer_pro_search("topic", use_topic=False, size=1)
+
+        self.assertEqual([item["id"] for item in results], ["0"])
+
 
 if __name__ == "__main__":
     unittest.main()

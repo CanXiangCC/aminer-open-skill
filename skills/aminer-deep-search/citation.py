@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Sequence
 
@@ -31,11 +32,14 @@ def _fetch_pub_relation(paper_id: str) -> list[dict[str, Any]]:
             timeout=(10, 30),
         )
         if response.status_code != 200:
-            print(f"AMiner reference request failed: status={response.status_code}, detail={response.text[:300]}")
+            print(
+                f"AMiner reference request failed: status={response.status_code}, detail={response.text[:300]}",
+                file=sys.stderr,
+            )
             return []
         data = response.json().get("data", [])
     except (requests.RequestException, ValueError) as exc:
-        print(f"AMiner reference request failed: {exc}")
+        print(f"AMiner reference request failed: {exc}", file=sys.stderr)
         return []
     return data if isinstance(data, list) else []
 
@@ -76,7 +80,8 @@ def get_reference_papers(
 
     id_to_sources: dict[str, set[str]] = {}
     ordered_ids: list[str] = []
-    seen: set[str] = set(seed_ids)
+    seed_id_set = set(seed_ids)
+    seen: set[str] = set(seed_id_set)
 
     with ThreadPoolExecutor(max_workers=max(1, min(max_workers, len(seed_ids)))) as executor:
         future_to_seed = {
@@ -88,14 +93,16 @@ def get_reference_papers(
             try:
                 related_ids = future.result()
             except Exception as exc:
-                print(f"Failed to fetch references for `{seed_id}`: {exc}")
+                print(f"Failed to fetch references for `{seed_id}`: {exc}", file=sys.stderr)
                 continue
             for paper_id in related_ids:
-                if not paper_id or paper_id in seen:
+                if not paper_id or paper_id in seed_id_set:
+                    continue
+                id_to_sources.setdefault(paper_id, set()).add(seed_id)
+                if paper_id in seen:
                     continue
                 seen.add(paper_id)
                 ordered_ids.append(paper_id)
-                id_to_sources.setdefault(paper_id, set()).add(seed_id)
 
     details = aminer_get_paper_info_batch(ordered_ids)
     detail_by_id = {

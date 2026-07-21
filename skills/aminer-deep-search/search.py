@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+import warnings
 from datetime import datetime, timezone
 from typing import Any, Sequence
 
@@ -52,11 +53,14 @@ def _fetch_search_page(
             timeout=(10, 30),
         )
         if response.status_code != 200:
-            print(f"AMiner search failed: status={response.status_code}, detail={response.text[:300]}")
+            print(
+                f"AMiner search failed: status={response.status_code}, detail={response.text[:300]}",
+                file=sys.stderr,
+            )
             return []
         return _extract_search_items(response.json())
     except (requests.RequestException, ValueError) as exc:
-        print(f"AMiner search failed for query `{query}`: {exc}")
+        print(f"AMiner search failed for query `{query}`: {exc}", file=sys.stderr)
         return []
 
 
@@ -71,14 +75,26 @@ def _current_utc_year() -> int:
 
 def aminer_pro_search(
     query: str,
-    use_topic: bool = True,
+    use_topic: bool | None = None,
     year: int | None = None,
     size: int = 20,
     offset: int = 0,
     order: str | None = None,
     max_pages: int = MAX_SEARCH_PAGES,
 ) -> list[dict[str, Any]]:
-    """Search papers while preserving the legacy end-year and offset semantics."""
+    """Search papers while preserving the legacy end-year and offset semantics.
+
+    ``use_topic`` is retained temporarily for call compatibility, but the Open
+    Platform endpoint has no equivalent option. Explicit use emits a warning.
+    """
+    if use_topic is not None:
+        warnings.warn(
+            "use_topic is unsupported by the AMiner Open Platform search endpoint "
+            "and will be removed in a future release.",
+            FutureWarning,
+            stacklevel=2,
+        )
+
     target = max(1, int(size))
     normalized_offset = max(0, int(offset))
     end_year = int(year) if year else _current_utc_year()
@@ -133,7 +149,6 @@ def search_papers(
     size = max(1, min(int(size), 20))
     raw_items = aminer_pro_search(
         query,
-        use_topic=True,
         year=year,
         size=size,
         offset=0,
