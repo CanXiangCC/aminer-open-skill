@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 import os
 import re
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Iterable, Sequence
 
@@ -142,11 +143,14 @@ def request_paper_detail(paper_id: str) -> dict[str, Any] | None:
             timeout=(10, 30),
         )
         if response.status_code != 200:
-            print(f"AMiner detail request failed: status={response.status_code}, detail={response.text[:300]}")
+            print(
+                f"AMiner detail request failed: status={response.status_code}, detail={response.text[:300]}",
+                file=sys.stderr,
+            )
             return None
         data = response.json().get("data", [])
     except (requests.RequestException, ValueError) as exc:
-        print(f"AMiner detail request failed: {exc}")
+        print(f"AMiner detail request failed: {exc}", file=sys.stderr)
         return None
 
     if isinstance(data, dict):
@@ -181,7 +185,7 @@ def aminer_get_paper_info_batch(
             try:
                 results_by_index[index] = future.result()
             except Exception as exc:
-                print(f"Failed to fetch AMiner detail for `{ids[index]}`: {exc}")
+                print(f"Failed to fetch AMiner detail for `{ids[index]}`: {exc}", file=sys.stderr)
                 results_by_index[index] = None
 
     details: list[dict[str, Any]] = []
