@@ -9,7 +9,7 @@ from typing import Any, Iterable, Sequence
 import requests
 
 
-AMINER_PAPER_DETAIL_URL = "https://datacenter.aminer.cn/gateway/api/v3/paper/detail/batch"
+AMINER_PAPER_DETAIL_URL = "https://datacenter.aminer.cn/gateway/open_platform/api/paper/detail"
 
 
 def get_aminer_key() -> str:
@@ -19,10 +19,14 @@ def get_aminer_key() -> str:
     return aminer_key
 
 
+def auth_headers() -> dict[str, str]:
+    return {"Authorization": get_aminer_key()}
+
+
 def json_auth_headers() -> dict[str, str]:
     return {
         "Content-Type": "application/json;charset=utf-8",
-        "Authorization": f"Bearer {get_aminer_key()}",
+        "Authorization": get_aminer_key(),
     }
 
 
@@ -126,59 +130,63 @@ def rule_based_score(paper: dict[str, Any], *, query: str = "") -> float:
     return min(1.0, lexical * 0.55 + phrase_bonus + citation_score + recency_score)
 
 
-def request_paper_detail_batch(paper_ids: Sequence[str]) -> list[dict[str, Any]]:
-    ids = dedupe_preserve_order(paper_ids)
-    if not ids:
-        return []
+def request_paper_detail(paper_id: str) -> dict[str, Any] | None:
+    paper_id = str(paper_id).strip()
+    if not paper_id:
+        return None
     try:
-        response = requests.post(
+        response = requests.get(
             AMINER_PAPER_DETAIL_URL,
-            json={"ids": ids},
-            headers=json_auth_headers(),
+            params={"id": paper_id},
+            headers=auth_headers(),
             timeout=(10, 30),
         )
         if response.status_code != 200:
             print(f"AMiner detail request failed: status={response.status_code}, detail={response.text[:300]}")
-            return []
+            return None
         data = response.json().get("data", [])
     except (requests.RequestException, ValueError) as exc:
         print(f"AMiner detail request failed: {exc}")
-        return []
+        return None
 
     if isinstance(data, dict):
         data = data.get("data") or data.get("items") or []
-    if not isinstance(data, list):
-        return []
-    return [item for item in data if isinstance(item, dict)]
+    if not isinstance(data, list) or not data:
+        return None
+    detail = data[0]
+    if not isinstance(detail, dict):
+        return None
+    # The detail endpoint does not echo the queried id, so backfill it.
+    detail.setdefault("id", paper_id)
+    return detail
 
 
 def aminer_get_paper_info_batch(
     paper_ids: Sequence[str],
-    detail_batch_size: int = 50,
+    detail_batch_size: int = 50,  # kept for backward compatibility; unused
     max_workers: int = 8,
 ) -> list[dict[str, Any]]:
     ids = dedupe_preserve_order(paper_ids)
     if not ids:
         return []
-    batches = list(chunks(ids, max(1, int(detail_batch_size))))
-    if len(batches) == 1:
-        return request_paper_detail_batch(batches[0])
 
-    results_by_index: dict[int, list[dict[str, Any]]] = {}
-    with ThreadPoolExecutor(max_workers=max(1, min(max_workers, len(batches)))) as executor:
+    results_by_index: dict[int, dict[str, Any] | None] = {}
+    with ThreadPoolExecutor(max_workers=max(1, min(max_workers, len(ids)))) as executor:
         future_to_index = {
-            executor.submit(request_paper_detail_batch, batch): index
-            for index, batch in enumerate(batches)
+            executor.submit(request_paper_detail, paper_id): index
+            for index, paper_id in enumerate(ids)
         }
         for future in as_completed(future_to_index):
             index = future_to_index[future]
             try:
                 results_by_index[index] = future.result()
             except Exception as exc:
-                print(f"Failed to fetch AMiner detail batch: {exc}")
-                results_by_index[index] = []
+                print(f"Failed to fetch AMiner detail for `{ids[index]}`: {exc}")
+                results_by_index[index] = None
 
     details: list[dict[str, Any]] = []
-    for index in range(len(batches)):
-        details.extend(results_by_index.get(index, []))
+    for index in range(len(ids)):
+        detail = results_by_index.get(index)
+        if detail:
+            details.append(detail)
     return details
