@@ -149,6 +149,8 @@ python3 search.py --query "<query>" --size 20 --order n_citation
 python3 citation.py --ids <id1> <id2> --topic "<research topic>"
 ```
 
+Search excludes papers after the current UTC year by default. Use `--year <yyyy>` for an older inclusive cutoff. Each keyword search scans at most 20 AMiner result pages; raise `--max-pages <n>` only when the older cutoff requires a larger, intentional request budget.
+
 Iterate: expand queries, prioritize high-quality seeds, snowball references, deduplicate by AMiner paper ID, and stop once you reach the target size (400+ when results allow) or the results are exhausted. Output the final list as `[{"id": "...", "title": "..."}, ...]` and never fabricate papers.
 
 ## Operating Rules
