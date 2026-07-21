@@ -17,3 +17,7 @@ config.local.yaml
 config.yaml
 outputs/
 skills/*/outputs/
+
+# Personal research notes (not part of the shared skill code)
+docs/
+CONTRIBUTING.zh.md

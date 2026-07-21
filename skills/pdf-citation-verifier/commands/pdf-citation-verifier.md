@@ -97,10 +97,22 @@ Stdout is JSON (the unwrapped record from `data[0]`, plus an auto-inlined `detai
 - `total`, `has_hallucination`, `hallucination_ratio`
 - A short table built from `counts_by_status` (or top-level `REAL` / `LIKELY_REAL` / `NEEDS_REVIEW` / `LIKELY_FAKE` / `FAKE` counts)
 - If `details.records[]` is present, list each FAKE / LIKELY_FAKE / NEEDS_REVIEW record's `title`, `first_author`, `year`, `key_reasons` — auto-fetched from `urls.result`, so the user does not have to follow the 5-minute OSS link
+- If the payload contains `website_records[]` (from the URL / Website Citation Re-verification pass in SKILL.md), also list each website-type entry with its reachable URL and original `status`, and show `website_summary` (`total_website_citations`, `adjusted_hallucination_ratio`)
 - `urls.report` / `urls.result` if present, noting they may expire after `url_expire_seconds`
 - The path written when `--output` was used
 
 If the gateway returned a non-200 `code`, the script exited with an error, or the payload contains `details_fetch_error`, surface the error verbatim. Do not invent verdicts.
+
+### 5. Render the HTML report card
+
+When a result JSON file exists (via `--output`), generate a visual report with the standard renderer — never hand-write ad hoc HTML:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/render_report.py" \
+  --input "<result-json>" --output "<same-dir>/report.html" --lang en
+```
+
+Prefer the `.filtered.json` when the local non-reference filter produced one. Tell the user the report path and offer to open it in the browser.
 
 ## 中文命令流程
 
@@ -178,7 +190,19 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify_pdf.py" \
 - `total`、`has_hallucination`、`hallucination_ratio`
 - 基于 `counts_by_status`（或顶层 `REAL` / `LIKELY_REAL` / `NEEDS_REVIEW` / `LIKELY_FAKE` / `FAKE` 计数）的状态小表
 - 如果 `details.records[]` 存在，逐条列出 FAKE / LIKELY_FAKE / NEEDS_REVIEW 的 `title`、`first_author`、`year`、`key_reasons`（来自自动拉取的 `urls.result`），用户就不必去点 5 分钟过期的 OSS 链接
+- 如果 payload 里有 `website_records[]`（来自 SKILL.md 中"URL / 网站型引用二次核验"步骤），逐条列出网站型引用及其可达 URL 与原始 `status`，并展示 `website_summary`（`total_website_citations`、`adjusted_hallucination_ratio`）
 - 响应里的 `urls.report` / `urls.result`，需要附注会在 `url_expire_seconds` 后过期
 - 如果用了 `--output`，告诉用户落盘路径
 
 如果网关 `code` 非 200、脚本以错误退出，或 payload 里出现 `details_fetch_error`，**原样汇报错误**，禁止伪造核验结论。
+
+### 5. 渲染 HTML 报告卡
+
+只要存在结果 JSON 文件（用了 `--output`），就用标准渲染器生成可视化报告——**不要临场手写 HTML**：
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/render_report.py" \
+  --input "<result-json>" --output "<同目录>/report.html" --lang zh
+```
+
+如果本地筛查生成了 `.filtered.json`，优先用它。告诉用户报告路径，并主动提出可以在浏览器里打开。

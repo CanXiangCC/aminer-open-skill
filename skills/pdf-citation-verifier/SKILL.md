@@ -48,6 +48,7 @@ The skill returns that record plus the `job_id` so the user can re-poll later.
 - `SKILL.md` / `SKILL.zh.md` — English / Chinese skill definitions (this file).
 - `commands/pdf-citation-verifier.md` — slash command entry.
 - `scripts/verify_pdf.py` — HTTP client: upload → poll → print the unwrapped result record.
+- `scripts/render_report.py` — renders the result JSON into a self-contained HTML report card (stdlib only).
 - `requirements.txt` — Python dependencies (`requests`).
 
 ## Pre-flight
@@ -152,8 +153,101 @@ After the script returns, summarize the result for the user with at minimum:
 - A short table built from `counts_by_status` (REAL / LIKELY_REAL / NEEDS_REVIEW / LIKELY_FAKE / FAKE / etc.)
 - If `details.records[]` is present (auto-fetched from `urls.result`), list each FAKE / LIKELY_FAKE / NEEDS_REVIEW record's `title`, `first_author`, `year`, and `key_reasons` so the user does not have to follow the 5-minute OSS link
 - Any `urls.report` / `urls.result` links from the response, with a note that they may expire after `url_expire_seconds`
+- If `website_records[]` is present, list each entry's `raw` (first ~80 chars), the reachable URL(s), and its original `status`; then show `website_summary` (`total_website_citations`, `adjusted_hallucination_ratio`). Explicitly note that `adjusted_hallucination_ratio` excludes website-type citations and that the original `hallucination_ratio` is still in the payload.
 - The full JSON should be either saved (via `--output`) or echoed back to the user, never silently dropped.
+
+## HTML Report Card
+
+After the verification finishes (and after the Local Non-Reference Filter when it applies), generate a visual report card with the standard renderer — do not hand-write ad hoc HTML:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/render_report.py" \
+  --input "<result-json-path>" \
+  --output "<same-dir>/report.html" \
+  --lang zh   # zh when the conversation is mainly Chinese, en otherwise
+```
+
+- `--input` is the JSON written by `verify_pdf.py --output` (must contain `summary`; `details.records` enables the per-record focus table). Prefer the `.filtered.json` when the Local Non-Reference Filter produced one.
+- The output is a single self-contained HTML file (inline CSS, no external assets): an overview card with the fake-ratio headline number, a five-color stacked status bar with legend, and a focus table listing each FAKE / LIKELY_FAKE / NEEDS_REVIEW record with its verdict badge, citation info, closest `top_match`, and human-readable reasons.
+- All numbers come verbatim from the input JSON; the renderer never re-classifies records.
+- Tell the user the report path and offer to `open` it in the browser. If no `--output` JSON exists (chat-only run), skip the report or first write the payload to a temp JSON.
+
+## Local Non-Reference Filter
+
+When `is_finish=true` and `details.records[]` is present, perform a local agent review before presenting the final summary. This review uses the current Claude Code/Codex agent only; do not call another LLM API, do not ask for an extra key, and do not send records back to the server.
+
+Filter conservatively. Remove only records that are clearly not bibliography references, such as body-text contamination, figure/table/stage/evaluation prose, appendix or section headings, page headers/footers, page numbers, captions, or non-citation narrative sentences. Do **not** remove a record merely because its status is `FAKE`, `LIKELY_FAKE`, or `NEEDS_REVIEW`, because AMiner has no match, or because metadata is incomplete. Ambiguous records stay in `filtered_records`.
+
+Use only these record fields for the review: `id`, `status`, `confidence`, `title`, `first_author`, `year`, `raw`, `key_reasons`, and `top_match`. Prioritize `raw`; use `title` and `key_reasons` only as supporting signals.
+
+Produce an auditable filtered payload:
+
+- Preserve the original service payload unchanged.
+- Add `llm_filter` only to records removed by the local review:
+  - `is_reference: false`
+  - `reason: "<short reason>"`
+  - `confidence: <0.0-1.0>`
+- Add `filtered_records` containing all retained records.
+- Add `removed_non_reference_records` containing removed records with their `llm_filter`.
+- Add `filtered_summary` recomputed only from `filtered_records`:
+  - `total`
+  - `counts_by_status`
+  - `has_hallucination`
+  - `hallucination_ratio = (FAKE + LIKELY_FAKE) / total`, or `0` when total is `0`
+
+If the user supplied `--output path.json`, write the filtered payload next to it as `path.filtered.json` (for example, `result.json` -> `result.filtered.json`). If the output path has no `.json` suffix, append `.filtered.json`. If no `--output` was used, do not create a new file; present the filtered summary and removed records in the final answer.
 
 If the inline details fetch failed, the payload carries a `details_fetch_error` string — surface it and tell the user to GET `urls.result` themselves before `url_expire_seconds` runs out.
 
 If `is_finish` is `true` and a `status` / `msg` field signals failure, report it and suggest re-running.
+
+## URL / Website Citation Re-verification
+
+After the Non-Reference filter completes and `filtered_records` is ready, run a second pass to identify **website-type citations** — references that point to a real webpage (RFC, blog post, GitHub README, standards doc, product page) rather than a journal / conference paper. AMiner SearchPro is paper-centric, so those citations often land in `LIKELY_REAL / NEEDS_REVIEW / LIKELY_FAKE / FAKE` even when the underlying URL is perfectly valid. This pass flags them so the user can distinguish "fake academic reference" from "legitimate website citation".
+
+Scope:
+
+- Operate only on `filtered_records` (never on `removed_non_reference_records`).
+- Consider only records whose `status` is one of `LIKELY_REAL / NEEDS_REVIEW / LIKELY_FAKE / FAKE` (skip `REAL`).
+- Read URLs **only** from the `raw` field. Extract with a conservative regex like `https?://[^\s<>"'()]+`. Deduplicate per record.
+- If a record has no URL in `raw`, leave it untouched — no metadata added.
+
+Probing rules (use the hosting agent's WebFetch tool; do NOT call any external LLM API and do NOT require an extra key):
+
+- HTTP 2xx or 3xx (allow up to 3 redirects) → `reachable`.
+- Any other status / timeout / DNS failure → `unreachable`.
+- 401 / 403 → `unreachable_paywalled` (do not treat as reachable).
+- Skip URLs that resolve to `localhost` or private IP ranges (10/8, 172.16/12, 192.168/16, 169.254/16, ::1, fc00::/7).
+- Per-URL timeout: 15s. At most 3 URLs per record; if a record has more, set `url_probe_truncated: true` on that record and probe the first 3 only.
+- Never fabricate an HTTP response. On WebFetch failure, record `unreachable` with the error verbatim in `reason`.
+- Do not send record data to any third-party service beyond the URL host itself.
+
+For every record that contains at least one URL, attach a `url_verification` object:
+
+```json
+"url_verification": {
+  "urls": ["<url1>", "<url2>"],
+  "reachable_urls": ["<url1>"],
+  "is_website_citation": true,
+  "reason": "<short reason>",
+  "url_probe_truncated": false
+}
+```
+
+`is_website_citation` is `true` iff at least one URL is `reachable`.
+
+Add two new top-level fields to the returned payload:
+
+- `website_records`: every record where `is_website_citation: true`. **Do NOT change its original `status`.** The WEBSITE label lives only in the agent-side view; the server verdict is preserved for audit.
+- `website_summary`:
+  - `total_website_citations`: N (count of records in `website_records`)
+  - `from_status`: `{ "LIKELY_REAL": a, "NEEDS_REVIEW": b, "LIKELY_FAKE": c, "FAKE": d }`
+  - `adjusted_hallucination_ratio`: `(FAKE_count + LIKELY_FAKE_count − c − d) / max(filtered_total − N, 1)`
+  - `note`: `"WEBSITE citations excluded from academic-hallucination ratio."`
+
+Output file conventions (mirror the Non-Reference filter):
+
+- If the user gave `--output path.json`, also write `path.website_verified.json` alongside `path.filtered.json`. If the output path has no `.json` suffix, append `.website_verified.json`.
+- If no `--output`, do not create new files; only surface the results in the reply.
+
+Do NOT change the server-side `hallucination_ratio` or `counts_by_status`. All website-aware numbers live in `website_summary` only.
