@@ -8,7 +8,7 @@ This repository currently provides seven skill flavors:
 - `aminer-academic-search`: full version with 27 APIs and 6 analysis workflows
 - `aminer-free-academic`: free-first version focused on discovery, lightweight screening, normalization, and upgrade qualification
 - `aminer-daily-paper`: personalized paper recommendation based on topics, scholar profiles, or author information
-- `aminer-deep-search`: LLM-controlled ReAct loop for deep survey-style paper collection and citation snowballing
+- `aminer-deep-search`: host- or external-LLM-controlled deep survey collection and citation snowballing
 - `paper-source-trace`: claim-centered paper source tracing and citation-intent analysis
 - `pdf-citation-verifier`: upload a paper PDF and fact-check whether each listed reference actually exists (hallucination detection)
 - `citation-faithfulness`: read a paper PDF and web-retrieve each cited source to check whether the in-text citations faithfully represent them
@@ -51,11 +51,12 @@ export AMINER_API_KEY="<YOUR_TOKEN>"
 
 For Claude Code, Codex, and other conversational Skill sessions, you can use `tools/setup-aminer-token.cmd` on Windows or `tools/setup-aminer-token.sh` on macOS/Linux.
 
-For `aminer-deep-search`, also configure OpenClaw LLM settings before running:
+`aminer-deep-search` supports two controller modes:
 
-- `llm.api_key`: required at runtime, but not listed as a hard install dependency
-- `llm.model`: required unless `--models` is passed
-- `llm.base_url`: optional when OpenClaw provides a default; otherwise pass `--base-url`
+- **Backing-model mode (default without an LLM key):** Claude Code, Codex, OpenClaw, or the other model running the Skill drives `search.py` and `citation.py` directly. No additional LLM credentials are required.
+- **External-LLM mode:** `react_agent.py` drives the loop using `LLM_API_KEY` (legacy: `llm.api_key`) and `LLM_MODEL` (legacy: `llm.model`, or pass `--models`). `LLM_BASE_URL` (legacy: `llm.base_url`) is optional for providers that need a custom endpoint.
+
+LLM credentials are optional for the Skill, but `react_agent.py` still requires them when run directly.
 
 Do not hard-code provider-specific LLM tokens, base URLs, or model names in the skill.
 

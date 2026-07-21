@@ -8,14 +8,14 @@ import requests
 import _utils
 
 
-AMINER_SEARCH_URL = "https://datacenter.aminer.cn/gateway/api/v3/paper/search/paper/SearchPro"
+AMINER_SEARCH_URL = "https://datacenter.aminer.cn/gateway/open_platform/api/paper/list/by/search/venue"
+
+# The search endpoint caps `size` at 10 per page, so larger requests are paginated.
+SEARCH_PAGE_SIZE = 10
 
 
 def _auth_headers() -> dict[str, str]:
-    return {
-        "Content-Type": "application/json;charset=utf-8",
-        "Authorization": f"Bearer {_utils.get_aminer_key()}",
-    }
+    return {"Authorization": _utils.get_aminer_key()}
 
 
 def _extract_search_items(response_json: dict[str, Any]) -> list[dict[str, Any]]:
@@ -27,25 +27,25 @@ def _extract_search_items(response_json: dict[str, Any]) -> list[dict[str, Any]]
     return [item for item in data if isinstance(item, dict)]
 
 
-def aminer_pro_search(
+def _fetch_search_page(
     query: str,
-    use_topic: bool = True,
-    year: int | None = None,
-    size: int = 20,
-    offset: int = 0,
+    *,
+    page: int,
+    size: int,
+    order: str | None = None,
 ) -> list[dict[str, Any]]:
-    payload: dict[str, Any] = {
-        "use_topic": use_topic,
-        "query": query,
-        "size": max(1, min(int(size), 100)),
-        "offset": max(0, int(offset)),
-        "end_year": int(year or 2026),
+    params: dict[str, Any] = {
+        "keyword": query,
+        "page": max(1, int(page)),
+        "size": max(1, min(int(size), SEARCH_PAGE_SIZE)),
     }
+    if order:
+        params["order"] = order
     try:
-        response = requests.post(
+        response = requests.get(
             AMINER_SEARCH_URL,
             headers=_auth_headers(),
-            data=json.dumps(payload),
+            params=params,
             timeout=(10, 30),
         )
         if response.status_code != 200:
@@ -57,27 +57,78 @@ def aminer_pro_search(
         return []
 
 
-def search_papers(query: str, *, size: int = 20, year: int | None = None) -> list[dict[str, Any]]:
+def _is_within_end_year(item: dict[str, Any], end_year: int) -> bool:
+    paper_year = _utils.safe_int(item.get("year"), 0)
+    return not paper_year or paper_year <= end_year
+
+
+def aminer_pro_search(
+    query: str,
+    use_topic: bool = True,
+    year: int | None = None,
+    size: int = 20,
+    offset: int = 0,
+    order: str | None = None,
+) -> list[dict[str, Any]]:
+    """Search papers while preserving the legacy end-year and offset semantics."""
+    target = max(1, int(size))
+    normalized_offset = max(0, int(offset))
+    end_year = int(year) if year else None
+
+    # Without a local year filter, jump directly to the page containing the
+    # requested offset. With a year filter, scan from page one because offset
+    # applies to the filtered result set, as it did in the previous API.
+    if end_year is None:
+        page = normalized_offset // SEARCH_PAGE_SIZE + 1
+        remaining_offset = normalized_offset % SEARCH_PAGE_SIZE
+    else:
+        page = 1
+        remaining_offset = normalized_offset
+
+    items: list[dict[str, Any]] = []
+    while len(items) < target:
+        raw_page_items = _fetch_search_page(query, page=page, size=SEARCH_PAGE_SIZE, order=order)
+        if not raw_page_items:
+            break
+
+        page_items = raw_page_items
+        if end_year is not None:
+            page_items = [item for item in raw_page_items if _is_within_end_year(item, end_year)]
+
+        if remaining_offset:
+            skipped = min(remaining_offset, len(page_items))
+            page_items = page_items[skipped:]
+            remaining_offset -= skipped
+
+        items.extend(page_items)
+        if len(raw_page_items) < SEARCH_PAGE_SIZE:
+            break
+        page += 1
+    return items[:target]
+
+
+def search_papers(
+    query: str,
+    *,
+    size: int = 20,
+    year: int | None = None,
+    order: str | None = None,
+) -> list[dict[str, Any]]:
     size = max(1, min(int(size), 20))
-    raw_items = aminer_pro_search(query, use_topic=True, year=year, size=size, offset=0)
+    raw_items = aminer_pro_search(query, use_topic=True, year=year, size=size, offset=0, order=order)
     if not raw_items:
         return []
 
-    ids = _utils.dedupe_preserve_order(_utils.extract_paper_id(item) for item in raw_items)
-    details_by_id = {
-        _utils.extract_paper_id(detail): detail
-        for detail in _utils.aminer_get_paper_info_batch(ids)
-        if _utils.extract_paper_id(detail)
-    }
-
+    # The search endpoint already returns full paper records, so normalize them directly.
     papers: list[dict[str, Any]] = []
+    seen: set[str] = set()
     for raw in raw_items:
         paper_id = _utils.extract_paper_id(raw)
-        merged = dict(raw)
-        if paper_id in details_by_id:
-            merged.update(details_by_id[paper_id])
-        normalized = _utils.normalize_paper_detail(merged, query=query)
+        if not paper_id or paper_id in seen:
+            continue
+        normalized = _utils.normalize_paper_detail(raw, query=query)
         if normalized["id"] and normalized["title"]:
+            seen.add(paper_id)
             papers.append(normalized)
 
     papers.sort(
@@ -114,9 +165,41 @@ def search_adding(
 keywords_adding = search_adding
 
 
+def _compact(paper: dict[str, Any], *, include_abstract: bool) -> dict[str, Any]:
+    item = {
+        "id": paper.get("id"),
+        "title": paper.get("title"),
+        "year": paper.get("year"),
+        "n_citation": paper.get("n_citation"),
+    }
+    if include_abstract and paper.get("abstract"):
+        item["abstract"] = paper["abstract"]
+    return item
+
+
+def _main() -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="AMiner keyword search (usable directly by the backing model when no LLM key is set)."
+    )
+    parser.add_argument("--query", required=True, help="Search keyword / query.")
+    parser.add_argument("--size", type=int, default=20, help="Number of papers to return (max 20).")
+    parser.add_argument("--order", default=None, help="Optional sort: year or n_citation.")
+    parser.add_argument("--include-abstracts", action="store_true")
+    args = parser.parse_args()
+
+    papers = search_papers(args.query, size=args.size, order=args.order)
+    print(json.dumps([_compact(p, include_abstract=args.include_abstracts) for p in papers], ensure_ascii=False, indent=2))
+
+
 __all__ = [
     "aminer_pro_search",
     "keywords_adding",
     "search_adding",
     "search_papers",
 ]
+
+
+if __name__ == "__main__":
+    _main()

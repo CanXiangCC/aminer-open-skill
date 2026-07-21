@@ -6,7 +6,7 @@ contact: report@aminer.cn
 description: >
   Activate this skill when the user wants deep, multi-round academic paper collection for a survey or literature review using AMiner data and a ReAct-style LLM controller.
   Use this skill for broad topic exploration, survey bibliography construction, automatic keyword search plus backward-reference snowballing, and collecting hundreds of candidate papers with AMiner IDs and titles.
-  This skill calls an OpenAI-compatible chat model to decide tool calls, and uses AMiner keyword search plus paper reference APIs as tools. It is not intended for simple single-paper lookup or lightweight recommendations; use aminer-free-academic or aminer-daily-paper for those simpler tasks.
+  The controller can be the model already running this skill or an optional external OpenAI-compatible chat model. It uses AMiner keyword search plus paper reference APIs as tools. This skill is not intended for simple single-paper lookup or lightweight recommendations; use aminer-free-academic or aminer-daily-paper for those simpler tasks.
 metadata:
   {
     "openclaw":
@@ -22,7 +22,7 @@ metadata:
 
 # AMiner Deep Search
 
-ReAct-style survey paper collection using OpenAI-compatible model calls and AMiner search/reference APIs.
+ReAct-style survey paper collection using the backing model or an external OpenAI-compatible model with AMiner search/reference APIs.
 
 Use this skill when the user asks to collect papers for a research topic, build a large literature list, run citation snowballing, or prepare survey references.
 
@@ -49,33 +49,30 @@ If `AMINER_API_KEY` is missing, stop and ask the user to provide or set it. Neve
 
 ## LLM Configuration
 
-The LLM can use OpenClaw-provided settings or a user-provided OpenAI-compatible endpoint. The skill reads the following environment variables (the underscore-style names are recommended; the dotted legacy names are still accepted for backward compatibility):
+The ReAct controller can be driven in two ways:
 
-- `LLM_API_KEY` (legacy: `llm.api_key`): LLM API key. Check at runtime and prompt if neither OpenClaw nor the user supplies a key.
+1. **External LLM (optional).** If the user provides an OpenAI-compatible LLM key, the skill runs `react_agent.py`, which lets that model autonomously decide every tool call.
+2. **Backing-model fallback (default when no key).** If no LLM key is configured, do **not** error. Fall back to the model already running this skill (for example, Claude Code itself) as the controller: drive the collection loop manually by calling the tool CLIs (`search.py`, `citation.py`) and applying the strategy in `prompt.py`.
+
+The external-LLM mode reads the following environment variables (the underscore-style names are recommended; the dotted legacy names are still accepted for backward compatibility):
+
+- `LLM_API_KEY` (legacy: `llm.api_key`): LLM API key. Optional. When absent, use the backing-model fallback instead of prompting.
 - `LLM_BASE_URL` (legacy: `llm.base_url`): LLM base URL. Optional when OpenClaw provides a default; otherwise pass `--base-url`.
-- `LLM_MODEL` (legacy: `llm.model`): LLM model name. Required unless `--models` is passed.
+- `LLM_MODEL` (legacy: `llm.model`): LLM model name. Required only for the external-LLM mode (or pass `--models`).
 
 Underscore-style names are recommended because POSIX shells (bash/zsh) do not allow `.` in variable names, so `export llm.api_key=...` will fail with `not a valid identifier`. Use the underscore names with `export`, or fall back to `env "llm.api_key=..." python ...` for the legacy names.
 
-Before running, check whether an LLM key is available:
+Detect which mode to use by checking whether an LLM key is available:
 
 ```bash
 if [ -z "${LLM_API_KEY:-$(printenv 'llm.api_key')}" ]; then
-  echo "LLM API key missing"
+  echo "No LLM key: use the backing-model fallback (drive tools manually)."
 else
-  echo "LLM API key exists"
+  echo "LLM key present: run react_agent.py in external-LLM mode."
 fi
 ```
 
-If no LLM key is available, stop and ask the user to set `LLM_API_KEY` (or legacy `llm.api_key`), or pass `--api-key`. Never print the key. Do not hard-code provider-specific tokens or base URLs in this skill.
-
-Check whether an LLM model is available:
-
-```bash
-[ -z "${LLM_MODEL:-$(printenv 'llm.model')}" ] && echo "LLM model missing" || echo "LLM model exists"
-```
-
-If no LLM model is available, ask the user to set `LLM_MODEL` (or legacy `llm.model`), or pass `--models`. There is no provider-specific default model list.
+Never print any key. Do not hard-code provider-specific tokens, base URLs, or default model names in this skill.
 
 ### Quick setup examples
 
@@ -113,9 +110,11 @@ conda activate "$(pwd)/.conda"
 PIP_CACHE_DIR="$(pwd)/.pip_cache" python3 -m pip install -r requirements.txt
 ```
 
-Any compatible Python 3 environment may run the script as long as it has `openai` and `requests`.
+Backing-model mode only requires `requests`. External-LLM mode requires both `openai` and `requests`.
 
 ## Execution
+
+### External-LLM mode (LLM key provided)
 
 Run the main collector from this skill directory:
 
@@ -138,18 +137,32 @@ Useful options:
 
 The script prints the final JSON list and saves a copy under `outputs/`.
 
+### Backing-model fallback mode (no LLM key)
+
+When no LLM key is configured, act as the controller yourself. Follow the collection strategy in `prompt.py` and call the tool CLIs directly (they only need `AMINER_API_KEY`):
+
+```bash
+# Keyword search — returns up to 20 papers as JSON
+python3 search.py --query "<query>" --size 20 --order n_citation
+
+# Backward-reference expansion from seed AMiner paper IDs
+python3 citation.py --ids <id1> <id2> --topic "<research topic>"
+```
+
+Iterate: expand queries, prioritize high-quality seeds, snowball references, deduplicate by AMiner paper ID, and stop once you reach the target size (400+ when results allow) or the results are exhausted. Output the final list as `[{"id": "...", "title": "..."}, ...]` and never fabricate papers.
+
 ## Operating Rules
 
 1. Use this skill only for deep collection workflows. For one-off lookup or normal AMiner Q&A, route to the simpler AMiner skills.
 2. Do not expose `LLM_API_KEY` (legacy `llm.api_key`) or `AMINER_API_KEY`.
 3. Keep model/tool-call budgets under control; default `--max-tool-calls 20` and `--max-rounds 50`.
 4. If AMiner returns too few papers, report the actual collected count instead of inventing missing papers.
-5. If a run is likely to be expensive or long, tell the user the planned topic, model, timeout, max tool calls, and output location before starting.
+5. If a run is likely to be expensive or long, tell the user the planned topic, controller mode, external model when applicable, timeout, max tool calls, and output location before starting.
 
 ## File Map
 
-- `react_agent.py`: ReAct loop and CLI.
-- `api_client.py`: OpenAI-compatible client with model fallback.
+- `react_agent.py`: external-LLM ReAct loop and CLI.
+- `api_client.py`: OpenAI-compatible client with external model fallback.
 - `prompt.py`: paper-collection system prompt.
 - `search.py`: AMiner keyword search and paper detail normalization.
 - `citation.py`: AMiner reference expansion.

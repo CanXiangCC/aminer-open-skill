@@ -8,7 +8,7 @@
 - `aminer-academic-search`：全量版，覆盖 27 个接口和 6 个分析工作流
 - `aminer-free-academic`：免费版，专注免费接口、轻量初筛、实体标准化和升级前判断
 - `aminer-daily-paper`：推荐版，根据研究主题、学者画像或作者信息进行个性化论文推荐
-- `aminer-deep-search`：深度收集版，用 LLM 控制 ReAct 循环做综述文献收集和引用雪球扩展
+- `aminer-deep-search`：深度收集版，由宿主或外部 LLM 控制综述文献收集和引用雪球扩展
 - `paper-source-trace`：论文来源追踪版，负责以关键论点为中心的来源追踪和引用意图分析
 - `pdf-citation-verifier`：PDF 引用核验版，上传论文 PDF，逐条核验参考文献是否真实存在，识别 hallucination
 - `citation-faithfulness`：引用忠实性核查版，读取论文 PDF 并联网检索被引原文，逐条判定正文引用是否忠于原文
@@ -51,11 +51,12 @@ export AMINER_API_KEY="<YOUR_TOKEN>"
 
 如果是在 Claude Code、Codex 等对话式 Skill 会话中使用，Windows 可运行 `tools/setup-aminer-token.cmd`，macOS/Linux 可运行 `tools/setup-aminer-token.sh`。
 
-如果使用 `aminer-deep-search`，还需要在运行前配置 OpenClaw LLM：
+`aminer-deep-search` 支持两种控制模式：
 
-- `llm.api_key`：运行时需要检测，但不要作为硬性安装依赖写入 metadata
-- `llm.model`：必需，除非运行时显式传 `--models`
-- `llm.base_url`：当 OpenClaw 已提供默认地址时可省略，否则运行时传 `--base-url`
+- **宿主模型模式（没有 LLM key 时默认使用）**：由正在运行 Skill 的 Claude Code、Codex、OpenClaw 或其他模型直接驱动 `search.py` 和 `citation.py`，不需要额外的 LLM 凭据。
+- **外部 LLM 模式**：由 `react_agent.py` 使用 `LLM_API_KEY`（兼容旧变量 `llm.api_key`）和 `LLM_MODEL`（兼容 `llm.model`，也可传 `--models`）控制循环。需要自定义接口时可配置 `LLM_BASE_URL`（兼容 `llm.base_url`）。
+
+LLM 凭据对于整个 Skill 是可选的，但直接运行 `react_agent.py` 时仍然必需。
 
 不要在 skill 中硬编码任何特定供应商的 LLM token、base URL 或模型名。
 
