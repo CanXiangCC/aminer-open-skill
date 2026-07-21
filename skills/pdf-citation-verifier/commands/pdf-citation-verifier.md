@@ -103,6 +103,17 @@ Stdout is JSON (the unwrapped record from `data[0]`, plus an auto-inlined `detai
 
 If the gateway returned a non-200 `code`, the script exited with an error, or the payload contains `details_fetch_error`, surface the error verbatim. Do not invent verdicts.
 
+### 5. Render the HTML report card
+
+When a result JSON file exists (via `--output`), generate a visual report with the standard renderer — never hand-write ad hoc HTML:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/render_report.py" \
+  --input "<result-json>" --output "<same-dir>/report.html" --lang en
+```
+
+Prefer the `.filtered.json` when the local non-reference filter produced one. Tell the user the report path and offer to open it in the browser.
+
 ## 中文命令流程
 
 ### 1. Pre-flight
@@ -184,3 +195,14 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify_pdf.py" \
 - 如果用了 `--output`，告诉用户落盘路径
 
 如果网关 `code` 非 200、脚本以错误退出，或 payload 里出现 `details_fetch_error`，**原样汇报错误**，禁止伪造核验结论。
+
+### 5. 渲染 HTML 报告卡
+
+只要存在结果 JSON 文件（用了 `--output`），就用标准渲染器生成可视化报告——**不要临场手写 HTML**：
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/render_report.py" \
+  --input "<result-json>" --output "<同目录>/report.html" --lang zh
+```
+
+如果本地筛查生成了 `.filtered.json`，优先用它。告诉用户报告路径，并主动提出可以在浏览器里打开。

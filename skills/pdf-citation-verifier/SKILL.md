@@ -48,6 +48,7 @@ The skill returns that record plus the `job_id` so the user can re-poll later.
 - `SKILL.md` / `SKILL.zh.md` — English / Chinese skill definitions (this file).
 - `commands/pdf-citation-verifier.md` — slash command entry.
 - `scripts/verify_pdf.py` — HTTP client: upload → poll → print the unwrapped result record.
+- `scripts/render_report.py` — renders the result JSON into a self-contained HTML report card (stdlib only).
 - `requirements.txt` — Python dependencies (`requests`).
 
 ## Pre-flight
@@ -154,6 +155,22 @@ After the script returns, summarize the result for the user with at minimum:
 - Any `urls.report` / `urls.result` links from the response, with a note that they may expire after `url_expire_seconds`
 - If `website_records[]` is present, list each entry's `raw` (first ~80 chars), the reachable URL(s), and its original `status`; then show `website_summary` (`total_website_citations`, `adjusted_hallucination_ratio`). Explicitly note that `adjusted_hallucination_ratio` excludes website-type citations and that the original `hallucination_ratio` is still in the payload.
 - The full JSON should be either saved (via `--output`) or echoed back to the user, never silently dropped.
+
+## HTML Report Card
+
+After the verification finishes (and after the Local Non-Reference Filter when it applies), generate a visual report card with the standard renderer — do not hand-write ad hoc HTML:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/render_report.py" \
+  --input "<result-json-path>" \
+  --output "<same-dir>/report.html" \
+  --lang zh   # zh when the conversation is mainly Chinese, en otherwise
+```
+
+- `--input` is the JSON written by `verify_pdf.py --output` (must contain `summary`; `details.records` enables the per-record focus table). Prefer the `.filtered.json` when the Local Non-Reference Filter produced one.
+- The output is a single self-contained HTML file (inline CSS, no external assets): an overview card with the fake-ratio headline number, a five-color stacked status bar with legend, and a focus table listing each FAKE / LIKELY_FAKE / NEEDS_REVIEW record with its verdict badge, citation info, closest `top_match`, and human-readable reasons.
+- All numbers come verbatim from the input JSON; the renderer never re-classifies records.
+- Tell the user the report path and offer to `open` it in the browser. If no `--output` JSON exists (chat-only run), skip the report or first write the payload to a temp JSON.
 
 ## Local Non-Reference Filter
 

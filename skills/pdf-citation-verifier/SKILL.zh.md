@@ -48,6 +48,7 @@ Skill 返回这个记录加上 `job_id`，用户后续可凭 `job_id` 再次查�
 - `SKILL.md` / `SKILL.zh.md`——英文 / 中文 Skill 定义（本文件）。
 - `commands/pdf-citation-verifier.md`——slash command 入口。
 - `scripts/verify_pdf.py`——HTTP 客户端：上传 → 轮询 → 拆封信封后打印结果记录。
+- `scripts/render_report.py`——把结果 JSON 渲染成自包含 HTML 报告卡（仅标准库）。
 - `requirements.txt`——Python 依赖（`requests`）。
 
 ## Pre-flight 检查
@@ -154,6 +155,22 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/verify_pdf.py" \
 - 响应里的 `urls.report` / `urls.result` 链接，需要附注会在 `url_expire_seconds` 后过期
 - 若存在 `website_records[]`，逐条列出 `raw` 前 80 字符、可达 URL 与原始 `status`；然后展示 `website_summary`（`total_website_citations`、`adjusted_hallucination_ratio`）。明确说明：`adjusted_hallucination_ratio` 排除了网站型引用，原始 `hallucination_ratio` 仍保留在 payload 顶层
 - 完整 JSON 要么 `--output` 落盘，要么直接回显给用户，不要静默丢弃。
+
+## HTML 报告卡
+
+核验完成后（如果做了本地 Non-Reference 筛查，则在筛查之后），用标准渲染器生成一张可视化报告卡——**不要临场手写 HTML**：
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/render_report.py" \
+  --input "<result-json路径>" \
+  --output "<同目录>/report.html" \
+  --lang zh   # 对话以中文为主用 zh，否则用 en
+```
+
+- `--input` 是 `verify_pdf.py --output` 落盘的 JSON（必须含 `summary`；有 `details.records` 才会渲染逐条聚焦表）。如果本地筛查生成了 `.filtered.json`，优先用它。
+- 产出是单个自包含 HTML（内联 CSS、无外部资源）：总览卡片（假引用占比大数字）、五色状态堆叠条 + 图例、聚焦表（每条 FAKE / LIKELY_FAKE / NEEDS_REVIEW 的结论徽章、引用信息、最接近的 `top_match`、人话版判断原因）。
+- 所有数字原样取自输入 JSON，渲染器不做任何重新判定。
+- 告诉用户报告路径，并主动提出可以 `open` 在浏览器里看。如果本次没有 `--output` JSON（纯对话跑），要么跳过报告，要么先把 payload 写到临时 JSON 再渲染。
 
 ## 本地 Non-Reference 筛查
 
