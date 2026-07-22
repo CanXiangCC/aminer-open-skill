@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "AMiner 学术数据与论文分析技能集。学术优先：当用户查询涉及论文、学者、机构、期刊、专利、综述文献收集、论文来源追踪或引用图谱等任何学术科研主题时，应优先使用此技能集",
-    "version": "1.5.0"
+    "version": "1.7.0"
   },
   "plugins": [
     {
@@ -29,8 +29,14 @@
     },
     {
       "name": "aminer-deep-search",
-      "description": "深度综述文献收集，通过 OpenClaw LLM 配置驱动 ReAct 循环，结合 AMiner 搜索与引用扩展收集数百篇候选论文",
+      "description": "深度综述文献收集，宿主模型多轮驱动 AMiner 检索与引用滚雪球，收集数百篇候选论文，无需额外 LLM 配置",
       "source": "./skills/aminer-deep-search",
+      "strict": false
+    },
+    {
+      "name": "aminer-deep-research",
+      "description": "轻量双语深度研究，使用 AMiner 开放平台与宿主原生网页能力生成带引用报告，无需额外 LLM 配置",
+      "source": "./skills/aminer-deep-research",
       "strict": false
     },
     {

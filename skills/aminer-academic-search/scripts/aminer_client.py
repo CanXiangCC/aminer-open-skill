@@ -190,7 +190,7 @@ def paper_search_pro(token: str, title: str = None, keyword: str = None,
 
 
 def paper_qa_search(token: str, query: str = None,
-                    use_topic: bool = False,
+                    use_topic: bool = True,
                     topic_high: str = None, topic_middle: str = None, topic_low: str = None,
                     title: list = None, doi: str = None, year: list = None,
                     sci_flag: bool = False, n_citation_flag: bool = False,
@@ -671,10 +671,11 @@ def workflow_paper_qa(token: str, query: str = None,
     Workflow 5: Paper QA Search
     Use AI-powered paper Q&A search API
     """
-    use_topic = topic_high is not None
-    print(f"[1/1] Academic Q&A search: query={query}, use_topic={use_topic}", file=sys.stderr)
+    # Always use_topic=true: with false the backend ignores `query` (only
+    # reads `title`), so query-only calls would return 403 "no data".
+    print(f"[1/1] Academic Q&A search: query={query}, use_topic=True", file=sys.stderr)
     qa_result = paper_qa_search(
-        token, query=query, use_topic=use_topic,
+        token, query=query, use_topic=True,
         topic_high=topic_high, topic_middle=topic_middle,
         sci_flag=sci_flag, force_citation_sort=sort_citation,
         force_year_sort=sort_year,

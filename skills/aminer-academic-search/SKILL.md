@@ -1,6 +1,6 @@
 ---
 name: aminer-academic-search
-version: 1.1.1
+version: 1.1.2
 author: AMiner
 contact: report@aminer.cn
 description: >

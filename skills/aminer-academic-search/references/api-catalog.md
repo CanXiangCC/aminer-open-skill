@@ -106,11 +106,11 @@ curl -X GET \
 
 | Parameter | Type | Required | Description |
 |--------|------|------|------|
-| use_topic | boolean | Yes | Whether to use combined keyword search. When `true`, use topic fields; when `false`, use title/query. |
+| use_topic | boolean | Yes | When `true`, searches with topic fields and/or keywords extracted from `query`; when `false`, only `title`/`doi` are read and `query` is ignored. Set `true` for any `query` or topic search. |
 | topic_high | string | No | Valid when use_topic=true; keywords that must match (AND logic). Nested array format: `[["termA","termB"],["termC"]]` — outer AND, inner OR. |
 | topic_middle | string | No | Strongly boosted terms; same format as topic_high. |
 | topic_low | string | No | Weakly boosted terms; same format as topic_high. |
-| title | []string | No | Title query when use_topic=false. |
+| title | []string | No | Title query; the only text field read when use_topic=false. |
 | doi | string | No | Exact DOI query. |
 | year | []number | No | Year filter array. |
 | sci_flag | boolean | No | Return SCI papers only. |
@@ -124,7 +124,7 @@ curl -X GET \
 | author_id | []string | No | Author entity ID filter; accepts single ID or ID list. OR relationship with author_terms when both are provided. |
 | org_id | []string | No | Institution entity ID filter; accepts single ID or ID list. OR relationship with org_terms when both are provided. |
 | venue_ids | []string | No | Conference/journal ID list filter. |
-| query | string | No | Raw natural language question (slower); system auto-extracts keywords. Takes precedence over topic_high when both are provided. |
+| query | string | No | Raw natural language question (slower); system auto-extracts keywords. Takes precedence over topic_high when both are provided. Only effective with use_topic=true; with `false` it is silently ignored and the call returns 403 "no data". |
 
 **Response Fields:**
 
@@ -144,7 +144,7 @@ curl -X POST \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: ${AMINER_API_KEY}' \
   -H 'X-Platform: openclaw' \
-  -d '{"use_topic": false, "query": "deep learning protein structure prediction", "size": 10, "sci_flag": true}'
+  -d '{"use_topic": true, "query": "deep learning protein structure prediction", "size": 10, "sci_flag": true}'
 ```
 
 **curl Example (structured keywords):**

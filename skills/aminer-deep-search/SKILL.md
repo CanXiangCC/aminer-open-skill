@@ -1,12 +1,14 @@
 ---
 name: aminer-deep-search
-version: 1.0.0
+version: 2.0.0
 author: AMiner
 contact: report@aminer.cn
 description: >
-  Activate this skill when the user wants deep, multi-round academic paper collection for a survey or literature review using AMiner data and a ReAct-style LLM controller.
-  Use this skill for broad topic exploration, survey bibliography construction, automatic keyword search plus backward-reference snowballing, and collecting hundreds of candidate papers with AMiner IDs and titles.
-  The controller can be the model already running this skill or an optional external OpenAI-compatible chat model. It uses AMiner keyword search plus paper reference APIs as tools. This skill is not intended for simple single-paper lookup or lightweight recommendations; use aminer-free-academic or aminer-daily-paper for those simpler tasks.
+  Activate this skill when the user wants deep, multi-round academic paper collection for a survey or literature review.
+  The host model (the model running this skill) drives the loop itself: it expands queries, judges relevance, snowballs backward references, and decides when to stop.
+  The bundled scripts are pure tool commands that call documented AMiner Open Platform endpoints and print JSON tool results only — no extra LLM configuration is needed.
+  Use this skill for broad topic exploration, survey bibliography construction, and collecting hundreds of candidate papers with AMiner IDs and titles.
+  Not intended for single-paper lookup or lightweight recommendations; use aminer-free-academic or aminer-daily-paper for those.
 metadata:
   {
     "openclaw":
@@ -22,150 +24,88 @@ metadata:
 
 # AMiner Deep Search
 
-ReAct-style survey paper collection using the backing model or an external OpenAI-compatible model with AMiner search/reference APIs.
+Host-model-driven survey paper collection. You (the model reading this) are the controller: run the tool scripts, read their JSON output, judge relevance yourself, and iterate until the collection target is met.
 
-Use this skill when the user asks to collect papers for a research topic, build a large literature list, run citation snowballing, or prepare survey references.
+## Scope
 
-## What This Skill Does
+- Use for: survey bibliography collection (hundreds of papers), keyword expansion, backward-citation snowballing.
+- Do not use for: single-paper lookup or Q&A (route to `aminer-free-academic`), personalized recommendations (route to `aminer-daily-paper`).
 
-The framework runs an LLM-controlled loop with these tools:
+## Pre-flight
 
-- `search`: AMiner keyword search, returning up to 20 papers per query.
-- `get_reference`: AMiner backward-reference expansion for selected seed papers.
-- `add_to_paper_set`: deduplicated paper collection by AMiner paper ID.
-- `END`: terminate and output `[{"id": "...", "title": "..."}, ...]`.
-
-The controller prompt asks the model to expand queries, prioritize high-quality seed papers, use reference snowballing, and terminate within 50 rounds. The target collection size is 400+ papers when AMiner results support it; it must not fabricate papers.
-
-## Required Environment Variables
-
-Check the AMiner key before running:
+1. Check the key without printing it:
 
 ```bash
 [ -z "${AMINER_API_KEY:-}" ] && echo "AMINER_API_KEY missing" || echo "AMINER_API_KEY exists"
 ```
 
-If `AMINER_API_KEY` is missing, stop and ask the user to provide or set it. Never print the key. The code does not contain a built-in AMiner token.
+If missing, stop and ask the user to set `AMINER_API_KEY` (console: https://open.aminer.cn/open/board?tab=control). Never print the key.
 
-## LLM Configuration
+2. Confirm the `topic` and the `target-size` (default 400). If your round plan is estimated to cost ¥5 or more, tell the user the estimate and get confirmation before starting.
 
-The ReAct controller can be driven in two ways:
+## Tools
 
-1. **External LLM (optional).** If the user provides an OpenAI-compatible LLM key, the skill runs `react_agent.py`, which lets that model autonomously decide every tool call.
-2. **Backing-model fallback (default when no key).** If no LLM key is configured, do **not** error. Fall back to the model already running this skill (for example, Claude Code itself) as the controller: drive the collection loop manually by calling the tool CLIs (`search.py`, `citation.py`) and applying the strategy in `prompt.py`.
+Both scripts live in `scripts/` under this skill directory. They print exactly one JSON document to stdout (the tool result); diagnostics and a `[cost]` line go to stderr. They never score relevance — that is your job.
 
-The external-LLM mode reads the following environment variables (the underscore-style names are recommended; the dotted legacy names are still accepted for backward compatibility):
+### `scripts/aminer_api.py` — AMiner API calls
 
-- `LLM_API_KEY` (legacy: `llm.api_key`): LLM API key. Optional. When absent, use the backing-model fallback instead of prompting.
-- `LLM_BASE_URL` (legacy: `llm.base_url`): LLM base URL. Optional when OpenClaw provides a default; otherwise pass `--base-url`.
-- `LLM_MODEL` (legacy: `llm.model`): LLM model name. Required only for the external-LLM mode (or pass `--models`).
+| Subcommand | Endpoint | Price |
+|---|---|---|
+| `search --query Q [--size 20] [--year YYYY] [--order n_citation\|year] [--max-pages 3]` | GET `/api/paper/search/pro` + free `paper/info` enrichment | ¥0.01/page |
+| `qa-search [--query "natural language question"] [--topic-high '[["termA","termB"],["termC"]]'] [--size 20] [--year-from Y] [--year-to Y] [--citation-sort]` | POST `/api/paper/qa/search` (always `use_topic=true`; the backend ignores `query` when `use_topic=false`) + free enrichment | ¥0.05/call |
+| `info --ids id1 id2 ...` | POST `/api/paper/info` (batched ≤100 ids) | Free |
+| `references --ids id1 id2 ... [--per-seed 20]` | GET `/api/paper/relation` per seed + free enrichment | ¥0.10/seed |
 
-Underscore-style names are recommended because POSIX shells (bash/zsh) do not allow `.` in variable names, so `export llm.api_key=...` will fail with `not a valid identifier`. Use the underscore names with `export`, or fall back to `env "llm.api_key=..." python ...` for the legacy names.
+Output shape: `search`/`qa-search`/`info` print `[{id, title, year?, venue?, abstract_slice?}]`; `references` additionally includes `source_paper_ids` (which seeds cited the paper). Seeds themselves are excluded from `references` output.
 
-Detect which mode to use by checking whether an LLM key is available:
+### `scripts/paper_set.py` — cross-round state file (no network)
 
-```bash
-if [ -z "${LLM_API_KEY:-$(printenv 'llm.api_key')}" ]; then
-  echo "No LLM key: use the backing-model fallback (drive tools manually)."
-else
-  echo "LLM key present: run react_agent.py in external-LLM mode."
-fi
-```
-
-Never print any key. Do not hard-code provider-specific tokens, base URLs, or default model names in this skill.
-
-### Quick setup examples
+State file defaults to `outputs/paper_set.json` relative to the working directory.
 
 ```bash
-# Recommended: underscore-style env vars (works with `export`)
-export LLM_API_KEY="sk-xxx"
-export LLM_BASE_URL="https://api.deepseek.com/v1"
-export LLM_MODEL="deepseek-chat"
-export AMINER_API_KEY="xxx"
-python3 react_agent.py --topic "your research topic"
+# Merge kept results (pipe the filtered JSON array in), dedupe by id
+python3 scripts/aminer_api.py search --query "..." | python3 scripts/paper_set.py add
+# → {"added": N, "duplicates": M, "total": T}
+
+python3 scripts/paper_set.py stats     # totals, expanded_seeds, by_year
+python3 scripts/paper_set.py mark-expanded --ids id1 id2   # record snowballed seeds
+python3 scripts/paper_set.py export -o outputs/final_papers.json
 ```
+
+`add` also accepts `--ids id1 id2 ...` for bare IDs. Items carrying `source_paper_ids` (from `references`) automatically mark those seeds as expanded.
+
+If you want to filter before adding, read the search output first, then pipe only the kept items:
 
 ```bash
-# Legacy dotted names still work via `env` (cannot use `export`)
-env "llm.api_key=sk-xxx" \
-    "llm.base_url=https://api.deepseek.com/v1" \
-    "llm.model=deepseek-chat" \
-    "AMINER_API_KEY=xxx" \
-    python3 react_agent.py --topic "your research topic"
+printf '%s' '[{"id":"...","title":"..."}]' | python3 scripts/paper_set.py add
 ```
 
-## Environment Setup
+## Round Protocol (core)
 
-From this skill directory, install dependencies into the Python environment used by `python3`:
+### Round 0 — plan
 
-```bash
-python3 -m pip install -r requirements.txt
-```
+- Derive 4–8 seed queries from the topic: synonyms, subfields, method names, datasets/benchmarks, common English abbreviations.
+- Estimate rounds and cost (searches ≈ ¥0.01–0.05 each, references ≈ ¥0.10/seed). If the estimate is ≥¥5, confirm with the user first.
 
-If you prefer an isolated conda environment, create and activate one first, then install the dependencies:
+### Each round (default budget: 12 rounds), five fixed steps
 
-```bash
-CONDA_PKGS_DIRS="$(pwd)/.conda_pkgs" conda create -p "$(pwd)/.conda" python=3.11 pip -y
-conda activate "$(pwd)/.conda"
-PIP_CACHE_DIR="$(pwd)/.pip_cache" python3 -m pip install -r requirements.txt
-```
+1. **Search**: run 1–4 `search` / `qa-search` calls from the pending query queue. Prefer `search` (cheaper); use `qa-search` when the query is a natural-language question.
+2. **Filter & add**: read the stdout results, judge relevance to the topic yourself, and pipe only the kept items into `paper_set.py add`. Never add papers you consider off-topic.
+3. **Check**: run `stats` to see the total and this round's increment.
+4. **Snowball**: from this round's relevant additions pick ≤5 strong seeds (highly relevant, ranked high under `--order n_citation`, not in `expanded_seeds`) and run `references --ids ...`. Filter the output for relevance, then add it. Run `mark-expanded` for seeds that yielded nothing addable.
+5. **Decide**: choose the next move —
+   - a search returned <5 results or poor quality → replace it with a reformulated query (max 2 variants per direction, then switch to snowballing);
+   - references are yielding many relevant papers → keep snowballing from fresh seeds;
+   - reached `target-size`, or results are exhausted, or 2 consecutive rounds added <5 papers → terminate.
 
-Backing-model mode only requires `requests`. External-LLM mode requires both `openai` and `requests`.
+### Wrap-up
 
-## Execution
+Run `export`, then report: final paper count, total cost (sum the `[cost]` stderr lines), and the output path.
 
-### External-LLM mode (LLM key provided)
+## Rules
 
-Run the main collector from this skill directory:
-
-```bash
-python3 react_agent.py \
-  --topic "<research topic>" \
-  --timeout 300 \
-  --max-tool-calls 20 \
-  --max-rounds 50
-```
-
-Useful options:
-
-- `--api-key`: LLM API key. Defaults to `LLM_API_KEY` (legacy: `llm.api_key`).
-- `--base-url`: LLM base URL. Defaults to `LLM_BASE_URL` (legacy: `llm.base_url`).
-- `--models`: model fallback list. Required unless `LLM_MODEL` (legacy: `llm.model`) is configured.
-- `--timeout`: per-model-call timeout in seconds. Default is 300.
-- `--target-size`: desired final paper count. Default is 400.
-- `--include-abstracts`: include abstracts in the final saved JSON when available.
-
-The script prints the final JSON list and saves a copy under `outputs/`.
-
-### Backing-model fallback mode (no LLM key)
-
-When no LLM key is configured, act as the controller yourself. Follow the collection strategy in `prompt.py` and call the tool CLIs directly (they only need `AMINER_API_KEY`):
-
-```bash
-# Keyword search — returns up to 20 papers as JSON
-python3 search.py --query "<query>" --size 20 --order n_citation
-
-# Backward-reference expansion from seed AMiner paper IDs
-python3 citation.py --ids <id1> <id2> --topic "<research topic>"
-```
-
-Search excludes papers after the current UTC year by default. Use `--year <yyyy>` for an older inclusive cutoff. Each keyword search scans at most 20 AMiner result pages; raise `--max-pages <n>` only when the older cutoff requires a larger, intentional request budget.
-
-Iterate: expand queries, prioritize high-quality seeds, snowball references, deduplicate by AMiner paper ID, and stop once you reach the target size (400+ when results allow) or the results are exhausted. Output the final list as `[{"id": "...", "title": "..."}, ...]` and never fabricate papers.
-
-## Operating Rules
-
-1. Use this skill only for deep collection workflows. For one-off lookup or normal AMiner Q&A, route to the simpler AMiner skills.
-2. Do not expose `LLM_API_KEY` (legacy `llm.api_key`) or `AMINER_API_KEY`.
-3. Keep model/tool-call budgets under control; default `--max-tool-calls 20` and `--max-rounds 50`.
-4. If AMiner returns too few papers, report the actual collected count instead of inventing missing papers.
-5. If a run is likely to be expensive or long, tell the user the planned topic, controller mode, external model when applicable, timeout, max tool calls, and output location before starting.
-
-## File Map
-
-- `react_agent.py`: external-LLM ReAct loop and CLI.
-- `api_client.py`: OpenAI-compatible client with external model fallback.
-- `prompt.py`: paper-collection system prompt.
-- `search.py`: AMiner keyword search and paper detail normalization.
-- `citation.py`: AMiner reference expansion.
-- `paper_set.py`: deduplicated collection and final JSON output.
+1. Never fabricate paper IDs or titles; only cite data actually returned by the tools.
+2. Free first: metadata always comes from the free `paper/info` (the scripts already do this); never call the paid `paper/detail` for bulk metadata.
+3. Keep the raw tool output out of your final answer; report counts and the exported file path instead.
+4. Never print or log `AMINER_API_KEY`.
+5. If AMiner returns fewer papers than the target, report the real count instead of inventing papers.
