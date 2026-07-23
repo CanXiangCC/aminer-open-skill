@@ -55,14 +55,14 @@
     },
     {
       "id": 5,
-      "prompt": "Help me look up Fei-Fei Li from Stanford University on AMiner and give me her 5 most-cited papers and her 5 most recent papers. My token is <YOUR_TOKEN>",
-      "expected_output": "Prefer paper_qa_search combined with author_id/org_id filters. First return the 5 most-cited papers (force_citation_sort), then return the 5 most recent papers (force_year_sort).",
+      "prompt": "Help me look up Fei-Fei Li from Stanford University on AMiner and give me her most-cited papers and her most recent papers. My token is <YOUR_TOKEN>",
+      "expected_output": "Prefer paper_qa_search_pro with author_ids/organization_ids filters. First call with sort=citation, then with sort=recent. Each call returns up to 10 card items (fixed page size).",
       "files": [],
       "expectations": [
         "Called the Scholar Search API (person_search) to confirm Fei-Fei Li's author_id",
-        "Called paper_qa_search with author_id and org_id filters",
-        "Executed two separate queries: one sorted by citation count and one sorted by year",
-        "Each result set returns at most 5 paper titles and paper IDs"
+        "Called paper_qa_search_pro with author_ids (and organization_ids when available)",
+        "Executed two separate queries: one with sort=citation and one with sort=recent",
+        "Each result set returns paper_id/title(/title_zh)/year card fields and AMiner URLs"
       ]
     },
     {

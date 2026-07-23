@@ -5,7 +5,7 @@
 Turn AMiner's academic data capabilities into ready-to-use query and analysis Skills.
 This repository currently provides eight skill flavors:
 
-- `aminer-academic-search`: full version with 27 APIs and 6 analysis workflows
+- `aminer-academic-search`: full version with 28 APIs and 5 analysis workflows
 - `aminer-free-academic`: free-first version focused on discovery, lightweight screening, normalization, and upgrade qualification
 - `aminer-daily-paper`: personalized paper recommendation based on topics, scholar profiles, or author information
 - `aminer-deep-search`: host-model-driven deep survey collection and citation snowballing, no extra LLM configuration
@@ -138,7 +138,7 @@ curl -X POST \
 - `skills/aminer-deep-research/SKILL.zh.md`: Chinese lightweight deep-research workflow
 - `skills/aminer-deep-research/scripts/aminer_open.py`: allowlisted, dependency-free AMiner Open Platform client
 - `skills/aminer-academic-search/scripts/aminer_client.py`: Optional Python client
-- `skills/aminer-academic-search/references/api-catalog.md`: Quick reference for all 27 API parameters and paths
+- `skills/aminer-academic-search/references/api-catalog.md`: Quick reference for all 28 API parameters and paths
 - `skills/aminer-academic-search/evals/evals.json`: Evaluation cases and test samples
 - `skills/paper-source-trace/SKILL.md`: Paper Source Trace workflow and AMiner enrichment boundary
 - `skills/paper-source-trace/README.md`: Paper Source Trace usage guide

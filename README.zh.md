@@ -5,7 +5,7 @@
 把 AMiner 的学术数据能力，变成"开箱即用"的查询与分析 Skill。
 仓库目前提供八类 Skill：
 
-- `aminer-academic-search`：全量版，覆盖 27 个接口和 6 个分析工作流
+- `aminer-academic-search`：全量版，覆盖 28 个接口和 5 个分析工作流
 - `aminer-free-academic`：免费版，专注免费接口、轻量初筛、实体标准化和升级前判断
 - `aminer-daily-paper`：推荐版，根据研究主题、学者画像或作者信息进行个性化论文推荐
 - `aminer-deep-search`：深度收集版，由宿主模型直驱综述文献收集和引用雪球扩展，无需额外 LLM 配置
@@ -139,7 +139,7 @@ curl -X POST \
 - `skills/aminer-deep-research/SKILL.zh.md`：轻量深度研究中文流程
 - `skills/aminer-deep-research/scripts/aminer_open.py`：仅允许 AMiner 开放平台接口的无依赖客户端
 - `skills/aminer-academic-search/scripts/aminer_client.py`：可选 Python 客户端
-- `skills/aminer-academic-search/references/api-catalog.md`：27 个 API 参数与路径速查
+- `skills/aminer-academic-search/references/api-catalog.md`：28 个 API 参数与路径速查
 - `skills/aminer-academic-search/evals/evals.json`：评测用例与测试样例
 - `skills/paper-source-trace/SKILL.zh.md`：论文来源追踪工作流和 AMiner 增强边界
 - `skills/paper-source-trace/README_zh.md`：论文来源追踪使用说明

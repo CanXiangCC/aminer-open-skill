@@ -48,7 +48,7 @@ API_PRICE: dict[str, float] = {
     "org_search": 0, "venue_search": 0, "patent_search": 0, "patent_info": 0,
     "paper_search_pro": 0.01, "paper_detail": 0.01, "patent_detail": 0.01,
     "org_detail": 0.01, "org_disambiguate": 0.01,
-    "paper_qa_search": 0.05, "org_disambiguate_pro": 0.05,
+    "paper_qa_search": 0.05, "paper_qa_search_pro": 0.70, "org_disambiguate_pro": 0.05,
     "paper_relation": 0.10, "org_paper_relation": 0.10,
     "org_patent_relation": 0.10, "venue_paper_relation": 0.10,
     "paper_list_by_keywords": 0.10,
@@ -198,7 +198,7 @@ def paper_qa_search(token: str, query: str = None,
                     author_terms: list = None, org_terms: list = None,
                     author_id: list = None, org_id: list = None, venue_ids: list = None,
                     size: int = 10, offset: int = 0) -> Any:
-    """Paper QA Search (¥0.05/call): AI-powered Q&A; supports natural language and structured keywords."""
+    """Legacy Paper QA Search (¥0.05/call). Prefer paper_qa_search_pro; use this only for topic_* OR/AND."""
     _track_cost("paper_qa_search")
     body: dict = {"use_topic": use_topic, "size": size, "offset": offset}
     optional = {
@@ -217,6 +217,80 @@ def paper_qa_search(token: str, query: str = None,
     if force_year_sort:
         body["force_year_sort"] = True
     return _request(token, "POST", "/api/paper/qa/search", body=body)
+
+
+def paper_qa_search_pro(
+    token: str,
+    query: str = None,
+    query_type: str = "auto",
+    cursor: str = None,
+    authors: list = None,
+    author_ids: list = None,
+    organizations: list = None,
+    organization_ids: list = None,
+    venues: list = None,
+    venue_ids: list = None,
+    year_values: list = None,
+    year_from: int = None,
+    year_to: int = None,
+    languages: list = None,
+    language_preference: str = None,
+    has_chinese_title: bool = None,
+    has_abstract: bool = None,
+    min_citations: int = None,
+    max_citations: int = None,
+    all_terms: list = None,
+    any_terms: list = None,
+    exclude_terms: list = None,
+    search_in: str = None,
+    paper_ids: list = None,
+    exclude_paper_ids: list = None,
+    dois: list = None,
+    sort: str = None,
+) -> Any:
+    """Paper QA Search Pro (¥0.70/call): NL + filters; fixed 10/page; cursor pagination."""
+    _track_cost("paper_qa_search_pro")
+    if cursor:
+        return _request(
+            token, "POST", "/api/v3/paper/qa/searchPro", body={"cursor": cursor}
+        )
+    body: dict = {}
+    if query is not None:
+        body["query"] = query
+    if query_type is not None:
+        body["query_type"] = query_type
+    optional = {
+        "authors": authors,
+        "author_ids": author_ids,
+        "organizations": organizations,
+        "organization_ids": organization_ids,
+        "venues": venues,
+        "venue_ids": venue_ids,
+        "year_values": year_values,
+        "year_from": year_from,
+        "year_to": year_to,
+        "languages": languages,
+        "language_preference": language_preference,
+        "has_chinese_title": has_chinese_title,
+        "has_abstract": has_abstract,
+        "min_citations": min_citations,
+        "max_citations": max_citations,
+        "all_terms": all_terms,
+        "any_terms": any_terms,
+        "exclude_terms": exclude_terms,
+        "search_in": search_in,
+        "paper_ids": paper_ids,
+        "exclude_paper_ids": exclude_paper_ids,
+        "dois": dois,
+        "sort": sort,
+    }
+    for key, value in optional.items():
+        if value is None:
+            continue
+        if isinstance(value, list) and not value:
+            continue
+        body[key] = value
+    return _request(token, "POST", "/api/v3/paper/qa/searchPro", body=body)
 
 
 def paper_info(token: str, ids: list) -> Any:
@@ -666,46 +740,76 @@ def workflow_paper_qa(token: str, query: str = None,
                       topic_high: str = None, topic_middle: str = None,
                       sci_flag: bool = False, sort_citation: bool = False, sort_year: bool = False,
                       author_id: list = None, org_id: list = None, venue_ids: list = None,
-                      size: int = 10) -> dict:
+                      size: int = 10,
+                      year_from: int = None, year_to: int = None,
+                      min_citations: int = None, cursor: str = None) -> dict:
     """
-    Workflow 5: Paper QA Search
-    Use AI-powered paper Q&A search API
+    Workflow: Paper QA Search — prefer Pro, use legacy sparingly.
+    - Default: natural language / filters → paper_qa_search_pro (¥0.70, fixed 10/page)
+    - Rare: only topic_high/topic_middle → legacy paper_qa_search (¥0.05)
     """
-    # Always use_topic=true: with false the backend ignores `query` (only
-    # reads `title`), so query-only calls would return 403 "no data".
-    print(f"[1/1] Academic Q&A search: query={query}, use_topic=True", file=sys.stderr)
-    qa_result = paper_qa_search(
-        token, query=query, use_topic=True,
-        topic_high=topic_high, topic_middle=topic_middle,
-        sci_flag=sci_flag, force_citation_sort=sort_citation,
-        force_year_sort=sort_year,
-        author_id=author_id, org_id=org_id, venue_ids=venue_ids,
-        size=size
-    )
-    if qa_result and qa_result.get("code") == 200 and qa_result.get("data"):
-        qa_result["source_api_chain"] = ["paper_qa_search"]
-        qa_result["route"] = "paper_qa_search"
+    # Structured topic_* exists only on the legacy endpoint; avoid unless required.
+    if topic_high or topic_middle:
+        print(f"[1/1] Legacy topic QA search: topic_high={bool(topic_high)}", file=sys.stderr)
+        qa_result = paper_qa_search(
+            token, query=query, use_topic=True,
+            topic_high=topic_high, topic_middle=topic_middle,
+            sci_flag=sci_flag, force_citation_sort=sort_citation,
+            force_year_sort=sort_year,
+            author_id=author_id, org_id=org_id, venue_ids=venue_ids,
+            size=size,
+        )
+        if isinstance(qa_result, dict):
+            qa_result["source_api_chain"] = ["paper_qa_search"]
+            qa_result["route"] = "paper_qa_search"
         return qa_result
 
-    # Fall back to pro search when query mode yields no results
-    if query:
-        print("      paper_qa_search returned no results; falling back to paper_search_pro...", file=sys.stderr)
-        fallback = paper_search_pro(token, keyword=query, order="n_citation", size=size)
-        data = (fallback or {}).get("data") or []
+    sort = None
+    if sort_citation:
+        sort = "citation"
+    elif sort_year:
+        sort = "recent"
+
+    print(f"[1/1] Paper QA Search Pro: query={query}, sort={sort}", file=sys.stderr)
+    qa_result = paper_qa_search_pro(
+        token,
+        query=query,
+        query_type="auto",
+        cursor=cursor,
+        author_ids=author_id,
+        organization_ids=org_id,
+        venue_ids=venue_ids,
+        year_from=year_from,
+        year_to=year_to,
+        min_citations=min_citations,
+        sort=sort,
+    )
+    data = (qa_result or {}).get("data") or {}
+    items = data.get("items") if isinstance(data, dict) else None
+    if qa_result and qa_result.get("code") == 200 and items:
+        qa_result["source_api_chain"] = ["paper_qa_search_pro"]
+        qa_result["route"] = "paper_qa_search_pro"
+        return qa_result
+
+    if query and not cursor:
+        print("      paper_qa_search_pro returned no results; falling back to paper_search_pro...", file=sys.stderr)
+        order = "n_citation" if sort_citation or not sort_year else "year"
+        fallback = paper_search_pro(token, keyword=query, order=order, size=min(size, 10))
+        fb_data = (fallback or {}).get("data") or []
         return {
-            "code": 200 if data else (qa_result or {}).get("code", -1),
-            "success": bool(data),
-            "msg": "" if data else "no data",
-            "data": data,
-            "total": (fallback or {}).get("total", len(data)),
-            "route": "paper_qa_search -> paper_search_pro",
-            "source_api_chain": ["paper_qa_search", "paper_search_pro"],
+            "code": 200 if fb_data else (qa_result or {}).get("code", -1),
+            "success": bool(fb_data),
+            "msg": "" if fb_data else "no data",
+            "data": fb_data,
+            "total": (fallback or {}).get("total", len(fb_data)),
+            "route": "paper_qa_search_pro -> paper_search_pro",
+            "source_api_chain": ["paper_qa_search_pro", "paper_search_pro"],
             "primary_result": qa_result,
         }
 
     if isinstance(qa_result, dict):
-        qa_result["source_api_chain"] = ["paper_qa_search"]
-        qa_result["route"] = "paper_qa_search"
+        qa_result["source_api_chain"] = ["paper_qa_search_pro"]
+        qa_result["route"] = "paper_qa_search_pro"
     return qa_result
 
 
@@ -803,8 +907,10 @@ Examples:
   # Journal paper monitoring
   python aminer_client.py --token <TOKEN> --action venue_papers --venue "NeurIPS" --year 2023
 
-  # Academic Q&A
+  # Academic Q&A (default: paper_qa_search_pro)
   python aminer_client.py --token <TOKEN> --action paper_qa --query "deep learning for protein structure"
+  python aminer_client.py --token <TOKEN> --action paper_qa \\
+    --query "graph neural network" --sort_citation --year_from 2020 --min_citations 50
   python aminer_client.py --token <TOKEN> --action paper_qa \\
     --topic_high '[["transformer","self-attention"],["protein folding"]]' \\
     --sci_flag --sort_citation
@@ -862,6 +968,10 @@ Docs: https://open.aminer.cn/open/docs
     p.add_argument("--author_id", help="Author ID filter; accepts single ID or JSON array string")
     p.add_argument("--org_id", help="Institution ID filter; accepts single ID or JSON array string")
     p.add_argument("--venue_ids", help="Conference/journal ID filter; accepts JSON array string")
+    p.add_argument("--year_from", type=int, help="[paper_qa pro] start year (inclusive)")
+    p.add_argument("--year_to", type=int, help="[paper_qa pro] end year (inclusive)")
+    p.add_argument("--min_citations", type=int, help="[paper_qa pro] minimum citation count")
+    p.add_argument("--cursor", help="[paper_qa pro] pagination cursor from previous next_cursor")
 
     # Raw mode
     p.add_argument("--api", help="[raw mode] API function name, e.g. paper_search")
@@ -889,7 +999,7 @@ WORKFLOW_DRY_RUN_INFO = {
     "venue_papers": [
         ("venue_search", 0), ("venue_detail", 0.20), ("venue_paper_relation", 0.10),
     ],
-    "paper_qa": [("paper_qa_search", 0.05)],
+    "paper_qa": [("paper_qa_search_pro", 0.70)],
     "patent_search": [("patent_search", 0), ("patent_detail", 0.01)],
     "scholar_patents": [
         ("person_search", 0), ("person_patent_relation", 1.50), ("patent_detail", 0.01),
@@ -971,7 +1081,9 @@ def main():
             topic_high=args.topic_high, topic_middle=args.topic_middle,
             sci_flag=args.sci_flag, sort_citation=args.sort_citation, sort_year=args.sort_year,
             author_id=author_id_filter, org_id=org_id_filter, venue_ids=venue_ids_filter,
-            size=args.size
+            size=args.size,
+            year_from=args.year_from, year_to=args.year_to,
+            min_citations=args.min_citations, cursor=args.cursor,
         )
 
     elif args.action == "patent_search":
@@ -991,6 +1103,7 @@ def main():
             "paper_search": paper_search,
             "paper_search_pro": paper_search_pro,
             "paper_qa_search": paper_qa_search,
+            "paper_qa_search_pro": paper_qa_search_pro,
             "paper_info": paper_info,
             "paper_detail": paper_detail,
             "paper_relation": paper_relation,

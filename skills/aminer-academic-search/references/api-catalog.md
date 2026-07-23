@@ -8,7 +8,7 @@
 
 ## Table of Contents
 
-- [Paper APIs (8)](#paper-apis)
+- [Paper APIs (9)](#paper-apis)
 - [Scholar APIs (6)](#scholar-apis)
 - [Institution APIs (7)](#institution-apis)
 - [Journal APIs (3)](#journal-apis)
@@ -162,6 +162,101 @@ curl -X POST \
     "force_citation_sort": true,
     "size": 10
   }'
+```
+
+> **Prefer Paper QA Search Pro; use this legacy endpoint sparingly.**  
+> Default almost all paper Q&A / topic / filter searches to **Paper QA Search Pro**. Keep this legacy API **only** for `topic_high/topic_middle/topic_low` structured OR/AND mode that Pro does not support. Do not start with this endpoint by default.
+
+---
+
+### 3b. Paper QA Search Pro
+
+> **Preferred default** for paper Q&A / topic / multi-filter search. Prefer this over legacy Paper QA Search whenever possible.
+
+- **URL**: `POST /api/v3/paper/qa/searchPro`
+- **Price**: ¥0.70/call
+- **Description**: Upgraded paper Q&A search. Supports natural-language understanding (`query_type=auto`), author/org/venue/year/citation filters, boolean terms, and cursor pagination. Default page size is fixed at **10** (not client-configurable on the open platform). Card response returns compact fields only.
+
+**Request Parameters:**
+
+| Parameter | Type | Required | Description |
+|--------|------|------|------|
+| query | string | No | Search text, max 500. Required when `query_type` is not `auto`. |
+| query_type | string | No | `auto` / `topic` / `keywords` / `title` / `identifier`. Default `auto`. |
+| cursor | string | No | Pagination cursor (16–256 chars). On next page, request body may contain **only** `cursor`. |
+| authors | []string | No | Author names; OR within list; max 100 |
+| author_ids | []string | No | Author IDs; OR with `authors` |
+| organizations | []string | No | Organization names; OR within list |
+| organization_ids | []string | No | Organization IDs; OR with `organizations` |
+| venues | []string | No | Venue names, e.g. `["NeurIPS"]` |
+| venue_ids | []string | No | Venue IDs; OR with `venues` |
+| year_values | []number | No | Exact years; mutually exclusive with `year_from`/`year_to` |
+| year_from | number | No | Start year (inclusive) |
+| year_to | number | No | End year (inclusive); must be ≥ `year_from` |
+| languages | []string | No | Hard language filter, e.g. `["en","zh"]` |
+| language_preference | string | No | Soft preference boost: `zh` / `en` |
+| has_chinese_title | boolean | No | Require / forbid Chinese title |
+| has_abstract | boolean | No | Require / forbid abstract |
+| min_citations | number | No | Minimum citation count (inclusive) |
+| max_citations | number | No | Maximum citation count (inclusive) |
+| all_terms | []string | No | All terms must match; max 20 |
+| any_terms | []string | No | At least one term must match |
+| exclude_terms | []string | No | Exclude if any term matches |
+| search_in | string | No | Scope for all/any/exclude only: `all` / `title` / `title_keywords` / `abstract` |
+| paper_ids | []string | No | Restrict to paper IDs |
+| exclude_paper_ids | []string | No | Exclude paper IDs |
+| dois | []string | No | DOI filter |
+| sort | string | No | `relevance` / `balanced` / `recent` / `citation` |
+
+**Response Fields (open-platform envelope):**
+
+| Field | Description |
+|--------|------|
+| success | Whether the call succeeded |
+| code | HTTP-style status: 200/400/410/500/502/503/504 |
+| message / msg | Status text; success often `"success"` or empty |
+| data | Business payload; usually `null` on failure |
+| data.items | Paper list (card view, compact fields only) |
+| data.items[].paper_id | Paper ID |
+| data.items[].title | Title (English/original) |
+| data.items[].title_zh | Title (Chinese) |
+| data.items[].authors[].name | Author English name |
+| data.items[].authors[].name_zh | Author Chinese name |
+| data.items[].year | Publication year (may be omitted) |
+| data.total.value | Hit count estimate |
+| data.total.relation | `eq` / `gte` / `unknown` |
+| data.next_cursor | Next-page cursor; null/omitted when no more pages |
+| data.warnings | Business warnings (`code` / `message`) |
+
+**Notes:**
+- Page size is fixed at 10; do **not** send `size` / `view` / `facets` / internal debug flags.
+- Pagination: first page → read `next_cursor` → next page body is `{"cursor":"..."}` only.
+- Always append paper URL: `https://www.aminer.cn/pub/{paper_id}`.
+
+**curl Example:**
+```bash
+curl -X POST \
+  'https://datacenter.aminer.cn/gateway/open_platform/api/v3/paper/qa/searchPro' \
+  -H 'Content-Type: application/json;charset=utf-8' \
+  -H 'Authorization: ${AMINER_API_KEY}' \
+  -H 'X-Platform: openclaw' \
+  -d '{
+    "query": "大模型比较新的高引论文",
+    "query_type": "auto",
+    "sort": "balanced",
+    "year_from": 2024,
+    "min_citations": 30
+  }'
+```
+
+**curl Example (next page):**
+```bash
+curl -X POST \
+  'https://datacenter.aminer.cn/gateway/open_platform/api/v3/paper/qa/searchPro' \
+  -H 'Content-Type: application/json;charset=utf-8' \
+  -H 'Authorization: ${AMINER_API_KEY}' \
+  -H 'X-Platform: openclaw' \
+  -d '{"cursor":"<NEXT_CURSOR_FROM_PREVIOUS_RESPONSE>"}'
 ```
 
 ---
@@ -1043,7 +1138,7 @@ curl -X GET \
 
 | Category | Free APIs | Paid APIs |
 |------|---------|---------|
-| Paper | Paper Search, Paper Info | Paper Search Pro(¥0.01), Paper Details(¥0.01), Paper Citations(¥0.10), Paper QA Search(¥0.05), Paper Batch Query(¥0.10), By Condition(¥0.20) |
+| Paper | Paper Search, Paper Info | Paper Search Pro(¥0.01), Paper Details(¥0.01), Paper Citations(¥0.10), Paper QA Search(¥0.05), **Paper QA Search Pro(¥0.70)**, Paper Batch Query(¥0.10), By Condition(¥0.20) |
 | Scholar | Scholar Search | Scholar Details(¥1.00), Scholar Portrait(¥0.50), Scholar Papers(¥1.50), Scholar Patents(¥1.50), Scholar Projects(¥1.50) |
 | Institution | Org Search | Org Details(¥0.01), Org Scholars(¥0.50), Org Papers(¥0.10), Org Patents(¥0.10), Org Disambiguation(¥0.01), Org Disambiguation Pro(¥0.05) |
 | Journal | Venue Search | Venue Details(¥0.20), Venue Papers(¥0.10) |
@@ -1071,6 +1166,7 @@ curl -X GET \
 |-----|-----------|
 | `paper_search` | `size` max 20; `page` starts at 1 |
 | `paper_search_pro` | `page` starts at 0 |
+| `paper_qa_search_pro` | Fixed 10 results/page; use `cursor` / `next_cursor` (cursor-only body on next page) |
 | `person_search` | `size` max 10; `offset` fixed at 0 (no pagination) |
 | `org_person_relation` | Fixed 10 results per call; use `offset` to paginate |
 | `org_paper_relation` | Fixed 10 results per call; use `offset` to paginate |
