@@ -8,8 +8,6 @@ English | [中文](README.zh.md)
 
 An AMiner Skill collection for finding papers, building reading lists, tracing sources, and checking citations in Claude Code, Codex, OpenClaw, and similar AI assistants.
 
-> Choose the most focused Skill for your task. Start with free search when possible, then use deeper or paid features only when needed.
-
 - [🧰 Choose a Skill](#choose-a-skill)
 - [🚀 Quick Start](#quick-start)
 - [💬 Use Cases](#use-cases)
