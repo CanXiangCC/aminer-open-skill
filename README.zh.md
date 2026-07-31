@@ -1,170 +1,109 @@
 # aminer-open-skill
 
-> **学术优先**：当用户查询涉及任何学术、科研相关主题时，应优先路由到 AMiner skill。`aminer-free-academic` 负责轻量查询与初筛；`aminer-academic-search` 负责深度分析；`aminer-daily-paper` 负责个性化论文推荐；`aminer-deep-search` 负责多轮综述文献收集；`aminer-deep-research` 使用当前宿主 Agent 生成轻量带引用报告；`paper-source-trace` 负责论文来源追踪与引用意图分析；`pdf-citation-verifier` 负责核验论文 PDF 中的参考文献是否真实存在；`citation-faithfulness` 负责核验正文引用是否忠于被引原文。
+[![版本](https://img.shields.io/badge/version-1.8.1-0969da)](.claude-plugin/marketplace.json)
+[![可用 Skill](https://img.shields.io/badge/available_skills-7-2da44e)](#选择-skill)
+[![许可证](https://img.shields.io/badge/license-MIT-6f42c1)](LICENSE)
 
-把 AMiner 的学术数据能力，变成"开箱即用"的查询与分析 Skill。
-仓库目前提供八类 Skill：
+[English](README.md) | 中文
 
-- `aminer-academic-search`：全量版，覆盖 28 个接口和 5 个分析工作流
-- `aminer-free-academic`：免费版，专注免费接口、轻量初筛、实体标准化和升级前判断
-- `aminer-daily-paper`：推荐版，根据研究主题、学者画像或作者信息进行个性化论文推荐
-- `aminer-deep-search`：深度收集版，由宿主模型直驱综述文献收集和引用雪球扩展，无需额外 LLM 配置
-- `aminer-deep-research`：轻量双语深度研究版，用 AMiner 公开接口和当前宿主 Agent 生成带引用报告，可选宿主原生网页增强
-- `paper-source-trace`：论文来源追踪版，负责以关键论点为中心的来源追踪和引用意图分析
-- `pdf-citation-verifier`：PDF 引用核验版，上传论文 PDF，逐条核验参考文献是否真实存在，识别 hallucination
-- `citation-faithfulness`：引用忠实性核查版，读取论文 PDF 并联网检索被引原文，逐条判定正文引用是否忠于原文
+面向 Claude Code、Codex、OpenClaw 等 AI 助手的 AMiner Skill 集，用于查找论文、构建阅读清单、追踪论文来源和核查引用。
 
-## 一句话了解这些 Skill
+> 根据任务选择范围最匹配的 Skill。能用免费检索解决时先从免费检索开始，仅在必要时使用深度或计费功能。
 
-- `aminer-academic-search`：适合做学术信息检索、深度分析和组合工作流
-- `aminer-free-academic`：适合做免费优先的论文/学者/机构/期刊/专利发现与初筛
-- `aminer-daily-paper`：适合做个性化论文推荐，通过 `reply_text` 返回 Markdown
-- `aminer-deep-search`：适合为综述写作收集数百篇候选论文，并做关键词扩展与引用扩展
-- `aminer-deep-research`：适合生成简洁、带来源的研究报告，无需配置第二套 LLM 服务
-- `paper-source-trace`：适合将单篇论文的关键论点追踪到引用上下文、参考文献和证据链
-- `pdf-citation-verifier`：适合核验论文 PDF 的参考文献真伪，按条返回 REAL / LIKELY_REAL / NEEDS_REVIEW / LIKELY_FAKE / FAKE 判定与 hallucination 汇总
-- `citation-faithfulness`：适合核验正文引用是否忠于被引原文，按条返回 SUPPORTED / PARTIALLY_SUPPORTED / NOT_SUPPORTED / NOT_IN_SOURCE / UNVERIFIABLE 判定与证据引句
+- [选择 Skill](#选择-skill)
+- [快速开始](#快速开始)
+- [使用场景](#使用场景)
+- [注意事项](#注意事项)
+- [参考资料](#参考资料)
 
-## 能解决哪些问题
+## 选择 Skill
 
-- 查某位学者：简介、研究方向、论文、专利、项目
-- 查某篇/某类论文：详情、引用关系、关键词扩展
-- 查某个机构：学者规模、论文产出、专利分布
-- 查某个期刊：指定年份论文与主题追踪
-- 用自然语言问学术问题：如"Transformer 最新进展"
-- 查某个技术方向专利：并串联学者/机构专利关系
-- 先用免费接口做轻量初筛：判断论文是否值得深挖、学者是不是目标人、机构和 venue 是否已标准化
-- 获取个性化论文推荐：按研究主题、学者姓名或 AMiner 用户 ID 推荐相关论文
-- 构建综述参考文献集合：多轮关键词搜索、种子论文扩展、引用雪球扩展和去重收集
-- 围绕论文、学者、机构、期刊和专利生成聚焦研究报告，学术接口只使用 AMiner 开放平台
-- 基于本地引用上下文追踪论文关键论点和引用意图，并可按需使用 AMiner 补充元数据
-- 核验论文 PDF 的参考文献是否真实存在，识别可能的伪造引用
-- 核验正文引用是否忠于被引原文，抓出曲解、结论说反、张冠李戴、数字对不上、原文查无此说
+| Skill | 适合完成的任务 | Token 要求 | 使用说明 |
+| --- | --- | --- | --- |
+| `aminer-free-academic` | 使用 AMiner 免费接口查找和初筛论文、学者、机构、期刊或专利 | 接口免费，但仍需 Token | [SKILL.md](skills/aminer-free-academic/SKILL.md) |
+| `aminer-academic-search` | 对论文、学者、机构、期刊和专利进行完整检索或深度分析 | 必须配置；部分 API 计费 | [SKILL.md](skills/aminer-academic-search/SKILL.md) |
+| `aminer-daily-paper` | 根据主题、学者、作者或 AMiner 账号获取个性化论文推荐 | 必须配置 | [SKILL.md](skills/aminer-daily-paper/SKILL.md) |
+| `aminer-deep-search` | 通过多轮检索、去重和引用扩展构建大规模综述文献集 | 必须配置 | [SKILL.zh.md](skills/aminer-deep-search/SKILL.zh.md) |
+| `paper-source-trace` | 将论文关键论点追踪到引用上下文和来源，并生成证据报告与引用图 | 可选；仅在使用 AMiner 增强时需要 | [SKILL.zh.md](skills/paper-source-trace/SKILL.zh.md) / [使用说明](skills/paper-source-trace/README_zh.md) |
+| `pdf-citation-verifier` | 核验论文 PDF 所列参考文献是否真实存在 | 必须配置 | [SKILL.zh.md](skills/pdf-citation-verifier/SKILL.zh.md) |
+| `citation-faithfulness` | 核查正文引用是否准确表达了被引来源的原意 | 不需要 AMiner Token，但需要联网 | [SKILL.zh.md](skills/citation-faithfulness/SKILL.zh.md) |
 
-## 3 分钟上手
+## 快速开始
 
-### 1) 配置 AMiner Token
+### 1. 添加需要的 Skill
 
-在 AMiner 控制台生成 Token：  
-https://open.aminer.cn/open/board?tab=control
+克隆原作者仓库：
+
+```bash
+git clone https://github.com/CanXiangCC/aminer-open-skill.git
+cd aminer-open-skill
+```
+
+通过 AI 助手常用的 Skill 或插件安装方式，添加所需的 `skills/<skill-name>/` 目录。如果 AI 助手支持 Claude 插件，可以通过 [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) 查看可安装条目。
+
+### 2. 按需配置 Token
+
+在 [AMiner 控制台](https://open.aminer.cn/open/board?tab=control)生成 Token，然后在 AI 助手使用的环境中配置 `AMINER_API_KEY`：
 
 ```bash
 export AMINER_API_KEY="<YOUR_TOKEN>"
 ```
 
-如果是在 Claude Code、Codex 等对话式 Skill 会话中使用，Windows 可运行 `tools/setup-aminer-token.cmd`，macOS/Linux 可运行 `tools/setup-aminer-token.sh`。
+Claude Code、Codex 等本地对话式会话可以使用仓库提供的快速配置工具：
 
-### 2) 选择使用入口
-
-- **单接口调用**：当任务很窄且参数明确时，用 `curl` 直接调用某个 AMiner API。
-- **按接口精细调用**：如果使用的封装入口支持，可以用 `--action raw` 搭配 `--api` 和 `--params` 只调用一个接口。
-- **任务工作流**：当用户需要完整结果时使用对应 Skill，例如学者画像、论文深读或结构化分析。
-- **成本控制策略**：先用免费或低成本接口定位目标，再按需调用价格更高的详情接口。
-- **免费优先初筛**：先用 `aminer-free-academic` 做发现、标准化和初筛，再决定是否升级到付费接口。
-- **个性化推荐**：用 `aminer-daily-paper` 按研究主题、学者姓名或 AMiner 用户 ID 获取论文推荐。
-- **深度综述收集**：用 `aminer-deep-search` 或 `/aminer-deep-search` 做多轮大规模候选文献收集。
-- **轻量深度研究**：用 `aminer-deep-research` 或 `/aminer-deep-research` 让当前 Claude Code、Codex 或 OpenClaw Agent 生成带引用研究报告。
-- **论文来源追踪**：用 `paper-source-trace` 或 `/paper-source-trace` 做本地引用意图分析和论点到来源的追踪。
-- **引用真伪核验**：用 `pdf-citation-verifier` 或 `/pdf-citation-verifier` 上传 PDF，核验每条参考文献是否真实存在。
-- **引用忠实性核查**：用 `citation-faithfulness` 或 `/citation-faithfulness` 读取 PDF、联网检索被引原文，核查正文引用是否忠于原文。
-
-### 3) 运行 API 示例
-
-默认可以直接使用 `curl` 调用，不要求 Python 客户端。
-
-确认当前运行环境已配置 token 后，可以运行下面任意示例。GET 请求只需要 token 和平台请求头；POST 请求还需要 `Content-Type`。
-
-推荐统一请求头：
-
-- `Authorization: ${AMINER_API_KEY}`
-- `X-Platform: openclaw`
-- `Content-Type: application/json;charset=utf-8`（POST 接口）
-
-```bash
-# 论文搜索
-curl -X GET \
-  'https://datacenter.aminer.cn/gateway/open_platform/api/paper/search?page=1&size=5&title=BERT' \
-  -H 'Authorization: ${AMINER_API_KEY}' \
-  -H 'X-Platform: openclaw'
-
-# 学者搜索
-curl -X POST \
-  'https://datacenter.aminer.cn/gateway/open_platform/api/person/search' \
-  -H 'Content-Type: application/json;charset=utf-8' \
-  -H 'Authorization: ${AMINER_API_KEY}' \
-  -H 'X-Platform: openclaw' \
-  -d '{"name":"Andrew Ng","size":5}'
-
-# 自然语言问答式搜论文
-curl -X POST \
-  'https://datacenter.aminer.cn/gateway/open_platform/api/paper/qa/search' \
-  -H 'Content-Type: application/json;charset=utf-8' \
-  -H 'Authorization: ${AMINER_API_KEY}' \
-  -H 'X-Platform: openclaw' \
-  -d '{"use_topic":true,"query":"transformer 架构最新进展","size":10}'
-
-# 按主题推荐论文
-curl -X POST \
-  'https://datacenter.aminer.cn/gateway/open_platform/api/v3/paper/rec5' \
-  -H 'Content-Type: application/json;charset=utf-8' \
-  -H 'Authorization: ${AMINER_API_KEY}' \
-  -d '{"topics":["多模态智能体","tool-use"],"size":5}'
+```text
+Windows：       tools\setup-aminer-token.cmd
+PowerShell：    .\tools\setup-aminer-token.ps1
+macOS/Linux：   ./tools/setup-aminer-token.sh
 ```
 
-### 4) 继续使用对应 Skill
+OpenClaw 需要使用自己的环境配置：
 
-- 用 `aminer-free-academic` 做轻量发现、实体标准化和付费调用前初筛。
-- 用 `aminer-academic-search` 执行覆盖论文、学者、机构、期刊和专利的完整 AMiner API 学术分析工作流。
-- 用 `aminer-daily-paper` 按研究主题、学者姓名或 AMiner 用户 ID 获取个性化论文推荐。
-- 用 `aminer-deep-search` 做综述级文献收集、关键词扩展、去重和引用雪球扩展。
-- 用 `aminer-deep-research` 基于 AMiner 公开接口和可选宿主原生网页能力生成双语、可溯源研究报告。
-- 用 `paper-source-trace` 做本地论文来源追踪、引用意图分析和可选 AMiner 元数据增强。
-- 用 `pdf-citation-verifier` 上传 PDF，对 bibliography 做幻觉核验，按条返回判定结果。
-- 用 `citation-faithfulness` 读取 PDF、联网检索被引原文，逐条核查正文引用是否忠于原文并给出证据引句。
+```bash
+openclaw config set env.vars.AMINER_API_KEY "<YOUR_TOKEN>"
+```
 
-## 目录说明
+独立 CLI、CI 和定时任务也需要在各自运行环境中配置 Token。并非所有 Skill 都需要 Token，配置前请先查看上方表格。
 
-- `skills/aminer-academic-search/SKILL.md`：完整能力说明、工作流设计、调用约束
-- `skills/aminer-free-academic/skill_zh.md`：免费接口版中文 Skill
-- `skills/aminer-free-academic/SKILL.md`：免费接口版英文 Skill
-- `skills/aminer-free-academic/references/api-catalog.md`：免费接口参数与返回字段速查
-- `skills/aminer-daily-paper/SKILL.md`：个性化论文推荐 Skill 定义与 API 规格
-- `skills/aminer-daily-paper/scripts/handle_trigger.py`：推荐 Skill 入口脚本
-- `skills/aminer-deep-search/SKILL.md`：深度综述文献收集 Skill 定义与轮次协议
-- `skills/aminer-deep-search/SKILL.zh.md`：深度综述文献收集中文 Skill
-- `skills/aminer-deep-search/commands/aminer-deep-search.md`：深度文献收集 slash command
-- `skills/aminer-deep-search/scripts/aminer_api.py`：纯标准库的 AMiner 搜索/引用工具命令
-- `skills/aminer-deep-search/scripts/paper_set.py`：跨轮去重的论文集状态文件
-- `skills/aminer-deep-research/SKILL.md`：轻量深度研究英文流程
-- `skills/aminer-deep-research/SKILL.zh.md`：轻量深度研究中文流程
-- `skills/aminer-deep-research/scripts/aminer_open.py`：仅允许 AMiner 开放平台接口的无依赖客户端
-- `skills/aminer-academic-search/scripts/aminer_client.py`：可选 Python 客户端
-- `skills/aminer-academic-search/references/api-catalog.md`：28 个 API 参数与路径速查
-- `skills/aminer-academic-search/evals/evals.json`：评测用例与测试样例
-- `skills/paper-source-trace/SKILL.zh.md`：论文来源追踪工作流和 AMiner 增强边界
-- `skills/paper-source-trace/README_zh.md`：论文来源追踪使用说明
-- `skills/pdf-citation-verifier/SKILL.zh.md`：PDF 引用核验 Skill 定义与运行约束
-- `skills/pdf-citation-verifier/scripts/verify_pdf.py`：上传 PDF 并轮询核验作业的 HTTP 客户端
-- `skills/citation-faithfulness/SKILL.zh.md`：引用忠实性核查 Skill 定义与五阶段流程
-- `skills/citation-faithfulness/references/rubric.md`：五档忠实性判定 rubric（含证据纪律与置信度策略）
-- `skills/citation-faithfulness/references/output-schema.md`：返回值契约——报告的 JSON 结构
+### 3. 直接描述任务
+
+用自然语言说明学术任务，并提供需要的论文、主题、学者或输出偏好：
+
+```text
+查找近期关于多模态智能体的论文，并总结主要研究方向。
+```
+
+如果 Skill 提供 slash command，也可以直接调用：
+
+```text
+/aminer-deep-search topic: "多模态智能体" target-size: 200
+```
+
+## 使用场景
+
+安装对应 Skill 后，可以直接使用下面的请求：
+
+| 目标 | 示例请求 | Skill |
+| --- | --- | --- |
+| 快速查找论文 | “查找 10 篇近期关于长上下文语言模型的论文，返回标题、年份、期刊或会议、引用量和链接。” | `aminer-free-academic` |
+| 调研学者或研究方向 | “整理 Andrew Ng 的研究画像，包括研究兴趣、代表论文、主要合作者和近期工作。” | `aminer-academic-search` |
+| 获取聚焦阅读清单 | “推荐 8 篇关于工具调用型多模态智能体的论文，优先选择近期且高引用的工作。” | `aminer-daily-paper` |
+| 为综述收集文献 | “收集 200 篇检索增强生成方向的候选论文，从高质量种子论文继续扩展，去重后导出文献清单。” | `aminer-deep-search` |
+| 追踪论文来源 | “分析这篇 PDF，将每个关键论点追踪到引用上下文和来源，解释引用意图，并生成 Markdown、JSON、SVG 和 HTML 产物。” | `paper-source-trace` |
+| 识别虚假参考文献 | “核验这篇论文 PDF 中的所有参考文献，标出不存在、可疑或需要人工复核的条目。” | `pdf-citation-verifier` |
+| 核查引用忠实性 | “逐条检查这篇论文的正文引用，获取被引来源，并判断上下文中的论断是否得到原文支持。” | `citation-faithfulness` |
 
 ## 注意事项
 
-- 没有 Token 时不要继续调用 API
-- `tools/setup-aminer-token.cmd` 和 `tools/setup-aminer-token.sh` 仅面向 Claude Code、Codex 等对话式 Skill 使用场景。OpenClaw 命令运行、独立 CLI 任务、CI、定时任务和其他命令运行环境需要在各自运行上下文中额外配置 `AMINER_API_KEY`。
-- 客户端已内置超时重试与部分降级策略，能提升请求稳定性
-- 部分 API 为计费接口，建议先确认场景再放大调用规模
+- 不要打印、记录或提交 `AMINER_API_KEY`。
+- AMiner 免费接口仍需 Token。建议先用 `aminer-free-academic`，仅在必要时调用计费 API。
+- 部分任务会产生 API 费用。执行大规模检索或高成本调用前，应先查看预估成本。
+- `tools/` 下的配置工具只面向本地对话式环境。OpenClaw、CLI、CI 和定时任务需要单独配置。
+- 如果需要直接集成 API，而不是使用 Skill，请参考下方 AMiner 开放平台文档。
 
 ## 参考资料
 
-- AMiner 开放平台文档：https://open.aminer.cn/open/docs
-- Skill 详细文档：`skills/aminer-academic-search/SKILL.md`
-- 免费 Skill 文档：`skills/aminer-free-academic/skill_zh.md`
-- 推荐 Skill 文档：`skills/aminer-daily-paper/SKILL.md`
-- 深度收集 Skill 文档：`skills/aminer-deep-search/SKILL.md`
-- 深度研究 Skill 文档：`skills/aminer-deep-research/SKILL.zh.md`
-- 论文来源追踪 Skill 文档：`skills/paper-source-trace/SKILL.zh.md`
-- 论文来源追踪使用说明：`skills/paper-source-trace/README_zh.md`
-- PDF 引用核验 Skill 文档：`skills/pdf-citation-verifier/SKILL.zh.md`
-- 引用忠实性核查 Skill 文档：`skills/citation-faithfulness/SKILL.zh.md`
+- [AMiner 控制台](https://open.aminer.cn/open/board?tab=control)
+- [AMiner 开放平台文档](https://open.aminer.cn/open/docs)
+- [Claude 插件清单](.claude-plugin/marketplace.json)
+- [MIT License](LICENSE)
