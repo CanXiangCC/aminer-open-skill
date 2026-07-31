@@ -10,13 +10,17 @@ An AMiner Skill collection for finding papers, building reading lists, tracing s
 
 > Choose the most focused Skill for your task. Start with free search when possible, then use deeper or paid features only when needed.
 
-- [Choose a Skill](#choose-a-skill)
-- [Quick Start](#quick-start)
-- [Use Cases](#use-cases)
-- [Notes](#notes)
-- [References](#references)
+- [🧰 Choose a Skill](#choose-a-skill)
+- [🚀 Quick Start](#quick-start)
+- [💬 Use Cases](#use-cases)
+- [ℹ️ Notes](#notes)
+- [📚 References](#references)
 
 ## Choose a Skill
+
+A typical workflow moves from finding literature, to understanding a paper's sources, to verifying its citations. Start with the category that matches your current task.
+
+### 🔎 Find and collect literature
 
 | Skill | Use it when you want to | Token | Guide |
 | --- | --- | --- | --- |
@@ -24,13 +28,23 @@ An AMiner Skill collection for finding papers, building reading lists, tracing s
 | `aminer-academic-search` | Run full academic searches or deeper analysis across papers, scholars, institutions, venues, and patents | Required; some APIs are billed | [SKILL.md](skills/aminer-academic-search/SKILL.md) |
 | `aminer-daily-paper` | Get personalized paper recommendations from topics, scholars, authors, or an AMiner account | Required | [SKILL.md](skills/aminer-daily-paper/SKILL.md) |
 | `aminer-deep-search` | Build a large survey bibliography through multi-round search, deduplication, and citation expansion | Required | [SKILL.md](skills/aminer-deep-search/SKILL.md) |
+
+### 🧭 Analyze and trace a paper
+
+| Skill | Use it when you want to | Token | Guide |
+| --- | --- | --- | --- |
 | `paper-source-trace` | Trace a paper's key claims to its citation contexts and sources, then generate evidence reports and citation maps | Optional; only needed for AMiner enrichment | [SKILL.md](skills/paper-source-trace/SKILL.md) / [Usage guide](skills/paper-source-trace/README.md) |
+
+### ✅ Verify citations
+
+| Skill | Use it when you want to | Token | Guide |
+| --- | --- | --- | --- |
 | `pdf-citation-verifier` | Check whether the references listed in a paper PDF actually exist | Required | [SKILL.md](skills/pdf-citation-verifier/SKILL.md) |
 | `citation-faithfulness` | Check whether in-text citations accurately represent what the cited sources say | No AMiner token required; web access is required | [SKILL.md](skills/citation-faithfulness/SKILL.md) |
 
 ## Quick Start
 
-### 1. Add the Skill you need
+### 1. 📦 Add the Skill you need
 
 Clone the repository:
 
@@ -41,7 +55,7 @@ cd aminer-open-skill
 
 Add the selected `skills/<skill-name>/` directory to your AI assistant using its normal Skill or plugin installation method. If your assistant supports Claude plugins, use [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) as the plugin list.
 
-### 2. Configure the token when required
+### 2. 🔑 Configure the token when required
 
 Generate a token in the [AMiner Console](https://open.aminer.cn/open/board?tab=control), then set `AMINER_API_KEY` in the environment used by your assistant:
 
@@ -65,7 +79,7 @@ openclaw config set env.vars.AMINER_API_KEY "<YOUR_TOKEN>"
 
 Standalone CLI commands, CI jobs, and scheduled tasks must set the token where the command runs. Check the table above first because not every Skill requires a token.
 
-### 3. Ask naturally
+### 3. 💬 Ask naturally
 
 Describe the academic task and provide any required paper, topic, scholar, or output preferences:
 

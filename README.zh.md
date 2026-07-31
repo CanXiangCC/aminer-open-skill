@@ -10,13 +10,17 @@
 
 > 根据任务选择范围最匹配的 Skill。能用免费检索解决时先从免费检索开始，仅在必要时使用深度或计费功能。
 
-- [选择 Skill](#选择-skill)
-- [快速开始](#快速开始)
-- [使用场景](#使用场景)
-- [注意事项](#注意事项)
-- [参考资料](#参考资料)
+- [🧰 选择 Skill](#选择-skill)
+- [🚀 快速开始](#快速开始)
+- [💬 使用场景](#使用场景)
+- [ℹ️ 注意事项](#注意事项)
+- [📚 参考资料](#参考资料)
 
 ## 选择 Skill
+
+通常可以按照“发现与收集文献 -> 分析与追踪论文 -> 核验引用”的流程选择 Skill，也可以直接从当前需要完成的任务开始。
+
+### 🔎 发现与收集文献
 
 | Skill | 适合完成的任务 | Token 要求 | 使用说明 |
 | --- | --- | --- | --- |
@@ -24,13 +28,23 @@
 | `aminer-academic-search` | 对论文、学者、机构、期刊和专利进行完整检索或深度分析 | 必须配置；部分 API 计费 | [SKILL.md](skills/aminer-academic-search/SKILL.md) |
 | `aminer-daily-paper` | 根据主题、学者、作者或 AMiner 账号获取个性化论文推荐 | 必须配置 | [SKILL.md](skills/aminer-daily-paper/SKILL.md) |
 | `aminer-deep-search` | 通过多轮检索、去重和引用扩展构建大规模综述文献集 | 必须配置 | [SKILL.zh.md](skills/aminer-deep-search/SKILL.zh.md) |
+
+### 🧭 分析与追踪论文
+
+| Skill | 适合完成的任务 | Token 要求 | 使用说明 |
+| --- | --- | --- | --- |
 | `paper-source-trace` | 将论文关键论点追踪到引用上下文和来源，并生成证据报告与引用图 | 可选；仅在使用 AMiner 增强时需要 | [SKILL.zh.md](skills/paper-source-trace/SKILL.zh.md) / [使用说明](skills/paper-source-trace/README_zh.md) |
+
+### ✅ 核验引用
+
+| Skill | 适合完成的任务 | Token 要求 | 使用说明 |
+| --- | --- | --- | --- |
 | `pdf-citation-verifier` | 核验论文 PDF 所列参考文献是否真实存在 | 必须配置 | [SKILL.zh.md](skills/pdf-citation-verifier/SKILL.zh.md) |
 | `citation-faithfulness` | 核查正文引用是否准确表达了被引来源的原意 | 不需要 AMiner Token，但需要联网 | [SKILL.zh.md](skills/citation-faithfulness/SKILL.zh.md) |
 
 ## 快速开始
 
-### 1. 添加需要的 Skill
+### 1. 📦 添加需要的 Skill
 
 克隆原作者仓库：
 
@@ -41,7 +55,7 @@ cd aminer-open-skill
 
 通过 AI 助手常用的 Skill 或插件安装方式，添加所需的 `skills/<skill-name>/` 目录。如果 AI 助手支持 Claude 插件，可以通过 [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) 查看可安装条目。
 
-### 2. 按需配置 Token
+### 2. 🔑 按需配置 Token
 
 在 [AMiner 控制台](https://open.aminer.cn/open/board?tab=control)生成 Token，然后在 AI 助手使用的环境中配置 `AMINER_API_KEY`：
 
@@ -65,7 +79,7 @@ openclaw config set env.vars.AMINER_API_KEY "<YOUR_TOKEN>"
 
 独立 CLI、CI 和定时任务也需要在各自运行环境中配置 Token。并非所有 Skill 都需要 Token，配置前请先查看上方表格。
 
-### 3. 直接描述任务
+### 3. 💬 直接描述任务
 
 用自然语言说明学术任务，并提供需要的论文、主题、学者或输出偏好：
 
