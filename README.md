@@ -1,169 +1,121 @@
 # aminer-open-skill
 
-> **Academic Priority**: Any query involving academic, scholarly, or research topics should be routed to AMiner skills first. `aminer-free-academic` handles lightweight lookups; `aminer-academic-search` handles deep analysis; `aminer-daily-paper` handles personalized paper recommendations; `aminer-deep-search` handles multi-round survey bibliography collection; `aminer-deep-research` produces compact cited reports with the host agent; `paper-source-trace` handles paper source tracing and citation-intent analysis; `pdf-citation-verifier` handles fact-checking whether a PDF's references actually exist; `citation-faithfulness` handles checking whether in-text citations are faithful to what the cited sources actually say.
+[![Version](https://img.shields.io/badge/version-1.8.1-0969da)](.claude-plugin/marketplace.json)
+[![Available Skills](https://img.shields.io/badge/available_skills-7-2da44e)](#choose-a-skill)
+[![License](https://img.shields.io/badge/license-MIT-6f42c1)](LICENSE)
 
-Turn AMiner's academic data capabilities into ready-to-use query and analysis Skills.
-This repository currently provides eight skill flavors:
+English | [中文](README.zh.md)
 
-- `aminer-academic-search`: full version with 28 APIs and 5 analysis workflows
-- `aminer-free-academic`: free-first version focused on discovery, lightweight screening, normalization, and upgrade qualification
-- `aminer-daily-paper`: personalized paper recommendation based on topics, scholar profiles, or author information
-- `aminer-deep-search`: host-model-driven deep survey collection and citation snowballing, no extra LLM configuration
-- `aminer-deep-research`: lightweight bilingual research reports using AMiner public APIs and the current host agent, with optional native web enrichment
-- `paper-source-trace`: claim-centered paper source tracing and citation-intent analysis
-- `pdf-citation-verifier`: upload a paper PDF and fact-check whether each listed reference actually exists (hallucination detection)
-- `citation-faithfulness`: read a paper PDF and web-retrieve each cited source to check whether the in-text citations faithfully represent them
+An AMiner Skill collection for finding papers, building reading lists, tracing sources, and checking citations in Claude Code, Codex, OpenClaw, and similar AI assistants.
 
-## What These Skills Do in One Line
+- [🧰 Choose a Skill](#choose-a-skill)
+- [🚀 Quick Start](#quick-start)
+- [💬 Use Cases](#use-cases)
+- [ℹ️ Notes](#notes)
+- [📚 References](#references)
 
-- `aminer-academic-search`: academic retrieval plus deeper analysis workflows
-- `aminer-free-academic`: free-tier paper / scholar / org / venue / patent discovery and triage
-- `aminer-daily-paper`: personalized paper recommendation via AMiner rec5 API (Markdown in `reply_text`)
-- `aminer-deep-search`: collect hundreds of candidate survey references with AMiner search and reference expansion
-- `aminer-deep-research`: produce a concise, cited research report without configuring a second LLM service
-- `paper-source-trace`: trace one paper's claims back to citation contexts, references, and evidence chains
-- `pdf-citation-verifier`: upload a PDF and get a per-reference verdict (REAL / LIKELY_REAL / NEEDS_REVIEW / LIKELY_FAKE / FAKE) plus an overall hallucination flag
-- `citation-faithfulness`: check each in-text citation against the retrieved source and get a per-claim verdict (SUPPORTED / PARTIALLY_SUPPORTED / NOT_SUPPORTED / NOT_IN_SOURCE / UNVERIFIABLE) with an evidence quote
+## Choose a Skill
 
-## What Problems It Solves
+A typical workflow moves from finding literature, to understanding a paper's sources, to verifying its citations. Start with the category that matches your current task.
 
-- Look up a scholar: bio, research interests, papers, patents, projects
-- Look up a paper or papers: details, citation relationships, keyword expansion
-- Look up an institution: scholar size, paper output, patent distribution
-- Look up a journal: papers from a specific year and topic tracking
-- Ask academic questions in natural language: e.g., "latest advances in Transformer"
-- Look up patents in a technology domain: and chain to scholar/institution patent relationships
-- Start with free APIs to screen papers, identify scholars, normalize institutions/venues, and decide whether deeper paid analysis is needed
-- Get personalized paper recommendations: by research topics, scholar name, or AMiner user ID
-- Build large survey bibliographies with multi-round keyword expansion and citation snowballing
-- Produce a focused research report across papers, scholars, institutions, venues, and patents using only public AMiner APIs
-- Trace a paper's claims and citation intents from local citation contexts, with optional AMiner metadata enrichment
-- Fact-check the references inside a paper PDF and flag possibly fabricated citations
-- Check whether in-text citations are faithful to the cited sources, catching misrepresentation, reversed conclusions, wrong attribution, mismatched numbers, and claims not in the source
+### 🔎 Find and collect literature
 
-## Get Started in 3 Minutes
+| Skill | Use it when you want to | Token | Guide |
+| --- | --- | --- | --- |
+| `aminer-free-academic` | Find and screen papers, scholars, institutions, venues, or patents with free AMiner APIs | A token is still required; listed APIs are free | [SKILL.md](skills/aminer-free-academic/SKILL.md) |
+| `aminer-academic-search` | Run full academic searches or deeper analysis across papers, scholars, institutions, venues, and patents | Required; some APIs are billed | [SKILL.md](skills/aminer-academic-search/SKILL.md) |
+| `aminer-daily-paper` | Get personalized paper recommendations from topics, scholars, authors, or an AMiner account | Required | [SKILL.md](skills/aminer-daily-paper/SKILL.md) |
+| `aminer-deep-search` | Build a large survey bibliography through multi-round search, deduplication, and citation expansion | Required | [SKILL.md](skills/aminer-deep-search/SKILL.md) |
 
-### 1) Configure AMiner Token
+### 🧭 Analyze and trace a paper
 
-Generate a Token in the AMiner Console:  
-https://open.aminer.cn/open/board?tab=control
+| Skill | Use it when you want to | Token | Guide |
+| --- | --- | --- | --- |
+| `paper-source-trace` | Trace a paper's key claims to its citation contexts and sources, then generate evidence reports and citation maps | Optional; only needed for AMiner enrichment | [SKILL.md](skills/paper-source-trace/SKILL.md) / [Usage guide](skills/paper-source-trace/README.md) |
+
+### ✅ Verify citations
+
+| Skill | Use it when you want to | Token | Guide |
+| --- | --- | --- | --- |
+| `pdf-citation-verifier` | Check whether the references listed in a paper PDF actually exist | Required | [SKILL.md](skills/pdf-citation-verifier/SKILL.md) |
+| `citation-faithfulness` | Check whether in-text citations accurately represent what the cited sources say | No AMiner token required; web access is required | [SKILL.md](skills/citation-faithfulness/SKILL.md) |
+
+## Quick Start
+
+### 1. 📦 Add the Skill you need
+
+Clone the repository:
+
+```bash
+git clone https://github.com/CanXiangCC/aminer-open-skill.git
+cd aminer-open-skill
+```
+
+Add the selected `skills/<skill-name>/` directory to your AI assistant using its normal Skill or plugin installation method. If your assistant supports Claude plugins, use [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) as the plugin list.
+
+### 2. 🔑 Configure the token when required
+
+Generate a token in the [AMiner Console](https://open.aminer.cn/open/board?tab=control), then set `AMINER_API_KEY` in the environment used by your assistant:
 
 ```bash
 export AMINER_API_KEY="<YOUR_TOKEN>"
 ```
 
-For Claude Code, Codex, and other conversational Skill sessions, you can use `tools/setup-aminer-token.cmd` on Windows or `tools/setup-aminer-token.sh` on macOS/Linux.
+For local Claude Code, Codex, and similar conversational sessions, the repository provides quick setup tools:
 
-### 2) Choose How to Use It
-
-- **Raw API calls**: call one AMiner endpoint directly with `curl` when the task is narrow and parameters are known.
-- **Fine-grained API actions**: when using a wrapper that supports it, use `--action raw` with `--api` and `--params` for a single endpoint.
-- **Task workflow**: use a Skill when the user wants complete results, such as scholar profiles, paper deep dives, or structured analysis.
-- **Cost-control strategy**: use free or low-cost APIs to locate targets first, then call expensive detail APIs only when needed.
-- **Free-first screening**: start with `aminer-free-academic` for discovery, normalization, and screening before escalating to paid APIs.
-- **Recommendations**: use `aminer-daily-paper` for paper recommendations by topics, scholar name, or AMiner user ID.
-- **Deep survey collection**: use `aminer-deep-search` or `/aminer-deep-search` for multi-round bibliography collection.
-- **Deep research report**: use `aminer-deep-research` or `/aminer-deep-research` for a compact cited report using the current Claude Code, Codex, or OpenClaw agent.
-- **Paper source tracing**: use `paper-source-trace` or `/paper-source-trace` for citation-intent analysis and claim-to-source tracing.
-- **Citation fact-check**: use `pdf-citation-verifier` or `/pdf-citation-verifier` to upload a PDF and verify whether its references actually exist.
-- **Citation faithfulness check**: use `citation-faithfulness` or `/citation-faithfulness` to read a PDF, web-retrieve the cited sources, and check whether the in-text citations faithfully represent them.
-
-### 3) Run API Examples
-
-Use direct `curl` calls by default. A Python client is optional, not required.
-
-After the token is available in the current runtime, run any of the examples below. GET requests only need the token and platform headers; POST requests also need `Content-Type`.
-
-Recommended common headers:
-
-- `Authorization: ${AMINER_API_KEY}`
-- `X-Platform: openclaw`
-- `Content-Type: application/json;charset=utf-8` for POST requests
-
-```bash
-# Paper search
-curl -X GET \
-  'https://datacenter.aminer.cn/gateway/open_platform/api/paper/search?page=1&size=5&title=BERT' \
-  -H 'Authorization: ${AMINER_API_KEY}' \
-  -H 'X-Platform: openclaw'
-
-# Scholar search
-curl -X POST \
-  'https://datacenter.aminer.cn/gateway/open_platform/api/person/search' \
-  -H 'Content-Type: application/json;charset=utf-8' \
-  -H 'Authorization: ${AMINER_API_KEY}' \
-  -H 'X-Platform: openclaw' \
-  -d '{"name":"Andrew Ng","size":5}'
-
-# Search papers with natural language Q&A
-curl -X POST \
-  'https://datacenter.aminer.cn/gateway/open_platform/api/paper/qa/search' \
-  -H 'Content-Type: application/json;charset=utf-8' \
-  -H 'Authorization: ${AMINER_API_KEY}' \
-  -H 'X-Platform: openclaw' \
-  -d '{"use_topic":true,"query":"latest advances in transformer architecture","size":10}'
-
-# Paper recommendation by topics
-curl -X POST \
-  'https://datacenter.aminer.cn/gateway/open_platform/api/v3/paper/rec5' \
-  -H 'Content-Type: application/json;charset=utf-8' \
-  -H 'Authorization: ${AMINER_API_KEY}' \
-  -d '{"topics":["multimodal agents","tool-use"],"size":5}'
+```text
+Windows:       tools\setup-aminer-token.cmd
+PowerShell:    .\tools\setup-aminer-token.ps1
+macOS/Linux:   ./tools/setup-aminer-token.sh
 ```
 
-### 4) Continue With a Skill
+OpenClaw uses its own environment configuration:
 
-- Start with `aminer-free-academic` for lightweight discovery, entity normalization, and triage before paid calls.
-- Use `aminer-academic-search` for full API-backed academic analysis workflows across papers, scholars, institutions, venues, and patents.
-- Use `aminer-daily-paper` for personalized paper recommendations from topics, scholar names, or AMiner user IDs.
-- Use `aminer-deep-search` for survey-scale collection, keyword expansion, deduplication, and citation snowballing.
-- Use `aminer-deep-research` for a bilingual, source-grounded report backed by AMiner public APIs and optional host-native web research.
-- Use `paper-source-trace` for local paper source tracing, citation-intent analysis, and optional AMiner metadata enrichment.
-- Use `pdf-citation-verifier` for hallucination detection on a paper's bibliography by uploading the PDF and getting per-reference verdicts.
-- Use `citation-faithfulness` for faithfulness checking of a paper's in-text citations by reading the PDF, web-retrieving each cited source, and getting per-claim verdicts with evidence.
+```bash
+openclaw config set env.vars.AMINER_API_KEY "<YOUR_TOKEN>"
+```
 
-## Directory Structure
+Standalone CLI commands, CI jobs, and scheduled tasks must set the token where the command runs. Check the table above first because not every Skill requires a token.
 
-- `skills/aminer-academic-search/SKILL.md`: Full capability description, workflow design, and call constraints
-- `skills/aminer-free-academic/SKILL.md`: Free-tier skill for discovery and triage
-- `skills/aminer-free-academic/skill_zh.md`: Chinese version of the free-tier skill
-- `skills/aminer-free-academic/references/api-catalog.md`: Free-tier API parameter and field reference
-- `skills/aminer-daily-paper/SKILL.md`: Personalized paper recommendation skill definition and API spec
-- `skills/aminer-daily-paper/scripts/handle_trigger.py`: Recommendation skill entrypoint
-- `skills/aminer-deep-search/SKILL.md`: Deep survey collection skill definition and round protocol
-- `skills/aminer-deep-search/commands/aminer-deep-search.md`: Slash command wrapper for deep paper collection
-- `skills/aminer-deep-search/scripts/aminer_api.py`: stdlib-only AMiner search/reference tool commands
-- `skills/aminer-deep-search/scripts/paper_set.py`: cross-round deduplicated paper-set state file
-- `skills/aminer-deep-research/SKILL.md`: English lightweight deep-research workflow
-- `skills/aminer-deep-research/SKILL.zh.md`: Chinese lightweight deep-research workflow
-- `skills/aminer-deep-research/scripts/aminer_open.py`: allowlisted, dependency-free AMiner Open Platform client
-- `skills/aminer-academic-search/scripts/aminer_client.py`: Optional Python client
-- `skills/aminer-academic-search/references/api-catalog.md`: Quick reference for all 28 API parameters and paths
-- `skills/aminer-academic-search/evals/evals.json`: Evaluation cases and test samples
-- `skills/paper-source-trace/SKILL.md`: Paper Source Trace workflow and AMiner enrichment boundary
-- `skills/paper-source-trace/README.md`: Paper Source Trace usage guide
-- `skills/pdf-citation-verifier/SKILL.md`: PDF Citation Verifier skill definition and runtime constraints
-- `skills/pdf-citation-verifier/scripts/verify_pdf.py`: HTTP client that uploads the PDF and polls the verifier job
-- `skills/citation-faithfulness/SKILL.md`: Citation Faithfulness skill definition and five-stage procedure
-- `skills/citation-faithfulness/references/rubric.md`: Five-verdict faithfulness rubric (evidence discipline and confidence policy)
-- `skills/citation-faithfulness/references/output-schema.md`: Return-value contract — JSON shape of the report
+### 3. 💬 Ask naturally
+
+Describe the academic task and provide any required paper, topic, scholar, or output preferences:
+
+```text
+Find recent papers on multimodal agents and summarize the main research directions.
+```
+
+Skills that provide slash commands can also be invoked directly:
+
+```text
+/aminer-deep-search topic: "multimodal agents" target-size: 200
+```
+
+## Use Cases
+
+The following prompts can be used directly after the corresponding Skill is installed:
+
+| Goal | Example request | Skill |
+| --- | --- | --- |
+| Find papers quickly | "Find 10 recent papers on long-context language models. Return the title, year, venue, citation count, and URL." | `aminer-free-academic` |
+| Investigate a scholar or research topic | "Build a research profile for Andrew Ng, including interests, representative papers, collaborators, and recent work." | `aminer-academic-search` |
+| Get a focused reading list | "Recommend 8 papers on tool-using multimodal agents, prioritizing recent and highly cited work." | `aminer-daily-paper` |
+| Collect literature for a survey | "Collect 200 candidate papers on retrieval-augmented generation, expand from strong seed papers, remove duplicates, and export the bibliography." | `aminer-deep-search` |
+| Trace a paper's sources | "Analyze this PDF. Trace each key claim to its citation context and source, explain the citation intent, and generate the Markdown, JSON, SVG, and HTML outputs." | `paper-source-trace` |
+| Detect fabricated references | "Check every reference in this paper PDF and flag entries that are missing, suspicious, or need manual review." | `pdf-citation-verifier` |
+| Check citation faithfulness | "For each in-text citation in this paper, retrieve the cited source and determine whether the surrounding claim is supported by the original text." | `citation-faithfulness` |
 
 ## Notes
 
-- Do not continue calling APIs without a Token
-- `tools/setup-aminer-token.cmd` and `tools/setup-aminer-token.sh` are for Claude Code, Codex, and other conversational Skill sessions. OpenClaw command runs, standalone CLI jobs, CI, scheduled jobs, and other command-run environments must configure `AMINER_API_KEY` in their own runtime context.
-- The client has built-in timeout retry and partial fallback strategies to improve request stability
-- Some APIs are billed; confirm the scenario before scaling up calls
+- Never print, log, or commit `AMINER_API_KEY`.
+- Free AMiner APIs still require a token. Start with `aminer-free-academic` before using paid APIs.
+- Some tasks may incur API charges. Review the estimated cost before approving large searches or expensive calls.
+- The setup tools under `tools/` configure local chat sessions only. Set the token separately for OpenClaw, CLI, CI, and scheduled jobs.
+- For direct API integration rather than Skill usage, see the AMiner Open Platform documentation below.
 
 ## References
 
-- AMiner Open Platform Documentation: https://open.aminer.cn/open/docs
-- Skill Detailed Documentation: `skills/aminer-academic-search/SKILL.md`
-- Free Skill Documentation: `skills/aminer-free-academic/SKILL.md`
-- Recommendation Skill Documentation: `skills/aminer-daily-paper/SKILL.md`
-- Deep Search Skill Documentation: `skills/aminer-deep-search/SKILL.md`
-- Deep Research Skill Documentation: `skills/aminer-deep-research/SKILL.md`
-- Paper Source Trace Skill Documentation: `skills/paper-source-trace/SKILL.md`
-- Paper Source Trace Usage Guide: `skills/paper-source-trace/README.md`
-- PDF Citation Verifier Skill Documentation: `skills/pdf-citation-verifier/SKILL.md`
-- Citation Faithfulness Skill Documentation: `skills/citation-faithfulness/SKILL.md`
+- [AMiner Console](https://open.aminer.cn/open/board?tab=control)
+- [AMiner Open Platform Documentation](https://open.aminer.cn/open/docs)
+- [Claude plugin list](.claude-plugin/marketplace.json)
+- [MIT License](LICENSE)
