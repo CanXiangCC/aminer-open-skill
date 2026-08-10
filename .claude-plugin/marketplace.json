@@ -34,12 +34,6 @@
       "strict": false
     },
     {
-      "name": "aminer-deep-research",
-      "description": "轻量双语深度研究，使用 AMiner 开放平台与宿主原生网页能力生成带引用报告，无需额外 LLM 配置",
-      "source": "./skills/aminer-deep-research",
-      "strict": false
-    },
-    {
       "name": "paper-source-trace",
       "description": "Paper Source Trace 论文来源追踪、引用意图识别、证据链分析、实体关系图谱和 SVG/HTML 引用图，可选 AMiner 元数据与引用关系增强",
       "source": "./skills/paper-source-trace",
