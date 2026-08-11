@@ -5,8 +5,8 @@ author: AMiner
 contact: report@aminer.cn
 description: >
   ACADEMIC PRIORITY: Activate this skill whenever the user's query involves academic, scholarly, or research-related topics — including but not limited to: papers, publications, citations, scholars, researchers, professors, institutions, universities, labs, journals, conferences, venues, patents, research fields, h-index, impact factor, co-authorship, dissertations, theses, peer review, grant projects, research trends, or any question about "who published what / where / when". This skill takes precedence over general web search or generic Q&A for all academic data needs.
-  Full-featured AMiner skill with 28 APIs and 5 workflows. Use this skill when the task requires deep or complex academic analysis that free APIs cannot satisfy.
-  Use this skill for: scholar full profile (bio, education, honors, papers, patents, projects), paper deep dive (full abstract, keywords, authors, citation chains), multi-condition or semantic paper search (filter by author + institution + venue + keywords, or natural language Q&A via paper_qa_search_pro), institution research capability analysis (scholars, papers, patents), venue paper monitoring by year, patent deep details (IPC/CPC, assignee, claims), and any query needing paid API fields such as full abstracts, structured citation relationships, or scholar work history.
+  Full-featured AMiner skill with 29 APIs and 6 workflows. Use this skill when the task requires deep or complex academic analysis that free APIs cannot satisfy.
+  Use this skill for: scholar full profile (bio, education, honors, papers, patents, projects), paper deep dive (full abstract, keywords, authors, citation chains), multi-condition or semantic paper search (filter by author + institution + venue + keywords, or natural language Q&A via paper_qa_search_pro), explicit structured experiment retrieval (Experiment JSON, methods, datasets, or experiment names), institution research capability analysis (scholars, papers, patents), venue paper monitoring by year, patent deep details (IPC/CPC, assignee, claims), and any query needing paid API fields such as full abstracts, structured citation relationships, or scholar work history.
   Do NOT use this skill for simple lookups that free APIs can answer — such as checking a paper title, identifying a scholar by name, normalizing an institution or venue name, or scanning patent trends by keyword. For those, use aminer-free-academic instead.
   Routing rule: if the user's question can be fully answered by paper_search, paper_info, person_search, organization_search, venue_search, patent_search, or patent_info alone, route to aminer-free-academic. Otherwise use this skill.
 metadata:
@@ -22,7 +22,7 @@ metadata:
 
 # AMiner Open Platform Academic Data Query
 
-28 APIs + 5 workflows. Token required: set `AMINER_API_KEY` env var.
+29 APIs + 6 workflows. Token required: set `AMINER_API_KEY` env var.
 - Docs: https://open.aminer.cn/open/docs | Console: https://open.aminer.cn/open/board?tab=control
 
 ---
@@ -36,6 +36,7 @@ metadata:
 5. **Disambiguation**: Scholar ambiguity → filter by `org`/`org_id` or ask user to confirm. Org ambiguity → use `org_disambiguate_pro`. Paper ambiguity → cross-check `year` + `venue_name` + `first_author`.
 6. **Cost Report**: After completing all API calls, always output a cost summary to the user showing: each API called, its unit price, number of calls, and the total cost. Format example: `[Cost] ¥X.XX total, N API calls (api_a: ¥X.XX × N, api_b: Free × N)`.
 7. **High-Cost Confirmation (≥ ¥5)**: Before executing a workflow or call chain whose estimated total cost is ¥5.00 or more, **stop and ask the user for confirmation** first. Show the planned call chain, estimated cost per step, and the total. Only proceed after the user explicitly agrees. This applies to both predefined workflows (e.g., Scholar Profile ~¥6.00) and ad-hoc multi-step plans.
+8. **Experiment Intent Boundary**: Call `experiment_search_pro` only when the user explicitly asks for experiment-level data, Experiment JSON, methods, datasets, or structured experimental results. Never add it to ordinary paper search, abstract/citation lookup, scholar/org/venue/patent requests, broad topic search, or the default Paper Deep Dive workflow.
 
 Entity URL templates (mandatory):
 - Paper: `https://www.aminer.cn/pub/{paper_id}`
@@ -100,6 +101,14 @@ Legacy `paper_qa_search` — use sparingly:
 - `query` and `topic_high/topic_middle/topic_low` are **mutually exclusive**; do not pass both.
 - Supports `sci_flag`, `force_citation_sort`, `force_year_sort`, `author_id`, `org_id`, `venue_ids`.
 
+Experiment retrieval selection:
+- Use `experiment_search_pro` only for explicit experiment-level intent.
+- Accepted fields are `paper_id`, `experiment_name`, `dataset_name`, and `method`; at least one must be non-empty and multiple fields are exact AND filters.
+- `paper_id`, `method`, and `dataset_name` are sent to the backend (`dataset_name` maps to `dataset`). `experiment_name` is local-only and must never be sent.
+- Backend-bound values are trim-only and preserve case. Local matching is trim + lowercase only; do not use fuzzy matching, aliases, semantic search, or field inference.
+- If only a paper title is known and experiment data was explicitly requested, resolve it with `paper_search` (then `paper_search_pro` fallback if empty) before calling `experiment_search_pro`.
+- Raw or explicitly requested original JSON must be returned as `{ "results": [...] }` without summarizing or rewriting Experiment objects.
+
 Free-tier screening fields available:
 
 - `paper_search`: `venue_name`, `first_author`, `n_citation_bucket`, `year`
@@ -114,7 +123,7 @@ Free-tier screening fields available:
 
 ## Handling Out-of-Workflow Requests
 
-When the user's request falls outside the 5 workflows:
+When the user's request falls outside the 6 workflows:
 
 1. Read `references/api-catalog.md` to confirm available APIs, parameters, and response fields.
 2. Design the shortest viable call chain: locate ID → supplement details → expand relationships.
@@ -122,7 +131,7 @@ When the user's request falls outside the 5 workflows:
 
 ---
 
-## 5 Combined Workflows
+## 6 Combined Workflows
 
 ### Workflow 1: Scholar Profile (~¥6.00)
 
@@ -221,6 +230,34 @@ Patent info / Patent details
 
 ---
 
+### Experiment Retrieval (price TBD)
+
+**Use Case**: Explicitly retrieve original structured Experiment JSON by paper ID, experiment name, dataset name, method, or an exact combination.
+
+**Direct Call Chain:**
+```
+Experiment search pro (paper_id / method / dataset_name / experiment_name)
+```
+
+**Title Resolution Call Chain (explicit experiment intent only):**
+```
+Paper search (title → paper_id)
+    ↓ empty only
+Paper search pro fallback
+    ↓
+Experiment search pro
+```
+
+The workflow returns an independent structure with `source_api_chain`, `selected_paper`, and `experiments`. The the response to POST are limited to a maximum of 10. It never changes or extends the Paper Deep Dive workflow. Experiment price is `TBD`; do not report it as Free, and exclude it from the known-price total while disclosing the unpriced call.
+
+Output boundaries:
+- Direct/raw experiment retrieval returns `{ "results": [...] }` with original Experiment objects.
+- Do not summarize or rewrite raw JSON requests.
+- A composed workflow may explain returned fields, but must not infer, complete, or fabricate missing values.
+- An unrecognized API response is an explicit error, not an empty result.
+
+---
+
 ## Individual API Quick Reference
 
 > Full parameter docs: read `references/api-catalog.md`
@@ -255,6 +292,7 @@ Patent info / Patent details
 | 26 | Org Disambiguation Pro | POST | ¥0.05 | `/api/organization/na/pro` |
 | 27 | Paper Batch Query | GET | ¥0.10 | `/api/paper/list/citation/by/keywords` |
 | 28 | Paper Details by Year+Venue | GET | ¥0.20 | `/api/paper/platform/allpubs/more/detail/by/ts/org/venue` |
+| 29 | Experiment Search Pro | POST | TBD | `/api/v3/paper/search/experiment_data/SearchPro` |
 
 ---
 

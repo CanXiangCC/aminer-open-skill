@@ -13,6 +13,7 @@
 - [Institution APIs (7)](#institution-apis)
 - [Journal APIs (3)](#journal-apis)
 - [Patent APIs (3)](#patent-apis)
+- [Experiment APIs (1)](#experiment-apis)
 
 ---
 
@@ -1134,6 +1135,75 @@ curl -X GET \
 
 ---
 
+## Experiment APIs
+
+### 29. Experiment Search Pro
+
+- **URL**: `POST /api/v3/paper/search/experiment_data/SearchPro`
+- **Price**: TBD (not Free; exclude from known-price totals until confirmed)
+- **Authentication**: `Authorization: ${AMINER_API_KEY}`, `X-Platform: openclaw`
+- **Description**: Retrieve original structured Experiment JSON. Use only for explicit experiment-level requests.
+
+**Skill Parameters:**
+
+| Parameter | Type | Required | Description |
+|--------|------|------|------|
+| paper_id | string | Conditional | Exact paper ID; sent as backend `paper_id` after trim |
+| experiment_name | string | Conditional | Exact experiment name; local-only and never sent to the backend |
+| dataset_name | string | Conditional | Exact `datasets[].name`; sent as backend `dataset` after trim |
+| method | string | Conditional | Exact method; sent as backend `method` after trim |
+| size | number | No | Added to the backend body only when greater than 0 |
+
+At least one of `paper_id`, `experiment_name`, `dataset_name`, or `method` must be non-empty. Multiple supplied fields are combined with AND.
+
+**Backend Request Body:**
+
+```json
+{
+  "paper_id": "",
+  "method": "",
+  "dataset": ""
+}
+```
+
+The three backend fields are always present and preserve user casing after trimming. `size` is optional and is added only when greater than 0. `experiment_name` is never included.
+
+**Supported Response Shapes:**
+- An array of Experiment objects
+- `{ "results": [...] }`
+- Arrays under `data`, `items`, `experiments`, or `records`
+- Any nesting of those supported envelope fields
+- A single Experiment object
+
+A single Experiment object is recognized by the presence of `paper_id` or `experiment_name`. Unrecognized responses return a structured `invalid_experiment_response` error and are never silently treated as empty results.
+
+**Common Experiment Fields:**
+
+| Field | Description |
+|--------|------|
+| paper_id | Source paper ID |
+| experiment_name | Experiment name |
+| method | Experiment method |
+| datasets | Dataset objects; `dataset_name` matches any exact `datasets[].name` |
+
+**Matching and Output Rules:**
+- Backend-bound values use trim only; local comparisons use trim + lowercase.
+- Matching is exact AND only. No fuzzy matching, semantic search, aliases, or field inference.
+- The success structure is `{ "results": [...] }`, containing original Experiment objects without field rewriting.
+- Raw or explicitly requested original JSON is not summarized.
+
+**curl Example:**
+```bash
+curl -X POST \
+  'https://datacenter.aminer.cn/gateway/open_platform/api/v3/paper/search/experiment_data/SearchPro' \
+  -H 'Content-Type: application/json;charset=utf-8' \
+  -H 'Authorization: ${AMINER_API_KEY}' \
+  -H 'X-Platform: openclaw' \
+  -d '{"paper_id":"<PAPER_ID>","method":"","dataset":""}'
+```
+
+---
+
 ## Appendix: API Pricing Summary
 
 | Category | Free APIs | Paid APIs |
@@ -1143,6 +1213,7 @@ curl -X GET \
 | Institution | Org Search | Org Details(¥0.01), Org Scholars(¥0.50), Org Papers(¥0.10), Org Patents(¥0.10), Org Disambiguation(¥0.01), Org Disambiguation Pro(¥0.05) |
 | Journal | Venue Search | Venue Details(¥0.20), Venue Papers(¥0.10) |
 | Patent | Patent Search, Patent Info | Patent Details(¥0.01) |
+| Experiment | None | Experiment Search Pro(TBD) |
 
 ---
 

@@ -23,7 +23,7 @@
 | Skill | 适合完成的任务 | Token 要求 | 使用说明 |
 | --- | --- | --- | --- |
 | `aminer-free-academic` | 使用 AMiner 免费接口查找和初筛论文、学者、机构、期刊或专利 | 接口免费，但仍需 Token | [SKILL.md](skills/aminer-free-academic/SKILL.md) |
-| `aminer-academic-search` | 对论文、学者、机构、期刊和专利进行完整检索或深度分析 | 必须配置；部分 API 计费 | [SKILL.md](skills/aminer-academic-search/SKILL.md) |
+| `aminer-academic-search` | 对论文、学者、机构、期刊和专利进行完整检索、深度分析或显式结构化实验检索 | 必须配置；部分 API 计费；实验 API 价格待定 | [SKILL.md](skills/aminer-academic-search/SKILL.md) |
 | `aminer-daily-paper` | 根据主题、学者、作者或 AMiner 账号获取个性化论文推荐 | 必须配置 | [SKILL.md](skills/aminer-daily-paper/SKILL.md) |
 | `aminer-deep-search` | 通过多轮检索、去重和引用扩展构建大规模综述文献集 | 必须配置 | [SKILL.zh.md](skills/aminer-deep-search/SKILL.zh.md) |
 
@@ -99,6 +99,7 @@ openclaw config set env.vars.AMINER_API_KEY "<YOUR_TOKEN>"
 | --- | --- | --- |
 | 快速查找论文 | “查找 10 篇近期关于长上下文语言模型的论文，返回标题、年份、期刊或会议、引用量和链接。” | `aminer-free-academic` |
 | 调研学者或研究方向 | “整理 Andrew Ng 的研究画像，包括研究兴趣、代表论文、主要合作者和近期工作。” | `aminer-academic-search` |
+| 检索结构化实验 | “返回这篇论文的原始 Experiment JSON，并按方法和数据集名称精确过滤。” | `aminer-academic-search` |
 | 获取聚焦阅读清单 | “推荐 8 篇关于工具调用型多模态智能体的论文，优先选择近期且高引用的工作。” | `aminer-daily-paper` |
 | 为综述收集文献 | “收集 200 篇检索增强生成方向的候选论文，从高质量种子论文继续扩展，去重后导出文献清单。” | `aminer-deep-search` |
 | 追踪论文来源 | “分析这篇 PDF，将每个关键论点追踪到引用上下文和来源，解释引用意图，并生成 Markdown、JSON、SVG 和 HTML 产物。” | `paper-source-trace` |

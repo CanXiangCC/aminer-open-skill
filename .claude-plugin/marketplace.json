@@ -11,7 +11,7 @@
   "plugins": [
     {
       "name": "aminer-academic-search",
-      "description": "全套学术数据查询，支持论文/学者/机构/期刊/专利检索与分析（28 API + 5 工作流；含论文问答搜索pro）",
+      "description": "全套学术数据查询，支持论文/学者/机构/期刊/专利检索、分析与结构化实验检索（29 API + 6 工作流；含论文问答搜索 Pro 与 Experiment Retrieval）",
       "source": "./skills/aminer-academic-search",
       "strict": false
     },
