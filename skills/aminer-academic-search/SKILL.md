@@ -1,6 +1,6 @@
 ---
 name: aminer-academic-search
-version: 1.3.0
+version: 1.4.0
 author: AMiner
 contact: report@aminer.cn
 description: >
@@ -65,41 +65,54 @@ Check `AMINER_API_KEY` exists before any API call. Never expose token in plain t
 1. Parameter names and types must match `references/api-catalog.md` exactly.
 2. `paper_info` is batch-only: `{"ids": [...]}`. `paper_detail` is single-paper only: one `id`. Never mix them.
 3. When multiple details are needed, filter with a low-cost API first, then fetch details for a small set.
-4. **Prefer `paper_qa_search_pro`; avoid legacy `paper_qa_search`.** For almost all paper Q&A / topic / filter searches, call `paper_qa_search_pro` first. Use legacy `paper_qa_search` **only** when the user explicitly needs `topic_high` / `topic_middle` / `topic_low` structured OR/AND mode that Pro does not support. Do not default to the legacy endpoint out of habit.
+4. **Route by query shape, not by habit.** See "Paper Search API Selection Guide". A phrase starts at free `paper_search`; bulk goes to `paper_search_pro` with `size`. Before spending ¥0.30 on `paper_qa_search_pro` you must be able to name one of four reasons — sentence, range filter, boolean exclusion, or precision-first — and if you cannot, drop down. Never send a sentence to `paper_search_pro`: it returns 0 and still bills.
 
 ---
 
 ## Paper Search API Selection Guide
 
-When the user says "search for papers", determine the goal first:
+When the user says "search for papers", do not guess at intent. Look at two directly observable facts: **is the query string a phrase or a sentence**, and **how many results are needed**.
 
-| API | Focus | Use Case | Cost |
-|---|---|---|---|
-| `paper_search` | Title search → `paper_id` | Known paper title, locate target | Free |
-| `paper_search_pro` | Multi-condition search (author/org/venue/keyword) | Topic search, sort by citations or year | ¥0.01 |
-| `paper_qa_search_pro` | Natural language Q&A + rich filters | **Default / prefer this** for semantic & filter search; card + cursor | ¥0.70 |
-| `paper_qa_search` | Legacy structured topic keywords | **Rarely**; only for `topic_high/middle/low` OR/AND | ¥0.05 |
-| `paper_list_by_keywords` | Multi-keyword batch retrieval | Batch thematic retrieval | ¥0.10 |
-| `paper_detail_by_condition` | Year + venue dimension | Journal annual monitoring | ¥0.20 |
+| API | Accepts | Only it can do | Hard limit | Cost |
+|---|---|---|---|---|
+| `paper_search` | Phrase | It is free | `title` field only; `size` ≤ 20; no filters, no sort | Free |
+| `paper_search_pro` | Phrase, per field (title/keyword/abstract/author/org/venue) | 100 per page + hard sort (`order=year\|n_citation`); **cheapest bulk** | A sentence returns 0 and is still billed | ¥0.01 |
+| `paper_qa_search` | Phrase or sentence | Weighted nested AND/OR (`topic_high/middle/low`), `sci_flag`, `offset` down to 10000 | No year/citation ranges, no boolean exclusion | ¥0.05 |
+| `paper_qa_search_pro` | Sentence, colloquial or Chinese questions | Semantic parsing + year/citation ranges + `all/any/exclude` booleans + `sort` modes; **best retrieval quality** | Fixed 10 per page; every further page costs another ¥0.30 | ¥0.30 |
+| `paper_list_by_keywords` | Multiple keywords | Batch thematic retrieval | — | ¥0.10 |
+| `paper_detail_by_condition` | Year + venue | Returns details directly | — | ¥0.20 |
 
-Default routing:
+### Two decision rules
 
-1. **Known title**: `paper_search -> paper_detail -> paper_relation`
-2. **Conditional filtering**: `paper_search_pro -> paper_detail` (or `paper_qa_search_pro` when NL intent / citation-year soft filters help)
-3. **Natural language / topic Q&A**: **always prefer** `paper_qa_search_pro` → if empty, fall back to `paper_search_pro`. **Do not** start with legacy `paper_qa_search`.
-4. **Journal annual analysis**: `venue_search -> venue_paper_relation -> paper_detail_by_condition`
+1. **Is the query a sentence** (has a predicate or a question word)? Yes → only `paper_qa_search_pro` / `paper_qa_search` can parse it; the other two return 0, and `paper_search_pro` bills you for that 0. No → start from free `paper_search` and escalate only if it falls short.
+2. **Do you need more than 10 results?** Yes → do not use `paper_qa_search_pro`; use `paper_search_pro` with `size` (≤100).
+
+**Cost cliff — memorise this.** For 100 results: `paper_search_pro` with `size=100` is one call at ¥0.01; `paper_qa_search_pro` needs 10 cursor pages = ¥3.00. **300×.**
+
+### Hard rule for spending ¥0.30
+
+Before calling `paper_qa_search_pro`, you must be able to name **at least one** of these reasons. If you cannot, drop to `paper_search_pro`.
+
+1. **Sentence** — the query is a natural-language sentence or question, so the literal-matching endpoints would return 0.
+2. **Range filter** — you need `year_from`/`year_to` or `min_citations`/`max_citations`. The other endpoints can only enumerate exact years; they cannot express a range.
+3. **Boolean exclusion** — you need `all_terms` / `any_terms` / `exclude_terms`.
+4. **Precision first** — the user explicitly wants accurate or best-matching results, or a cheaper endpoint already came back off-topic. This is the highest-quality retrieval of the four; go straight to it rather than burning attempts to save ¥0.29. Legacy `paper_qa_search` also parses a sentence, but it drifts toward the dominant term: measured on `how do LLM agents implement long-term memory`, Pro returned 4/4 results specifically about agent long-term memory, while legacy returned 1/5 — the rest were generic "LLM-based agents" surveys.
+
+None of the four applies = paying 30× for nothing. Drop down.
 
 Key `paper_qa_search_pro` rules:
-- **Default choice** for natural-language paper search and multi-filter retrieval (`authors`/`author_ids`, `organizations`/`organization_ids`, `venues`/`venue_ids`, year/citation ranges, `all_terms`/`any_terms`/`exclude_terms`).
+- **Use the natural-language `query` field** (`query_type="auto"`, the default) and pass the user's original question as a whole sentence. Do not pre-split it into keywords and reassemble them into `all_terms` — splitting throws away the semantic understanding you are paying for, and precision drops below just asking. Fall back to `query_type="topic"` only when literal term matching is genuinely required.
 - Page size is **fixed at 10**. Do not send `size`. Paginate with `next_cursor` → next request body is `{"cursor":"..."}` only.
 - `sort`: `relevance` / `balanced` / `recent` / `citation`. For “most cited” use `citation`; for “newest” use `recent`.
-- Response card fields only: `paper_id`, `title`, `title_zh`, `authors.name`/`name_zh`, `year`. Use `paper_detail` when full abstract/keywords are needed.
+- Response card fields only: `paper_id`, `title`, `title_zh`, `authors.name`/`name_zh`, `n_citation_bucket`, `venue_name`, `year`. Use `paper_detail` when full abstract/keywords are needed.
 - Always append `https://www.aminer.cn/pub/{paper_id}`.
 
-Legacy `paper_qa_search` — use sparingly:
-- Call **only** when `topic_high` / `topic_middle` / `topic_low` structured OR/AND is explicitly required; otherwise use Pro.
+Legacy `paper_qa_search` — what only it can do:
+- **Weighted nested AND/OR**: `topic_high` / `topic_middle` / `topic_low` give three boost tiers. Pro has no equivalent. Use it for "must contain A, strongly boost B, weakly boost C".
+- **Deep paging**: `size` ≤ 100 with `offset` ≤ 10000 — 100 results for ¥0.05. Pro's cursor cannot match that (10 per page × ¥0.30).
+- `sci_flag` restricts to SCI papers; Pro has no such filter.
 - `query` and `topic_high/topic_middle/topic_low` are **mutually exclusive**; do not pass both.
-- Supports `sci_flag`, `force_citation_sort`, `force_year_sort`, `author_id`, `org_id`, `venue_ids`.
+- Response now also carries `first_author`, `venue_name`, `year`, `n_citation_bucket` — screen on those before paying for `paper_detail`.
 
 Experiment retrieval selection:
 - Use `experiment_search` only for explicit experiment-level intent.
@@ -118,6 +131,8 @@ Free-tier screening fields available:
 - `venue_search`: `aliases`, `venue_type`
 - `patent_search`: `inventor_name`, `app_year`, `pub_year`
 - `patent_info`: `app_year`, `pub_year`
+
+All three paper-search endpoints (`paper_search`, `paper_search_pro`, `paper_qa_search`) now return the same screening set — `first_author`, `venue_name`, `year`, `n_citation_bucket` — and `paper_qa_search_pro` returns `authors`, `venue_name`, `year`, `n_citation_bucket`. Filter on these before calling `paper_detail` (¥0.01 each); only fetch details for papers you will actually cite. `n_citation_bucket` is a coarse tier, never an exact count — do not compare buckets numerically or claim a precise citation figure from one.
 
 ---
 
@@ -250,7 +265,7 @@ Single POST; no paper-title resolution. Returns `{ "results": [...] }` (or a str
 
 | # | Title | Method | Price | API Path (Base: datacenter.aminer.cn/gateway/open_platform) |
 |---|------|------|------|------|
-| 1 | Paper QA Search Pro | POST | ¥0.70 | `/api/v3/paper/qa/searchPro` |
+| 1 | Paper QA Search Pro | POST | ¥0.30 | `/api/paper/qa/searchPro` |
 | 2 | Paper QA Search (legacy) | POST | ¥0.05 | `/api/paper/qa/search` |
 | 3 | Scholar Search | POST | Free | `/api/person/search` |
 | 4 | Paper Search | GET | Free | `/api/paper/search` |

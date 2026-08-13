@@ -49,7 +49,7 @@ API_PRICE: dict[str, Optional[float]] = {
     "org_search": 0, "venue_search": 0, "patent_search": 0, "patent_info": 0,
     "paper_search_pro": 0.01, "paper_detail": 0.01, "patent_detail": 0.01,
     "org_detail": 0.01, "org_disambiguate": 0.01,
-    "paper_qa_search": 0.05, "paper_qa_search_pro": 0.70, "org_disambiguate_pro": 0.05,
+    "paper_qa_search": 0.05, "paper_qa_search_pro": 0.30, "org_disambiguate_pro": 0.05,
     "paper_relation": 0.10, "org_paper_relation": 0.10,
     "org_patent_relation": 0.10, "venue_paper_relation": 0.10,
     "paper_list_by_keywords": 0.10,
@@ -262,11 +262,11 @@ def paper_qa_search_pro(
     dois: list = None,
     sort: str = None,
 ) -> Any:
-    """Paper QA Search Pro (¥0.70/call): NL + filters; fixed 10/page; cursor pagination."""
+    """Paper QA Search Pro (¥0.30/call): NL + filters; fixed 10/page; cursor pagination."""
     _track_cost("paper_qa_search_pro")
     if cursor:
         return _request(
-            token, "POST", "/api/v3/paper/qa/searchPro", body={"cursor": cursor}
+            token, "POST", "/api/paper/qa/searchPro", body={"cursor": cursor}
         )
     body: dict = {}
     if query is not None:
@@ -304,7 +304,7 @@ def paper_qa_search_pro(
         if isinstance(value, list) and not value:
             continue
         body[key] = value
-    return _request(token, "POST", "/api/v3/paper/qa/searchPro", body=body)
+    return _request(token, "POST", "/api/paper/qa/searchPro", body=body)
 
 
 def paper_info(token: str, ids: list) -> Any:
@@ -874,7 +874,7 @@ def workflow_paper_qa(token: str, query: str = None,
                       min_citations: int = None, cursor: str = None) -> dict:
     """
     Workflow: Paper QA Search — prefer Pro, use legacy sparingly.
-    - Default: natural language / filters → paper_qa_search_pro (¥0.70, fixed 10/page)
+    - Default: natural language / filters → paper_qa_search_pro (¥0.30, fixed 10/page)
     - Rare: only topic_high/topic_middle → legacy paper_qa_search (¥0.05)
     """
     # Structured topic_* exists only on the legacy endpoint; avoid unless required.
@@ -1145,7 +1145,7 @@ WORKFLOW_DRY_RUN_INFO = {
     "venue_papers": [
         ("venue_search", 0), ("venue_detail", 0.20), ("venue_paper_relation", 0.10),
     ],
-    "paper_qa": [("paper_qa_search_pro", 0.70)],
+    "paper_qa": [("paper_qa_search_pro", 0.30)],
     "patent_search": [("patent_search", 0), ("patent_detail", 0.01)],
     "scholar_patents": [
         ("person_search", 0), ("person_patent_relation", 1.50), ("patent_detail", 0.01),

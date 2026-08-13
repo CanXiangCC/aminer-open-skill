@@ -1,6 +1,6 @@
 ---
 name: aminer-free-academic
-version: 1.1.1
+version: 1.2.0
 author: AMiner
 contact: report@aminer.cn
 description: >
@@ -125,6 +125,8 @@ Use when the user wants to quickly judge whether a paper is relevant.
 Default chain:
 
 `paper_search -> paper_info`
+
+> **`paper_search` is not title-only lookup.** It phrase-matches the `title` field, so a short controlled phrase (`retrieval augmented generation`) returns thousands of on-topic hits for free — try it before routing anything to a paid endpoint. Its real limits: it cannot parse a full sentence (returns 0), caps at `size` 20, and offers no author/venue/year filter or sort. When the query is a sentence, or needs filtering or volume, that is when it becomes an `aminer-academic-search` job.
 
 Return:
 

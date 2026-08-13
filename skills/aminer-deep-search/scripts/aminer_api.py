@@ -216,6 +216,11 @@ def _compact_paper(base: dict[str, Any], info: dict[str, Any] | None) -> dict[st
     venue = _venue_text(merged) or _venue_text(base)
     if venue:
         item["venue"] = venue
+    # search/pro and qa/search now return a citation tier on the search result itself,
+    # so it survives even when paper/info has nothing for the id.
+    bucket = str(base.get("n_citation_bucket") or merged.get("n_citation_bucket") or "").strip()
+    if bucket:
+        item["n_citation_bucket"] = bucket
     abstract = str(merged.get("abstract_slice") or merged.get("abstract") or "").strip()
     if abstract:
         item["abstract_slice"] = abstract[:ABSTRACT_SLICE_LIMIT]
