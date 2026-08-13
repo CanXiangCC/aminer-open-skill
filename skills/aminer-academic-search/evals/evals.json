@@ -165,23 +165,23 @@
     {
       "id": 14,
       "prompt": "Retrieve the original experiment JSON for paper_id P123, filtered by dataset_name ImageNet and search_text Baseline. My token is <YOUR_TOKEN>",
-      "expected_output": "Call experiment_search_pro with paper_id, dataset, and search_text. Return original Experiment objects under results without summarizing them. Report the API price as TBD.",
+      "expected_output": "Call experiment_search with paper_id, dataset, and search_text. Return original Experiment objects under results without summarizing them. Report the API price as TBD.",
       "files": [],
       "expectations": [
-        "Called experiment_search_pro because experiment-level data was explicitly requested",
+        "Called experiment_search because experiment-level data was explicitly requested",
         "Sent paper_id, dataset, and search_text to the backend",
         "Did not expose or send a separate experiment_name query parameter",
         "Returned raw Experiment JSON in a results array",
-        "Displayed experiment_search_pro as TBD and not Free"
+        "Displayed experiment_search as TBD and not Free"
       ]
     },
     {
       "id": 15,
       "prompt": "For the paper title 'Value Compression for Barotropic Flows', return its structured experiment records as raw JSON. My token is <YOUR_TOKEN>",
-      "expected_output": "Because the request explicitly asks for experiments, call experiment_search_pro directly with search_text set to the paper title (or other free text). Do not call paper_search or paper_search_pro to resolve a paper_id first.",
+      "expected_output": "Because the request explicitly asks for experiments, call experiment_search directly with search_text set to the paper title (or other free text). Do not call paper_search or paper_search_pro to resolve a paper_id first.",
       "files": [],
       "expectations": [
-        "Called experiment_search_pro with search_text from the user text",
+        "Called experiment_search with search_text from the user text",
         "Did not call paper_search or paper_search_pro for title resolution",
         "Did not invent a paper_id when the user only provided free text",
         "Returned the experiment records without inventing missing fields"
@@ -194,17 +194,17 @@
       "files": [],
       "expectations": [
         "Used the normal paper search routing",
-        "Did not call experiment_search_pro"
+        "Did not call experiment_search"
       ]
     },
     {
       "id": 17,
       "prompt": "Deep-dive into 'Attention Is All You Need' and show its abstract and citation chain. My token is <YOUR_TOKEN>",
-      "expected_output": "Run the unchanged paper_deep_dive workflow. Do not append experiment_search_pro.",
+      "expected_output": "Run the unchanged paper_deep_dive workflow. Do not append experiment_search.",
       "files": [],
       "expectations": [
         "Called paper search, paper_detail, and paper_relation",
-        "Did not call experiment_search_pro",
+        "Did not call experiment_search",
         "Kept the existing paper_deep_dive output structure"
       ]
     },
@@ -215,17 +215,17 @@
       "files": [],
       "expectations": [
         "Used only the existing entity APIs required by the request",
-        "Did not call experiment_search_pro",
+        "Did not call experiment_search",
         "Did not alter existing entity routing"
       ]
     },
     {
       "id": 19,
-      "prompt": "Call experiment_search_pro directly with search_text='Baseline' and show the raw result. My token is <YOUR_TOKEN>",
+      "prompt": "Call experiment_search directly with search_text='Baseline' and show the raw result. My token is <YOUR_TOKEN>",
       "expected_output": "Use raw API mode. Send paper_id/method/dataset as empty strings when unused, and send search_text=Baseline for ES full-text retrieval. Return results as raw JSON.",
       "files": [],
       "expectations": [
-        "Called experiment_search_pro through raw mode",
+        "Called experiment_search through raw mode",
         "Sent search_text to the backend",
         "Did not use a separate experiment_name input parameter",
         "Returned original objects under results",

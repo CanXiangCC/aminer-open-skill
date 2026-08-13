@@ -58,7 +58,7 @@ API_PRICE: dict[str, Optional[float]] = {
     "person_detail": 1.00,
     "person_paper_relation": 1.50, "person_patent_relation": 1.50,
     "person_project": 1.50,
-    "experiment_search_pro": None,  # TODO: replace after pricing is confirmed
+    "experiment_search": None,  # TODO: replace after pricing is confirmed
 }
 
 _cost_log: list[tuple[str, Optional[float]]] = []
@@ -410,7 +410,7 @@ def _adapt_experiment_response(raw: Any) -> list[dict[str, Any]]:
     return records
 
 
-def experiment_search_pro(
+def experiment_search(
     token: str,
     paper_id: str = "",
     search_text: str = "",
@@ -436,7 +436,7 @@ def experiment_search_pro(
             "retryable": False,
         }
 
-    _track_cost("experiment_search_pro")
+    _track_cost("experiment_search")
     raw = _request(
         token,
         "POST",
@@ -1150,7 +1150,7 @@ WORKFLOW_DRY_RUN_INFO = {
     "scholar_patents": [
         ("person_search", 0), ("person_patent_relation", 1.50), ("patent_detail", 0.01),
     ],
-    "experiment_retrieval": [("experiment_search_pro", None)],
+    "experiment_retrieval": [("experiment_search", None)],
 }
 
 
@@ -1267,7 +1267,7 @@ def main():
                 "--action experiment_retrieval requires --paper-id, "
                 "--search-text, --dataset-name, or --method"
             )
-        result = experiment_search_pro(
+        result = experiment_search(
             token,
             paper_id=args.paper_id or "",
             search_text=args.search_text or "",
@@ -1289,7 +1289,7 @@ def main():
             "paper_relation": paper_relation,
             "paper_list_by_keywords": paper_list_by_keywords,
             "paper_detail_by_condition": paper_detail_by_condition,
-            "experiment_search_pro": experiment_search_pro,
+            "experiment_search": experiment_search,
             "person_search": person_search,
             "person_detail": person_detail,
             "person_figure": person_figure,

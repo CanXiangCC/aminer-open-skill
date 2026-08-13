@@ -36,7 +36,7 @@ metadata:
 5. **Disambiguation**: Scholar ambiguity → filter by `org`/`org_id` or ask user to confirm. Org ambiguity → use `org_disambiguate_pro`. Paper ambiguity → cross-check `year` + `venue_name` + `first_author`.
 6. **Cost Report**: After completing all API calls, always output a cost summary to the user showing: each API called, its unit price, number of calls, and the total cost. Format example: `[Cost] ¥X.XX total, N API calls (api_a: ¥X.XX × N, api_b: Free × N)`.
 7. **High-Cost Confirmation (≥ ¥5)**: Before executing a workflow or call chain whose estimated total cost is ¥5.00 or more, **stop and ask the user for confirmation** first. Show the planned call chain, estimated cost per step, and the total. Only proceed after the user explicitly agrees. This applies to both predefined workflows (e.g., Scholar Profile ~¥6.00) and ad-hoc multi-step plans.
-8. **Experiment Intent Boundary**: Call `experiment_search_pro` only when the user explicitly asks for experiment-level data, Experiment JSON, methods, datasets, or structured experimental results. Never add it to ordinary paper search, abstract/citation lookup, scholar/org/venue/patent requests, broad topic search, or the default Paper Deep Dive workflow.
+8. **Experiment Intent Boundary**: Call `experiment_search` only when the user explicitly asks for experiment-level data, Experiment JSON, methods, datasets, or structured experimental results. Never add it to ordinary paper search, abstract/citation lookup, scholar/org/venue/patent requests, broad topic search, or the default Paper Deep Dive workflow.
 
 Entity URL templates (mandatory):
 - Paper: `https://www.aminer.cn/pub/{paper_id}`
@@ -102,7 +102,7 @@ Legacy `paper_qa_search` — use sparingly:
 - Supports `sci_flag`, `force_citation_sort`, `force_year_sort`, `author_id`, `org_id`, `venue_ids`.
 
 Experiment retrieval selection:
-- Use `experiment_search_pro` only for explicit experiment-level intent.
+- Use `experiment_search` only for explicit experiment-level intent.
 - Exact filters: `paper_id`, `method`, `dataset_name` (→ backend `dataset`).
 - Free text (paper title, experiment name, problem/method/conclusion, etc.) → `search_text` (ES over `paper_title`, `experiment_name`, `research_problem`, `research_problem_description`, `research_goal`, `method`, `method_description`, `conclusion`, `limitations`, `key_results`).
 - Do not call `paper_search` to resolve titles; do not send a separate `experiment_name` parameter.
@@ -236,10 +236,10 @@ Patent info / Patent details
 
 **Call Chain:**
 ```
-Experiment search pro (paper_id / method / dataset_name / search_text)
+Experiment search (paper_id / method / dataset_name / search_text)
 ```
 
-Single POST; no paper-title resolution. Returns `{ "results": [...] }` (or a structured API error). Page-limited (commonly ≤10). Does not extend Paper Deep Dive. Price is `TBD` — not Free; exclude from known-price totals while disclosing the call. `--dry-run` previews only `experiment_search_pro`. Do not summarize raw JSON or invent missing fields.
+Single POST; no paper-title resolution. Returns `{ "results": [...] }` (or a structured API error). Page-limited (commonly ≤10). Does not extend Paper Deep Dive. Price is `TBD` — not Free; exclude from known-price totals while disclosing the call. `--dry-run` previews only `experiment_search`. Do not summarize raw JSON or invent missing fields.
 
 ---
 
@@ -277,7 +277,7 @@ Single POST; no paper-title resolution. Returns `{ "results": [...] }` (or a str
 | 26 | Org Disambiguation Pro | POST | ¥0.05 | `/api/organization/na/pro` |
 | 27 | Paper Batch Query | GET | ¥0.10 | `/api/paper/list/citation/by/keywords` |
 | 28 | Paper Details by Year+Venue | GET | ¥0.20 | `/api/paper/platform/allpubs/more/detail/by/ts/org/venue` |
-| 29 | Experiment Search Pro | POST | TBD | `/api/v3/paper/search/experiment_data/SearchPro` |
+| 29 | Experiment Search | POST | TBD | `/api/v3/paper/search/experiment_data/SearchPro` |
 
 ---
 
