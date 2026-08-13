@@ -230,16 +230,17 @@ Patent info / Patent details
 
 ---
 
-### Experiment Retrieval (price TBD)
+### Workflow 6: Experiment Retrieval (price TBD)
 
 **Use Case**: Explicit Experiment JSON via user-supplied `paper_id` / `method` / `dataset_name` / `search_text`.
+**Cost note**: Price is `TBD` — not Free. Exclude it from the known-price total while disclosing the unpriced call. `--dry-run` previews only `experiment_search`.
 
 **Call Chain:**
 ```
 Experiment search (paper_id / method / dataset_name / search_text)
 ```
 
-Single POST; no paper-title resolution. Returns `{ "results": [...] }` (or a structured API error). Page-limited (commonly ≤10). Does not extend Paper Deep Dive. Price is `TBD` — not Free; exclude from known-price totals while disclosing the call. `--dry-run` previews only `experiment_search`. Do not summarize raw JSON or invent missing fields.
+Single POST; no paper-title resolution. Returns `{ "results": [...] }` (or a structured API error). Page-limited (commonly ≤10). Never add this workflow to Paper Deep Dive. Do not summarize raw JSON or invent missing fields.
 
 ---
 
