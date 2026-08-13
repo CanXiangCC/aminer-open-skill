@@ -1,6 +1,6 @@
 ---
 name: aminer-deep-search
-version: 2.0.0
+version: 2.1.0
 author: AMiner
 contact: report@aminer.cn
 description: >
@@ -56,7 +56,7 @@ Both scripts live in `scripts/` under this skill directory. They print exactly o
 | `info --ids id1 id2 ...` | POST `/api/paper/info` (batched ≤100 ids) | Free |
 | `references --ids id1 id2 ... [--per-seed 20]` | GET `/api/paper/relation` per seed + free enrichment | ¥0.10/seed |
 
-Output shape: `search`/`qa-search`/`info` print `[{id, title, year?, venue?, abstract_slice?}]`; `references` additionally includes `source_paper_ids` (which seeds cited the paper). Seeds themselves are excluded from `references` output.
+Output shape: `search`/`qa-search`/`info` print `[{id, title, year?, venue?, n_citation_bucket?, abstract_slice?}]`; `references` additionally includes `source_paper_ids` (which seeds cited the paper). Seeds themselves are excluded from `references` output.
 
 ### `scripts/paper_set.py` — cross-round state file (no network)
 

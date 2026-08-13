@@ -19,11 +19,30 @@
 
 ## Paper APIs
 
+### Choosing among the four search endpoints
+
+They overlap heavily on output — all four now return the same screening fields (`first_author`/`authors`, `venue_name`, `year`, `n_citation_bucket`), so **output is no longer a reason to pick one**. Decide on two observable facts instead: is the query string a phrase or a sentence, and how many results do you need.
+
+| | Accepts | Only it can do | Hard limit | Cost |
+|---|---|---|---|---|
+| Paper Search | Phrase | It is free | `title` only; ≤20/page; no filters or sort | Free |
+| Paper Search Pro | Phrase, per field | 100/page + hard sort; cheapest bulk | Sentence → 0, still billed | ¥0.01 |
+| Paper QA Search | Phrase or sentence | Weighted `topic_high/middle/low`; `sci_flag`; `offset` to 10000 | No ranges, no boolean exclusion | ¥0.05 |
+| Paper QA Search Pro | Sentence | Semantic parsing; year/citation ranges; `all/any/exclude`; best precision | Fixed 10/page, ¥0.30 per page | ¥0.30 |
+
+1. **Sentence?** Only the two QA endpoints parse it; the other two return 0 (and Paper Search Pro bills for that 0).
+2. **More than 10 results?** Do not use QA Search Pro — 100 results costs ¥3.00 there versus ¥0.01 on Paper Search Pro. **300×.**
+
+Spend ¥0.30 on QA Search Pro only for: a sentence query, a range filter, a boolean exclusion, or precision-first. Otherwise drop down.
+
+---
+
 ### 1. Paper Search
 
 - **URL**: `GET /api/paper/search`
 - **Price**: Free
-- **Description**: Search by paper title; returns low-cost screening fields such as paper ID, title, DOI, venue, first author, citation bucket, and year.
+- **Description**: Phrase match against the `title` field. Free, so it is the first thing to try for any **phrase** query — it is not limited to titles you already know: a short controlled phrase (`retrieval augmented generation`) returns thousands of on-topic hits. It cannot parse a sentence (returns 0) and offers no filters or sort, so escalate when you need those.
+- **Pick it when**: the query is a phrase and you need ≤20 results with no filtering.
 
 **Request Parameters:**
 
@@ -42,10 +61,12 @@
 | title_zh | Paper title (Chinese) |
 | doi | DOI |
 | first_author | First author |
-| n_citation_bucket | Citation bucket: `0`, `1-10`, `11-50`, `51-200`, `200-1000`, `1000-5000`, `5000+` |
+| n_citation_bucket | Citation bucket (see note below) |
 | venue_name | Venue title |
 | year | Publication year |
 | total | Total count |
+
+> **Citation bucket values.** The official docs describe the buckets as `0` / `1-10` / `11-50` / `51-200` / `200-1000` / `1000-5000` / `5000+`, but the live API emits the boundary-exclusive form `201-1000` and `1001-5000`. Match on both spellings; never parse a bucket into an exact citation count.
 
 **curl Example:**
 ```bash
@@ -61,14 +82,15 @@ curl -X GET \
 
 - **URL**: `GET /api/paper/search/pro`
 - **Price**: ¥0.01/call
-- **Description**: Multi-condition search; supports filtering by keyword, abstract, author, institution, and journal.
+- **Description**: Fielded literal matching across title / keyword / abstract / author / org / venue, with a hard sort. The **cheapest way to pull volume**: 100 results per call for ¥0.01. Matching is literal — a full sentence returns `"msg": "no data"` **and is still billed**; `keyword` wants one controlled term, `title`/`abstract` a two- or three-word phrase.
+- **Pick it when**: the query is already a structured filter, or you need more than 20 results.
 
 **Request Parameters:**
 
 | Parameter | Type | Required | Description |
 |--------|------|------|------|
 | page | number | No | Page number (starts at 0) |
-| size | number | No | Items per page |
+| size | number | No | Items per page, maximum 100 |
 | title | string | No | Title keyword |
 | keyword | string | No | Keyword |
 | abstract | string | No | Abstract keyword |
@@ -85,6 +107,10 @@ curl -X GET \
 | title | Title (English) |
 | title_zh | Title (Chinese) |
 | doi | DOI |
+| first_author | First author |
+| n_citation_bucket | Citation bucket (same values as Paper Search) |
+| venue_name | Venue title |
+| year | Publication year |
 | total | Total count |
 
 **curl Example:**
@@ -101,7 +127,8 @@ curl -X GET \
 
 - **URL**: `POST /api/paper/qa/search`
 - **Price**: ¥0.05/call
-- **Description**: AI-powered intelligent Q&A search; supports natural language queries and structured keyword search.
+- **Description**: Accepts either a sentence (via `query`, keywords extracted server-side) or weighted structured topics. Two things only this endpoint can do: **three-tier weighted nested AND/OR** (`topic_high`/`topic_middle`/`topic_low`) and **deep paging** (`size` ≤ 100 with `offset` ≤ 10000 — 100 results for ¥0.05, which Pro's 10-per-page cursor cannot match). It has no year/citation ranges and no boolean exclusion.
+- **Pick it when**: you need weighted topic tiers, `sci_flag`, or cheap deep paging.
 
 **Request Parameters:**
 
@@ -116,8 +143,8 @@ curl -X GET \
 | year | []number | No | Year filter array. |
 | sci_flag | boolean | No | Return SCI papers only. |
 | n_citation_flag | boolean | No | Boost papers with high citation counts. |
-| size | number | No | Maximum number of results to return. |
-| offset | number | No | Offset. |
+| size | number | No | Maximum number of results to return, maximum 100. |
+| offset | number | No | Offset, maximum 10000. |
 | force_citation_sort | boolean | No | Sort entirely by citation count. |
 | force_year_sort | boolean | No | Sort entirely by year. |
 | author_terms | []string | No | Author name query; OR relationship within array; include multiple variants. |
@@ -131,12 +158,18 @@ curl -X GET \
 
 | Field | Description |
 |--------|------|
-| data | Paper ID list |
+| code | Status code |
+| message / msg | Status text |
+| data | Paper list |
 | id | Paper ID |
 | title | Paper title |
 | title_zh | Title (Chinese) |
 | doi | DOI |
-| Total / total | Total count |
+| first_author | First author |
+| n_citation_bucket | Citation bucket (same values as Paper Search); omitted for uncited papers |
+| venue_name | Venue title |
+| year | Publication year |
+| total | Total count |
 
 **curl Example (natural language Q&A):**
 ```bash
@@ -165,18 +198,20 @@ curl -X POST \
   }'
 ```
 
-> **Prefer Paper QA Search Pro; use this legacy endpoint sparingly.**  
-> Default almost all paper Q&A / topic / filter searches to **Paper QA Search Pro**. Keep this legacy API **only** for `topic_high/topic_middle/topic_low` structured OR/AND mode that Pro does not support. Do not start with this endpoint by default.
+> **Narrow but not obsolete.** Reach for this when you need weighted topic tiers, `sci_flag`, or 100 results at depth for ¥0.05. For a plain sentence query use Paper QA Search Pro; for a plain phrase query use the free Paper Search or ¥0.01 Paper Search Pro.
 
 ---
 
 ### 3b. Paper QA Search Pro
 
-> **Preferred default** for paper Q&A / topic / multi-filter search. Prefer this over legacy Paper QA Search whenever possible.
+> **Highest quality, highest price (¥0.30 — 30× Paper Search Pro).** Not a blanket default: spend it only when the query is a sentence, needs a range filter or boolean exclusion, or precision is the explicit requirement.
 
-- **URL**: `POST /api/v3/paper/qa/searchPro`
-- **Price**: ¥0.70/call
-- **Description**: Upgraded paper Q&A search. Supports natural-language understanding (`query_type=auto`), author/org/venue/year/citation filters, boolean terms, and cursor pagination. Default page size is fixed at **10** (not client-configurable on the open platform). Card response returns compact fields only.
+- **URL**: `POST /api/paper/qa/searchPro`
+- **Price**: ¥0.30/call
+- **Description**: The only endpoint that genuinely parses natural language, and the highest-precision retrieval of the four. Adds year/citation **ranges**, `all_terms`/`any_terms`/`exclude_terms` booleans, `search_in` scoping, and `sort` modes. Page size is fixed at **10** (not client-configurable) and each cursor page costs another ¥0.30, so it is the wrong tool for volume.
+- **Pick it when** you can name one of: a sentence query, a range filter, a boolean exclusion, or precision-first (the user wants accuracy, or a cheaper endpoint already came back off-topic). Otherwise drop to `paper_search_pro` — 30× cheaper.
+
+> **Path change.** The canonical path is now `/api/paper/qa/searchPro`. The old `/api/v3/paper/qa/searchPro` still resolves as a legacy alias, but new code should use the non-`v3` path.
 
 **Request Parameters:**
 
@@ -223,6 +258,8 @@ curl -X POST \
 | data.items[].title_zh | Title (Chinese) |
 | data.items[].authors[].name | Author English name |
 | data.items[].authors[].name_zh | Author Chinese name |
+| data.items[].n_citation_bucket | Citation bucket (same values as Paper Search) |
+| data.items[].venue_name | Venue title |
 | data.items[].year | Publication year (may be omitted) |
 | data.total.value | Hit count estimate |
 | data.total.relation | `eq` / `gte` / `unknown` |
@@ -237,7 +274,7 @@ curl -X POST \
 **curl Example:**
 ```bash
 curl -X POST \
-  'https://datacenter.aminer.cn/gateway/open_platform/api/v3/paper/qa/searchPro' \
+  'https://datacenter.aminer.cn/gateway/open_platform/api/paper/qa/searchPro' \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: ${AMINER_API_KEY}' \
   -H 'X-Platform: openclaw' \
@@ -253,7 +290,7 @@ curl -X POST \
 **curl Example (next page):**
 ```bash
 curl -X POST \
-  'https://datacenter.aminer.cn/gateway/open_platform/api/v3/paper/qa/searchPro' \
+  'https://datacenter.aminer.cn/gateway/open_platform/api/paper/qa/searchPro' \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: ${AMINER_API_KEY}' \
   -H 'X-Platform: openclaw' \
@@ -1216,7 +1253,7 @@ curl -X POST \
 
 | Category | Free APIs | Paid APIs |
 |------|---------|---------|
-| Paper | Paper Search, Paper Info | Paper Search Pro(¥0.01), Paper Details(¥0.01), Paper Citations(¥0.10), Paper QA Search(¥0.05), **Paper QA Search Pro(¥0.70)**, Paper Batch Query(¥0.10), By Condition(¥0.20) |
+| Paper | Paper Search, Paper Info | Paper Search Pro(¥0.01), Paper Details(¥0.01), Paper Citations(¥0.10), Paper QA Search(¥0.05), **Paper QA Search Pro(¥0.30)**, Paper Batch Query(¥0.10), By Condition(¥0.20) |
 | Scholar | Scholar Search | Scholar Details(¥1.00), Scholar Portrait(¥0.50), Scholar Papers(¥1.50), Scholar Patents(¥1.50), Scholar Projects(¥1.50) |
 | Institution | Org Search | Org Details(¥0.01), Org Scholars(¥0.50), Org Papers(¥0.10), Org Patents(¥0.10), Org Disambiguation(¥0.01), Org Disambiguation Pro(¥0.05) |
 | Journal | Venue Search | Venue Details(¥0.20), Venue Papers(¥0.10) |

@@ -1,6 +1,6 @@
 ---
 name: aminer-deep-search
-version: 2.0.0
+version: 2.1.0
 author: AMiner
 contact: report@aminer.cn
 description: >
@@ -56,7 +56,7 @@ metadata:
 | `info --ids id1 id2 ...` | POST `/api/paper/info`（≤100 个 id 分批） | 免费 |
 | `references --ids id1 id2 ... [--per-seed 20]` | 每个 seed 调 GET `/api/paper/relation` + 免费补全 | ¥0.10/篇 seed |
 
-输出形状：`search`/`qa-search`/`info` 输出 `[{id, title, year?, venue?, abstract_slice?}]`；`references` 额外带 `source_paper_ids`（哪些 seed 引用了该论文），且结果中排除 seed 本身。
+输出形状：`search`/`qa-search`/`info` 输出 `[{id, title, year?, venue?, n_citation_bucket?, abstract_slice?}]`；`references` 额外带 `source_paper_ids`（哪些 seed 引用了该论文），且结果中排除 seed 本身。
 
 ### `scripts/paper_set.py` — 跨轮状态文件（无网络）
 

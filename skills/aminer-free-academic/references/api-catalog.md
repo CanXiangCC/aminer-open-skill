@@ -42,9 +42,11 @@
 | doi | DOI |
 | first_author | First author |
 | venue_name | Venue title |
-| n_citation_bucket | Citation bucket: `0`, `1-10`, `11-50`, `51-200`, `200-1000`, `1000-5000`, `5000+` |
+| n_citation_bucket | Citation bucket (see note below) |
 | year | Publication year |
 | total | Total count |
+
+> **Citation bucket values.** The official docs describe the buckets as `0` / `1-10` / `11-50` / `51-200` / `200-1000` / `1000-5000` / `5000+`, but the live API emits the boundary-exclusive form `201-1000` and `1001-5000`. Match on both spellings; never parse a bucket into an exact citation count.
 
 **curl Example:**
 ```bash
