@@ -16,6 +16,7 @@ Workflows:
     paper_qa          Academic Q&A (AI-driven keyword search)
     patent_search     Patent search and details
     scholar_patents   Retrieve all patent details for a scholar by name
+    experiment_retrieval  Explicit structured Experiment JSON retrieval
 
 Direct single API call:
     raw               Call any API directly; requires --api and --params
@@ -43,7 +44,7 @@ REQUEST_TIMEOUT_SECONDS = 30
 MAX_RETRIES = 3
 RETRYABLE_HTTP_STATUS = {408, 429, 500, 502, 503, 504}
 
-API_PRICE: dict[str, float] = {
+API_PRICE: dict[str, Optional[float]] = {
     "paper_search": 0, "paper_info": 0, "person_search": 0,
     "org_search": 0, "venue_search": 0, "patent_search": 0, "patent_info": 0,
     "paper_search_pro": 0.01, "paper_detail": 0.01, "patent_detail": 0.01,
@@ -57,9 +58,10 @@ API_PRICE: dict[str, float] = {
     "person_detail": 1.00,
     "person_paper_relation": 1.50, "person_patent_relation": 1.50,
     "person_project": 1.50,
+    "experiment_search": None,  # TODO: replace after pricing is confirmed
 }
 
-_cost_log: list[tuple[str, float]] = []
+_cost_log: list[tuple[str, Optional[float]]] = []
 _cost_lock = threading.Lock()
 
 
@@ -71,11 +73,23 @@ def _track_cost(api_name: str) -> None:
 
 def get_cost_summary() -> dict:
     with _cost_lock:
-        total = sum(p for _, p in _cost_log)
+        total = sum(p for _, p in _cost_log if p is not None)
         breakdown = {}
+        unpriced_calls = 0
         for name, price in _cost_log:
-            breakdown[name] = breakdown.get(name, 0) + price
-        return {"total": round(total, 2), "breakdown": breakdown, "calls": len(_cost_log)}
+            if price is None:
+                breakdown[name] = None
+                unpriced_calls += 1
+            else:
+                breakdown[name] = (breakdown.get(name) or 0) + price
+        summary = {
+            "total": round(total, 2),
+            "breakdown": breakdown,
+            "calls": len(_cost_log),
+        }
+        if unpriced_calls:
+            summary["unpriced_calls"] = unpriced_calls
+        return summary
 
 
 def reset_cost() -> None:
@@ -327,6 +341,121 @@ def paper_detail_by_condition(token: str, year: int, venue_id: str = None) -> An
     return _request(token, "GET",
                     "/api/paper/platform/allpubs/more/detail/by/ts/org/venue",
                     params=params)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Experiment API
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Exact filters + ES search_text (paper_title, experiment_name, research_problem(+_description),
+# research_goal, method(+_description), conclusion, limitations, key_results).
+# No client-side result filtering and no paper-title resolution.
+
+
+class ExperimentResponseError(ValueError):
+    """Raised when a response cannot be identified as Experiment data."""
+
+
+def _experiment_raw(value: Any) -> str:
+    return "" if value is None else str(value).strip()
+
+
+def _build_experiment_payload(
+    paper_id: str = "",
+    search_text: str = "",
+    dataset_name: str = "",
+    method: str = "",
+    size: int = 0,
+) -> dict[str, Any]:
+    payload = {
+        "paper_id": _experiment_raw(paper_id),
+        "method": _experiment_raw(method),
+        "dataset": _experiment_raw(dataset_name),
+        "search_text": _experiment_raw(search_text),
+    }
+    if not any(payload.values()):
+        raise ValueError("At least one experiment retrieval field must be non-empty")
+    if size > 0:
+        payload["size"] = size
+    return payload
+
+
+def _adapt_experiment_response(raw: Any) -> list[dict[str, Any]]:
+    """Unwrap common envelopes; keep original Experiment objects."""
+
+    def is_record(value: Any) -> bool:
+        return isinstance(value, dict) and (
+            "paper_id" in value or "experiment_name" in value
+        )
+
+    def extract(value: Any) -> Optional[list[dict[str, Any]]]:
+        if isinstance(value, list):
+            return value if all(is_record(item) for item in value) else None
+        if not isinstance(value, dict):
+            return None
+        if is_record(value):
+            return [value]
+        for key in ("results", "data", "items", "experiments", "records"):
+            if key in value:
+                records = extract(value[key])
+                if records is not None:
+                    return records
+        return None
+
+    records = extract(raw)
+    if records is None:
+        raise ExperimentResponseError(
+            "Unable to adapt API response to an Experiment list"
+        )
+    return records
+
+
+def experiment_search(
+    token: str,
+    paper_id: str = "",
+    search_text: str = "",
+    dataset_name: str = "",
+    method: str = "",
+    size: int = 0,
+) -> Any:
+    """Retrieve Experiment JSON via exact filters and ES search_text."""
+    try:
+        payload = _build_experiment_payload(
+            paper_id=paper_id,
+            search_text=search_text,
+            dataset_name=dataset_name,
+            method=method,
+            size=size,
+        )
+    except ValueError as exc:
+        return {
+            "code": -1,
+            "success": False,
+            "msg": "invalid_experiment_query",
+            "error": str(exc),
+            "retryable": False,
+        }
+
+    _track_cost("experiment_search")
+    raw = _request(
+        token,
+        "POST",
+        "/api/v3/paper/search/experiment_data/SearchPro",
+        body=payload,
+    )
+    if isinstance(raw, dict) and raw.get("success") is False:
+        return raw
+
+    try:
+        return {"results": _adapt_experiment_response(raw)}
+    except ExperimentResponseError as exc:
+        return {
+            "code": -1,
+            "success": False,
+            "msg": "invalid_experiment_response",
+            "error": str(exc),
+            "retryable": False,
+        }
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -921,6 +1050,10 @@ Examples:
   # Scholar patents
   python aminer_client.py --token <TOKEN> --action scholar_patents --name "Shou-Cheng Zhang"
 
+  # Structured experiment retrieval
+  python aminer_client.py --token <TOKEN> --action experiment_retrieval \\
+    --paper-id <PAPER_ID> --search-text "Baseline" --dataset-name "ImageNet" --size 10
+
   # Direct single API call
   python aminer_client.py --token <TOKEN> --action raw \\
     --api paper_search --params '{"title":"BERT","page":0,"size":5}'
@@ -940,7 +1073,7 @@ Docs: https://open.aminer.cn/open/docs
     p.add_argument("--action", required=True,
                    choices=["scholar_profile", "paper_deep_dive", "org_analysis",
                             "venue_papers", "paper_qa", "patent_search",
-                            "scholar_patents", "raw"],
+                            "scholar_patents", "experiment_retrieval", "raw"],
                    help="Action to perform")
 
     # General parameters
@@ -973,6 +1106,19 @@ Docs: https://open.aminer.cn/open/docs
     p.add_argument("--min_citations", type=int, help="[paper_qa pro] minimum citation count")
     p.add_argument("--cursor", help="[paper_qa pro] pagination cursor from previous next_cursor")
 
+    # Experiment retrieval specific
+    p.add_argument("--paper-id", help="[experiment] exact paper_id filter")
+    p.add_argument(
+        "--search-text",
+        help=(
+            "[experiment] ES full-text query over paper_title, experiment_name, "
+            "research_problem(+_description), research_goal, method(+_description), "
+            "conclusion, limitations, key_results. Map experiment-name intent here."
+        ),
+    )
+    p.add_argument("--dataset-name", help="[experiment] exact datasets[].name filter")
+    p.add_argument("--method", help="[experiment] exact method filter")
+
     # Raw mode
     p.add_argument("--api", help="[raw mode] API function name, e.g. paper_search")
     p.add_argument("--params", help="[raw mode] Parameter dictionary in JSON format")
@@ -1004,6 +1150,7 @@ WORKFLOW_DRY_RUN_INFO = {
     "scholar_patents": [
         ("person_search", 0), ("person_patent_relation", 1.50), ("patent_detail", 0.01),
     ],
+    "experiment_retrieval": [("experiment_search", None)],
 }
 
 
@@ -1017,12 +1164,22 @@ def main():
         if not info:
             print(f"[Dry Run] No preview available for action '{args.action}'.")
         else:
-            total = sum(p for _, p in info)
+            total = sum(p for _, p in info if p is not None)
+            unpriced_calls = sum(1 for _, p in info if p is None)
             print(f"[Dry Run] Action: {args.action}")
             for i, (api, price) in enumerate(info, 1):
-                label = "Free" if price == 0 else f"¥{price:.2f}"
+                if price is None:
+                    label = "TBD"
+                else:
+                    label = "Free" if price == 0 else f"¥{price:.2f}"
                 print(f"  {i}. {api} ({label})")
-            print(f"  Estimated total: ¥{total:.2f}")
+            if unpriced_calls:
+                print(
+                    f"  Estimated known total: CNY {total:.2f}; "
+                    f"excludes {unpriced_calls} TBD API call(s)"
+                )
+            else:
+                print(f"  Estimated total: ¥{total:.2f}")
         return
 
     if not token or not token.strip():
@@ -1096,6 +1253,29 @@ def main():
             parser.error("--action scholar_patents requires --name")
         result = workflow_scholar_patents(token, args.name)
 
+    elif args.action == "experiment_retrieval":
+        if not any(
+            value and str(value).strip()
+            for value in (
+                args.paper_id,
+                args.search_text,
+                args.dataset_name,
+                args.method,
+            )
+        ):
+            parser.error(
+                "--action experiment_retrieval requires --paper-id, "
+                "--search-text, --dataset-name, or --method"
+            )
+        result = experiment_search(
+            token,
+            paper_id=args.paper_id or "",
+            search_text=args.search_text or "",
+            dataset_name=args.dataset_name or "",
+            method=args.method or "",
+            size=args.size,
+        )
+
     elif args.action == "raw":
         if not args.api:
             parser.error("--action raw requires --api (API function name)")
@@ -1109,6 +1289,7 @@ def main():
             "paper_relation": paper_relation,
             "paper_list_by_keywords": paper_list_by_keywords,
             "paper_detail_by_condition": paper_detail_by_condition,
+            "experiment_search": experiment_search,
             "person_search": person_search,
             "person_detail": person_detail,
             "person_figure": person_figure,
@@ -1144,10 +1325,21 @@ def main():
 
     cost = get_cost_summary()
     if cost["calls"] > 0:
-        parts = [f"{k}: ¥{v:.2f}" if v > 0 else f"{k}: Free"
-                 for k, v in sorted(cost["breakdown"].items())]
-        print(f"\n[Cost] ¥{cost['total']:.2f} total, {cost['calls']} API calls "
-              f"({', '.join(parts)})", file=sys.stderr)
+        parts = [
+            f"{k}: TBD" if v is None
+            else (f"{k}: ¥{v:.2f}" if v > 0 else f"{k}: Free")
+            for k, v in sorted(cost["breakdown"].items())
+        ]
+        if cost.get("unpriced_calls"):
+            print(
+                f"\n[Cost] CNY {cost['total']:.2f} known total, "
+                f"{cost['calls']} API calls ({', '.join(parts)}); "
+                f"total excludes {cost['unpriced_calls']} TBD call(s)",
+                file=sys.stderr,
+            )
+        else:
+            print(f"\n[Cost] ¥{cost['total']:.2f} total, {cost['calls']} API calls "
+                  f"({', '.join(parts)})", file=sys.stderr)
 
 
 if __name__ == "__main__":

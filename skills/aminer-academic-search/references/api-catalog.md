@@ -13,6 +13,7 @@
 - [Institution APIs (7)](#institution-apis)
 - [Journal APIs (3)](#journal-apis)
 - [Patent APIs (3)](#patent-apis)
+- [Experiment APIs (1)](#experiment-apis)
 
 ---
 
@@ -1134,6 +1135,83 @@ curl -X GET \
 
 ---
 
+## Experiment APIs
+
+### 29. Experiment Search
+
+- **URL**: `POST /api/v3/paper/search/experiment_data/SearchPro`
+- **Price**: TBD (not Free; exclude from known-price totals until confirmed)
+- **Authentication**: `Authorization: ${AMINER_API_KEY}`, `X-Platform: openclaw`
+- **Description**: Retrieve original structured Experiment JSON. Exact filters plus Elasticsearch `search_text`. Use only for explicit experiment-level requests.
+
+**Skill Parameters:**
+
+| Parameter | Type | Required | Description |
+|--------|------|------|------|
+| paper_id | string | Conditional | Exact paper ID; sent as backend `paper_id` after trim |
+| search_text | string | Conditional | ES full-text over experiment text fields below. Free text (paper title, experiment name, etc.) goes here. |
+| dataset_name | string | Conditional | Exact `datasets[].name`; sent as backend `dataset` after trim |
+| method | string | Conditional | Exact method; sent as backend `method` after trim |
+| size | number | No | Added to the backend body only when greater than 0 |
+
+At least one of `paper_id`, `method`, `dataset_name`, or `search_text` must be non-empty.
+
+**`search_text` covers these indexed text fields:**
+`paper_title`, `experiment_name`, `research_problem`, `research_problem_description`, `research_goal`, `method`, `method_description`, `conclusion`, `limitations`, `key_results`.
+
+**Backend Request Body:**
+
+```json
+{
+  "paper_id": "",
+  "method": "",
+  "dataset": "",
+  "search_text": ""
+}
+```
+
+Exact filter fields and `search_text` are always present after trim (empty string when unused). `size` is optional and is added only when greater than 0. Do **not** accept or send a separate `experiment_name` query parameter; put that text in `search_text`.
+
+**Supported Response Shapes:**
+- An array of Experiment objects
+- `{ "results": [...] }`
+- Arrays under `data`, `items`, `experiments`, or `records`
+- Any nesting of those supported envelope fields
+- A single Experiment object
+
+A single Experiment object is recognized by the presence of `paper_id` or `experiment_name`. Unrecognized responses return a structured `invalid_experiment_response` error and are never silently treated as empty results.
+
+**Common Experiment Fields:**
+
+| Field | Description |
+|--------|------|
+| paper_id | Source paper ID |
+| paper_title | Paper title |
+| experiment_name | Experiment name |
+| research_problem / research_problem_description | Research problem text |
+| research_goal | Research goal |
+| method / method_description | Method text |
+| datasets | Dataset objects; `dataset_name` maps to backend `dataset` |
+| conclusion / limitations / key_results | Result narrative fields |
+
+**Matching and Output Rules:**
+- `paper_id` / `method` / `dataset` are exact filters; `search_text` is ES full-text. No client-side re-filtering.
+- Backend-bound values use trim only and preserve case.
+- Success shape: `{ "results": [...] }` with original Experiment objects.
+- Do not summarize raw JSON; presentation may list non-empty returned fields only.
+
+**curl Example:**
+```bash
+curl -X POST \
+  'https://datacenter.aminer.cn/gateway/open_platform/api/v3/paper/search/experiment_data/SearchPro' \
+  -H 'Content-Type: application/json;charset=utf-8' \
+  -H 'Authorization: ${AMINER_API_KEY}' \
+  -H 'X-Platform: openclaw' \
+  -d '{"paper_id":"<PAPER_ID>","method":"","dataset":"","search_text":"Baseline"}'
+```
+
+---
+
 ## Appendix: API Pricing Summary
 
 | Category | Free APIs | Paid APIs |
@@ -1143,6 +1221,7 @@ curl -X GET \
 | Institution | Org Search | Org Details(¥0.01), Org Scholars(¥0.50), Org Papers(¥0.10), Org Patents(¥0.10), Org Disambiguation(¥0.01), Org Disambiguation Pro(¥0.05) |
 | Journal | Venue Search | Venue Details(¥0.20), Venue Papers(¥0.10) |
 | Patent | Patent Search, Patent Info | Patent Details(¥0.01) |
+| Experiment | None | Experiment Search(TBD) |
 
 ---
 

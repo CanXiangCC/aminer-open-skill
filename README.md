@@ -1,6 +1,6 @@
 # aminer-open-skill
 
-[![Version](https://img.shields.io/badge/version-1.8.1-0969da)](.claude-plugin/marketplace.json)
+[![Version](https://img.shields.io/badge/version-1.9.0-0969da)](.claude-plugin/marketplace.json)
 [![Available Skills](https://img.shields.io/badge/available_skills-7-2da44e)](#choose-a-skill)
 [![License](https://img.shields.io/badge/license-MIT-6f42c1)](LICENSE)
 
@@ -23,7 +23,7 @@ A typical workflow moves from finding literature, to understanding a paper's sou
 | Skill | Use it when you want to | Token | Guide |
 | --- | --- | --- | --- |
 | `aminer-free-academic` | Find and screen papers, scholars, institutions, venues, or patents with free AMiner APIs | A token is still required; listed APIs are free | [SKILL.md](skills/aminer-free-academic/SKILL.md) |
-| `aminer-academic-search` | Run full academic searches or deeper analysis across papers, scholars, institutions, venues, and patents | Required; some APIs are billed | [SKILL.md](skills/aminer-academic-search/SKILL.md) |
+| `aminer-academic-search` | Run full academic searches, deeper analysis, or explicit structured experiment retrieval across papers, scholars, institutions, venues, and patents | Required; some APIs are billed; experiment pricing is TBD | [SKILL.md](skills/aminer-academic-search/SKILL.md) |
 | `aminer-daily-paper` | Get personalized paper recommendations from topics, scholars, authors, or an AMiner account | Required | [SKILL.md](skills/aminer-daily-paper/SKILL.md) |
 | `aminer-deep-search` | Build a large survey bibliography through multi-round search, deduplication, and citation expansion | Required | [SKILL.md](skills/aminer-deep-search/SKILL.md) |
 
@@ -99,6 +99,7 @@ The following prompts can be used directly after the corresponding Skill is inst
 | --- | --- | --- |
 | Find papers quickly | "Find 10 recent papers on long-context language models. Return the title, year, venue, citation count, and URL." | `aminer-free-academic` |
 | Investigate a scholar or research topic | "Build a research profile for Andrew Ng, including interests, representative papers, collaborators, and recent work." | `aminer-academic-search` |
+| Retrieve structured experiments | "Return the original Experiment JSON for this paper, filtered by method and dataset name." | `aminer-academic-search` |
 | Get a focused reading list | "Recommend 8 papers on tool-using multimodal agents, prioritizing recent and highly cited work." | `aminer-daily-paper` |
 | Collect literature for a survey | "Collect 200 candidate papers on retrieval-augmented generation, expand from strong seed papers, remove duplicates, and export the bibliography." | `aminer-deep-search` |
 | Trace a paper's sources | "Analyze this PDF. Trace each key claim to its citation context and source, explain the citation intent, and generate the Markdown, JSON, SVG, and HTML outputs." | `paper-source-trace` |

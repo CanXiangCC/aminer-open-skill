@@ -17,6 +17,7 @@ config.local.yaml
 config.yaml
 outputs/
 skills/*/outputs/
+skills/*/.cache/
 
 # Personal research notes (not part of the shared skill code)
 docs/

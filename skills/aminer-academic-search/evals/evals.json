@@ -161,6 +161,76 @@
         "Output includes paper abstract, authors, and citation information",
         "Output includes a cost summary at the end showing APIs called and total cost"
       ]
+    },
+    {
+      "id": 14,
+      "prompt": "Retrieve the original experiment JSON for paper_id P123, filtered by dataset_name ImageNet and search_text Baseline. My token is <YOUR_TOKEN>",
+      "expected_output": "Call experiment_search with paper_id, dataset, and search_text. Return original Experiment objects under results without summarizing them. Report the API price as TBD.",
+      "files": [],
+      "expectations": [
+        "Called experiment_search because experiment-level data was explicitly requested",
+        "Sent paper_id, dataset, and search_text to the backend",
+        "Did not expose or send a separate experiment_name query parameter",
+        "Returned raw Experiment JSON in a results array",
+        "Displayed experiment_search as TBD and not Free"
+      ]
+    },
+    {
+      "id": 15,
+      "prompt": "For the paper title 'Value Compression for Barotropic Flows', return its structured experiment records as raw JSON. My token is <YOUR_TOKEN>",
+      "expected_output": "Because the request explicitly asks for experiments, call experiment_search directly with search_text set to the paper title (or other free text). Do not call paper_search or paper_search_pro to resolve a paper_id first.",
+      "files": [],
+      "expectations": [
+        "Called experiment_search with search_text from the user text",
+        "Did not call paper_search or paper_search_pro for title resolution",
+        "Did not invent a paper_id when the user only provided free text",
+        "Returned the experiment records without inventing missing fields"
+      ]
+    },
+    {
+      "id": 16,
+      "prompt": "Find papers about experiment retrieval systems and summarize their abstracts. My token is <YOUR_TOKEN>",
+      "expected_output": "Treat this as a normal paper topic and abstract search. Do not call the Experiment API because the phrase experiment retrieval is the research topic, not a request for experiment-level records.",
+      "files": [],
+      "expectations": [
+        "Used the normal paper search routing",
+        "Did not call experiment_search"
+      ]
+    },
+    {
+      "id": 17,
+      "prompt": "Deep-dive into 'Attention Is All You Need' and show its abstract and citation chain. My token is <YOUR_TOKEN>",
+      "expected_output": "Run the unchanged paper_deep_dive workflow. Do not append experiment_search.",
+      "files": [],
+      "expectations": [
+        "Called paper search, paper_detail, and paper_relation",
+        "Did not call experiment_search",
+        "Kept the existing paper_deep_dive output structure"
+      ]
+    },
+    {
+      "id": 18,
+      "prompt": "Show me scholars at MIT, NeurIPS papers, and quantum-chip patents. My token is <YOUR_TOKEN>",
+      "expected_output": "Use the existing Scholar, Org, Venue, and Patent routing as applicable. Do not call the Experiment API.",
+      "files": [],
+      "expectations": [
+        "Used only the existing entity APIs required by the request",
+        "Did not call experiment_search",
+        "Did not alter existing entity routing"
+      ]
+    },
+    {
+      "id": 19,
+      "prompt": "Call experiment_search directly with search_text='Baseline' and show the raw result. My token is <YOUR_TOKEN>",
+      "expected_output": "Use raw API mode. Send paper_id/method/dataset as empty strings when unused, and send search_text=Baseline for ES full-text retrieval. Return results as raw JSON.",
+      "files": [],
+      "expectations": [
+        "Called experiment_search through raw mode",
+        "Sent search_text to the backend",
+        "Did not use a separate experiment_name input parameter",
+        "Returned original objects under results",
+        "Reported the cost as TBD rather than Free"
+      ]
     }
   ]
 }
