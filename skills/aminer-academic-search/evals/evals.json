@@ -165,14 +165,14 @@
     {
       "id": 14,
       "prompt": "Retrieve the original experiment JSON for paper_id P123, filtered by dataset_name ImageNet and search_text Baseline. My token is <YOUR_TOKEN>",
-      "expected_output": "Call experiment_search with paper_id, dataset, and search_text. Return original Experiment objects under results without summarizing them. Report the API price as TBD.",
+      "expected_output": "Call experiment_search with paper_id, dataset, and search_text. Return original Experiment objects under results without summarizing them. Report the API price as ¥0.10.",
       "files": [],
       "expectations": [
         "Called experiment_search because experiment-level data was explicitly requested",
         "Sent paper_id, dataset, and search_text to the backend",
         "Did not expose or send a separate experiment_name query parameter",
         "Returned raw Experiment JSON in a results array",
-        "Displayed experiment_search as TBD and not Free"
+        "Displayed experiment_search as ¥0.10, not Free"
       ]
     },
     {
@@ -229,7 +229,7 @@
         "Sent search_text to the backend",
         "Did not use a separate experiment_name input parameter",
         "Returned original objects under results",
-        "Reported the cost as TBD rather than Free"
+        "Reported the cost as ¥0.10 rather than Free"
       ]
     }
   ]

@@ -115,7 +115,7 @@ Legacy `paper_qa_search` — what only it can do:
 - Response now also carries `first_author`, `venue_name`, `year`, `n_citation_bucket` — screen on those before paying for `paper_detail`.
 
 Experiment retrieval selection:
-- Use `experiment_search` only for explicit experiment-level intent.
+- Use `experiment_search` only for explicit experiment-level intent (¥0.10/call).
 - Exact filters: `paper_id`, `method`, `dataset_name` (→ backend `dataset`).
 - Free text (paper title, experiment name, problem/method/conclusion, etc.) → `search_text` (ES over `paper_title`, `experiment_name`, `research_problem`, `research_problem_description`, `research_goal`, `method`, `method_description`, `conclusion`, `limitations`, `key_results`).
 - Do not call `paper_search` to resolve titles; do not send a separate `experiment_name` parameter.
@@ -245,10 +245,10 @@ Patent info / Patent details
 
 ---
 
-### Workflow 6: Experiment Retrieval (price TBD)
+### Workflow 6: Experiment Retrieval (~¥0.10)
 
 **Use Case**: Explicit Experiment JSON via user-supplied `paper_id` / `method` / `dataset_name` / `search_text`.
-**Cost note**: Price is `TBD` — not Free. Exclude it from the known-price total while disclosing the unpriced call. `--dry-run` previews only `experiment_search`.
+**Cost note**: `experiment_search` is ¥0.10 per call. `--dry-run` previews only `experiment_search`.
 
 **Call Chain:**
 ```
@@ -293,7 +293,7 @@ Single POST; no paper-title resolution. Returns `{ "results": [...] }` (or a str
 | 26 | Org Disambiguation Pro | POST | ¥0.05 | `/api/organization/na/pro` |
 | 27 | Paper Batch Query | GET | ¥0.10 | `/api/paper/list/citation/by/keywords` |
 | 28 | Paper Details by Year+Venue | GET | ¥0.20 | `/api/paper/platform/allpubs/more/detail/by/ts/org/venue` |
-| 29 | Experiment Search | POST | TBD | `/api/v3/paper/search/experiment_data/SearchPro` |
+| 29 | Experiment Search | POST | ¥0.10 | `/api/v3/paper/search/experiment_data/SearchPro` |
 
 ---
 

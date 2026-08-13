@@ -58,7 +58,7 @@ API_PRICE: dict[str, Optional[float]] = {
     "person_detail": 1.00,
     "person_paper_relation": 1.50, "person_patent_relation": 1.50,
     "person_project": 1.50,
-    "experiment_search": None,  # TODO: replace after pricing is confirmed
+    "experiment_search": 0.10,
 }
 
 _cost_log: list[tuple[str, Optional[float]]] = []
@@ -418,7 +418,7 @@ def experiment_search(
     method: str = "",
     size: int = 0,
 ) -> Any:
-    """Retrieve Experiment JSON via exact filters and ES search_text."""
+    """Experiment Search (¥0.10/call): retrieve Experiment JSON via exact filters and ES search_text."""
     try:
         payload = _build_experiment_payload(
             paper_id=paper_id,
@@ -1150,7 +1150,7 @@ WORKFLOW_DRY_RUN_INFO = {
     "scholar_patents": [
         ("person_search", 0), ("person_patent_relation", 1.50), ("patent_detail", 0.01),
     ],
-    "experiment_retrieval": [("experiment_search", None)],
+    "experiment_retrieval": [("experiment_search", 0.10)],
 }
 
 
