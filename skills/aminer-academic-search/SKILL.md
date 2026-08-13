@@ -1,6 +1,6 @@
 ---
 name: aminer-academic-search
-version: 1.2.1
+version: 1.3.0
 author: AMiner
 contact: report@aminer.cn
 description: >
@@ -103,11 +103,11 @@ Legacy `paper_qa_search` — use sparingly:
 
 Experiment retrieval selection:
 - Use `experiment_search_pro` only for explicit experiment-level intent.
-- Accepted fields are `paper_id`, `experiment_name`, `dataset_name`, and `method`; at least one must be non-empty and multiple fields are exact AND filters.
-- `paper_id`, `method`, and `dataset_name` are sent to the backend (`dataset_name` maps to `dataset`). `experiment_name` is local-only and must never be sent.
-- Backend-bound values are trim-only and preserve case. Local matching is trim + lowercase only; do not use fuzzy matching, aliases, semantic search, or field inference.
-- If only a paper title is known and experiment data was explicitly requested, resolve it with `paper_search` (then `paper_search_pro` fallback if empty) before calling `experiment_search_pro`.
-- Raw or explicitly requested original JSON must be returned as `{ "results": [...] }` without summarizing or rewriting Experiment objects.
+- Exact filters: `paper_id`, `method`, `dataset_name` (→ backend `dataset`).
+- Free text (paper title, experiment name, problem/method/conclusion, etc.) → `search_text` (ES over `paper_title`, `experiment_name`, `research_problem`, `research_problem_description`, `research_goal`, `method`, `method_description`, `conclusion`, `limitations`, `key_results`).
+- Do not call `paper_search` to resolve titles; do not send a separate `experiment_name` parameter.
+- At least one of `paper_id`, `method`, `dataset_name`, `search_text` must be non-empty. Trim-only; do not invent fields.
+- Raw JSON requests return `{ "results": [...] }` without rewriting Experiment objects.
 
 Free-tier screening fields available:
 
@@ -232,29 +232,14 @@ Patent info / Patent details
 
 ### Experiment Retrieval (price TBD)
 
-**Use Case**: Explicitly retrieve original structured Experiment JSON by paper ID, experiment name, dataset name, method, or an exact combination.
+**Use Case**: Explicit Experiment JSON via user-supplied `paper_id` / `method` / `dataset_name` / `search_text`.
 
-**Direct Call Chain:**
+**Call Chain:**
 ```
-Experiment search pro (paper_id / method / dataset_name / experiment_name)
-```
-
-**Title Resolution Call Chain (explicit experiment intent only):**
-```
-Paper search (title → paper_id)
-    ↓ empty only
-Paper search pro fallback
-    ↓
-Experiment search pro
+Experiment search pro (paper_id / method / dataset_name / search_text)
 ```
 
-The workflow returns an independent structure with `source_api_chain`, `selected_paper`, and `experiments`. The the response to POST are limited to a maximum of 10. It never changes or extends the Paper Deep Dive workflow. Experiment price is `TBD`; do not report it as Free, and exclude it from the known-price total while disclosing the unpriced call.
-
-Output boundaries:
-- Direct/raw experiment retrieval returns `{ "results": [...] }` with original Experiment objects.
-- Do not summarize or rewrite raw JSON requests.
-- A composed workflow may explain returned fields, but must not infer, complete, or fabricate missing values.
-- An unrecognized API response is an explicit error, not an empty result.
+Single POST; no paper-title resolution. Returns `{ "results": [...] }` (or a structured API error). Page-limited (commonly ≤10). Does not extend Paper Deep Dive. Price is `TBD` — not Free; exclude from known-price totals while disclosing the call. `--dry-run` previews only `experiment_search_pro`. Do not summarize raw JSON or invent missing fields.
 
 ---
 

@@ -1,6 +1,6 @@
 # aminer-open-skill
 
-[![Version](https://img.shields.io/badge/version-1.8.1-0969da)](.claude-plugin/marketplace.json)
+[![Version](https://img.shields.io/badge/version-1.9.0-0969da)](.claude-plugin/marketplace.json)
 [![Available Skills](https://img.shields.io/badge/available_skills-7-2da44e)](#choose-a-skill)
 [![License](https://img.shields.io/badge/license-MIT-6f42c1)](LICENSE)
 

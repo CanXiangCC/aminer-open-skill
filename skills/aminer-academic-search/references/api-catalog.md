@@ -1142,19 +1142,22 @@ curl -X GET \
 - **URL**: `POST /api/v3/paper/search/experiment_data/SearchPro`
 - **Price**: TBD (not Free; exclude from known-price totals until confirmed)
 - **Authentication**: `Authorization: ${AMINER_API_KEY}`, `X-Platform: openclaw`
-- **Description**: Retrieve original structured Experiment JSON. Use only for explicit experiment-level requests.
+- **Description**: Retrieve original structured Experiment JSON. Exact filters plus Elasticsearch `search_text`. Use only for explicit experiment-level requests.
 
 **Skill Parameters:**
 
 | Parameter | Type | Required | Description |
 |--------|------|------|------|
 | paper_id | string | Conditional | Exact paper ID; sent as backend `paper_id` after trim |
-| experiment_name | string | Conditional | Exact experiment name; local-only and never sent to the backend |
+| search_text | string | Conditional | ES full-text over experiment text fields below. Free text (paper title, experiment name, etc.) goes here. |
 | dataset_name | string | Conditional | Exact `datasets[].name`; sent as backend `dataset` after trim |
 | method | string | Conditional | Exact method; sent as backend `method` after trim |
 | size | number | No | Added to the backend body only when greater than 0 |
 
-At least one of `paper_id`, `experiment_name`, `dataset_name`, or `method` must be non-empty. Multiple supplied fields are combined with AND.
+At least one of `paper_id`, `method`, `dataset_name`, or `search_text` must be non-empty.
+
+**`search_text` covers these indexed text fields:**
+`paper_title`, `experiment_name`, `research_problem`, `research_problem_description`, `research_goal`, `method`, `method_description`, `conclusion`, `limitations`, `key_results`.
 
 **Backend Request Body:**
 
@@ -1162,11 +1165,12 @@ At least one of `paper_id`, `experiment_name`, `dataset_name`, or `method` must 
 {
   "paper_id": "",
   "method": "",
-  "dataset": ""
+  "dataset": "",
+  "search_text": ""
 }
 ```
 
-The three backend fields are always present and preserve user casing after trimming. `size` is optional and is added only when greater than 0. `experiment_name` is never included.
+Exact filter fields and `search_text` are always present after trim (empty string when unused). `size` is optional and is added only when greater than 0. Do **not** accept or send a separate `experiment_name` query parameter; put that text in `search_text`.
 
 **Supported Response Shapes:**
 - An array of Experiment objects
@@ -1182,15 +1186,19 @@ A single Experiment object is recognized by the presence of `paper_id` or `exper
 | Field | Description |
 |--------|------|
 | paper_id | Source paper ID |
+| paper_title | Paper title |
 | experiment_name | Experiment name |
-| method | Experiment method |
-| datasets | Dataset objects; `dataset_name` matches any exact `datasets[].name` |
+| research_problem / research_problem_description | Research problem text |
+| research_goal | Research goal |
+| method / method_description | Method text |
+| datasets | Dataset objects; `dataset_name` maps to backend `dataset` |
+| conclusion / limitations / key_results | Result narrative fields |
 
 **Matching and Output Rules:**
-- Backend-bound values use trim only; local comparisons use trim + lowercase.
-- Matching is exact AND only. No fuzzy matching, semantic search, aliases, or field inference.
-- The success structure is `{ "results": [...] }`, containing original Experiment objects without field rewriting.
-- Raw or explicitly requested original JSON is not summarized.
+- `paper_id` / `method` / `dataset` are exact filters; `search_text` is ES full-text. No client-side re-filtering.
+- Backend-bound values use trim only and preserve case.
+- Success shape: `{ "results": [...] }` with original Experiment objects.
+- Do not summarize raw JSON; presentation may list non-empty returned fields only.
 
 **curl Example:**
 ```bash
@@ -1199,7 +1207,7 @@ curl -X POST \
   -H 'Content-Type: application/json;charset=utf-8' \
   -H 'Authorization: ${AMINER_API_KEY}' \
   -H 'X-Platform: openclaw' \
-  -d '{"paper_id":"<PAPER_ID>","method":"","dataset":""}'
+  -d '{"paper_id":"<PAPER_ID>","method":"","dataset":"","search_text":"Baseline"}'
 ```
 
 ---

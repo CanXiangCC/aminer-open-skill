@@ -347,8 +347,9 @@ def paper_detail_by_condition(token: str, year: int, venue_id: str = None) -> An
 # Experiment API
 # ──────────────────────────────────────────────────────────────────────────────
 
-EXPERIMENT_QUERY_FIELDS = ("paper_id", "experiment_name", "dataset_name", "method")
-EXPERIMENT_RESPONSE_KEYS = ("results", "data", "items", "experiments", "records")
+# Exact filters + ES search_text (paper_title, experiment_name, research_problem(+_description),
+# research_goal, method(+_description), conclusion, limitations, key_results).
+# No client-side result filtering and no paper-title resolution.
 
 
 class ExperimentResponseError(ValueError):
@@ -356,66 +357,52 @@ class ExperimentResponseError(ValueError):
 
 
 def _experiment_raw(value: Any) -> str:
-    """Trim a backend-bound value without changing its case."""
     return "" if value is None else str(value).strip()
 
 
-def _experiment_normalized(value: Any) -> str:
-    """Normalize a value for local exact comparison."""
-    return _experiment_raw(value).lower()
-
-
-def _experiment_query_filters(query: dict[str, Any]) -> dict[str, str]:
-    """Return non-empty normalized query fields, which are ANDed together."""
-    filters = {}
-    for field in EXPERIMENT_QUERY_FIELDS:
-        value = _experiment_normalized(query.get(field))
-        if value:
-            filters[field] = value
-    if not filters:
-        raise ValueError("At least one experiment retrieval field must be non-empty")
-    return filters
-
-
 def _build_experiment_payload(
-    query: dict[str, Any], size: int = 0
+    paper_id: str = "",
+    search_text: str = "",
+    dataset_name: str = "",
+    method: str = "",
+    size: int = 0,
 ) -> dict[str, Any]:
-    """Build the SearchPro payload; experiment_name is local-only."""
-    _experiment_query_filters(query)
-    payload: dict[str, Any] = {
-        "paper_id": _experiment_raw(query.get("paper_id")),
-        "method": _experiment_raw(query.get("method")),
-        "dataset": _experiment_raw(query.get("dataset_name")),
+    payload = {
+        "paper_id": _experiment_raw(paper_id),
+        "method": _experiment_raw(method),
+        "dataset": _experiment_raw(dataset_name),
+        "search_text": _experiment_raw(search_text),
     }
+    if not any(payload.values()):
+        raise ValueError("At least one experiment retrieval field must be non-empty")
     if size > 0:
         payload["size"] = size
     return payload
 
 
-def _is_experiment_record(value: Any) -> bool:
-    return isinstance(value, dict) and (
-        "paper_id" in value or "experiment_name" in value
-    )
-
-
-def _extract_experiment_records(value: Any) -> Optional[list[dict[str, Any]]]:
-    if isinstance(value, list):
-        return value if all(_is_experiment_record(item) for item in value) else None
-    if not isinstance(value, dict):
-        return None
-    if _is_experiment_record(value):
-        return [value]
-    for key in EXPERIMENT_RESPONSE_KEYS:
-        if key in value:
-            records = _extract_experiment_records(value[key])
-            if records is not None:
-                return records
-    return None
-
-
 def _adapt_experiment_response(raw: Any) -> list[dict[str, Any]]:
-    """Extract original Experiment objects from supported response envelopes."""
-    records = _extract_experiment_records(raw)
+    """Unwrap common envelopes; keep original Experiment objects."""
+
+    def is_record(value: Any) -> bool:
+        return isinstance(value, dict) and (
+            "paper_id" in value or "experiment_name" in value
+        )
+
+    def extract(value: Any) -> Optional[list[dict[str, Any]]]:
+        if isinstance(value, list):
+            return value if all(is_record(item) for item in value) else None
+        if not isinstance(value, dict):
+            return None
+        if is_record(value):
+            return [value]
+        for key in ("results", "data", "items", "experiments", "records"):
+            if key in value:
+                records = extract(value[key])
+                if records is not None:
+                    return records
+        return None
+
+    records = extract(raw)
     if records is None:
         raise ExperimentResponseError(
             "Unable to adapt API response to an Experiment list"
@@ -423,78 +410,23 @@ def _adapt_experiment_response(raw: Any) -> list[dict[str, Any]]:
     return records
 
 
-def _experiment_dataset_matches(
-    experiment: dict[str, Any], dataset_name: str
-) -> bool:
-    datasets = experiment.get("datasets", [])
-    if not isinstance(datasets, list):
-        return False
-    return any(
-        _experiment_normalized(dataset.get("name")) == dataset_name
-        for dataset in datasets
-        if isinstance(dataset, dict)
-    )
-
-
-def _experiment_matches(
-    experiment: dict[str, Any], filters: dict[str, str]
-) -> bool:
-    if (
-        "paper_id" in filters
-        and _experiment_normalized(experiment.get("paper_id"))
-        != filters["paper_id"]
-    ):
-        return False
-    if (
-        "experiment_name" in filters
-        and _experiment_normalized(experiment.get("experiment_name"))
-        != filters["experiment_name"]
-    ):
-        return False
-    if (
-        "dataset_name" in filters
-        and not _experiment_dataset_matches(experiment, filters["dataset_name"])
-    ):
-        return False
-    if (
-        "method" in filters
-        and _experiment_normalized(experiment.get("method")) != filters["method"]
-    ):
-        return False
-    return True
-
-
-def _filter_experiments(
-    experiments: list[dict[str, Any]], query: dict[str, Any]
-) -> dict[str, list[dict[str, Any]]]:
-    """Return original Experiment objects matching every supplied field."""
-    filters = _experiment_query_filters(query)
-    return {
-        "results": [
-            experiment
-            for experiment in experiments
-            if _experiment_matches(experiment, filters)
-        ]
-    }
-
-
 def experiment_search_pro(
     token: str,
     paper_id: str = "",
-    experiment_name: str = "",
+    search_text: str = "",
     dataset_name: str = "",
     method: str = "",
     size: int = 0,
 ) -> Any:
-    """Retrieve original Experiment JSON with deterministic local AND filters."""
-    query = {
-        "paper_id": paper_id,
-        "experiment_name": experiment_name,
-        "dataset_name": dataset_name,
-        "method": method,
-    }
+    """Retrieve Experiment JSON via exact filters and ES search_text."""
     try:
-        payload = _build_experiment_payload(query, size)
+        payload = _build_experiment_payload(
+            paper_id=paper_id,
+            search_text=search_text,
+            dataset_name=dataset_name,
+            method=method,
+            size=size,
+        )
     except ValueError as exc:
         return {
             "code": -1,
@@ -515,7 +447,7 @@ def experiment_search_pro(
         return raw
 
     try:
-        return _filter_experiments(_adapt_experiment_response(raw), query)
+        return {"results": _adapt_experiment_response(raw)}
     except ExperimentResponseError as exc:
         return {
             "code": -1,
@@ -1081,82 +1013,6 @@ def workflow_scholar_patents(token: str, name: str) -> dict:
     return result
 
 
-def workflow_experiment_retrieval(
-    token: str,
-    *,
-    title: str = None,
-    paper_id: str = "",
-    experiment_name: str = "",
-    dataset_name: str = "",
-    method: str = "",
-    size: int = 0,
-) -> dict:
-    """Retrieve structured experiments only when explicitly requested."""
-    source_api_chain = []
-    selected_paper = None
-    resolved_paper_id = (paper_id or "").strip()
-
-    if title and not resolved_paper_id:
-        search_result = paper_search(token, title=title, size=5)
-        search_api = "paper_search"
-        papers = search_result.get("data", []) if isinstance(search_result, dict) else []
-        if not papers:
-            search_result = paper_search_pro(
-                token, title=title, keyword=title, size=5
-            )
-            search_api = "paper_search_pro(fallback)"
-            papers = (
-                search_result.get("data", [])
-                if isinstance(search_result, dict)
-                else []
-            )
-        source_api_chain.append(search_api)
-        if not isinstance(papers, list) or not papers:
-            return {
-                "source_api_chain": source_api_chain,
-                "selected_paper": None,
-                "experiments": {
-                    "code": -1,
-                    "success": False,
-                    "msg": "paper_not_found",
-                    "error": "No relevant papers found",
-                    "retryable": False,
-                },
-            }
-
-        selected_paper = papers[0]
-        resolved_paper_id = (
-            selected_paper.get("id") or selected_paper.get("_id") or ""
-        )
-        if not resolved_paper_id:
-            return {
-                "source_api_chain": source_api_chain,
-                "selected_paper": selected_paper,
-                "experiments": {
-                    "code": -1,
-                    "success": False,
-                    "msg": "paper_id_missing",
-                    "error": "Selected paper has no usable ID",
-                    "retryable": False,
-                },
-            }
-
-    experiments = experiment_search_pro(
-        token,
-        paper_id=resolved_paper_id,
-        experiment_name=experiment_name,
-        dataset_name=dataset_name,
-        method=method,
-        size=size,
-    )
-    source_api_chain.append("experiment_search_pro")
-    return {
-        "source_api_chain": source_api_chain,
-        "selected_paper": selected_paper,
-        "experiments": experiments,
-    }
-
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Command-Line Entry Point
 # ──────────────────────────────────────────────────────────────────────────────
@@ -1196,7 +1052,7 @@ Examples:
 
   # Structured experiment retrieval
   python aminer_client.py --token <TOKEN> --action experiment_retrieval \\
-    --paper-id <PAPER_ID> --dataset-name "ImageNet" --size 10
+    --paper-id <PAPER_ID> --search-text "Baseline" --dataset-name "ImageNet" --size 10
 
   # Direct single API call
   python aminer_client.py --token <TOKEN> --action raw \\
@@ -1252,7 +1108,14 @@ Docs: https://open.aminer.cn/open/docs
 
     # Experiment retrieval specific
     p.add_argument("--paper-id", help="[experiment] exact paper_id filter")
-    p.add_argument("--experiment-name", help="[experiment] exact local experiment_name filter")
+    p.add_argument(
+        "--search-text",
+        help=(
+            "[experiment] ES full-text query over paper_title, experiment_name, "
+            "research_problem(+_description), research_goal, method(+_description), "
+            "conclusion, limitations, key_results. Map experiment-name intent here."
+        ),
+    )
     p.add_argument("--dataset-name", help="[experiment] exact datasets[].name filter")
     p.add_argument("--method", help="[experiment] exact method filter")
 
@@ -1392,24 +1255,22 @@ def main():
 
     elif args.action == "experiment_retrieval":
         if not any(
-            value and value.strip()
+            value and str(value).strip()
             for value in (
-                args.title,
                 args.paper_id,
-                args.experiment_name,
+                args.search_text,
                 args.dataset_name,
                 args.method,
             )
         ):
             parser.error(
-                "--action experiment_retrieval requires --title, --paper-id, "
-                "--experiment-name, --dataset-name, or --method"
+                "--action experiment_retrieval requires --paper-id, "
+                "--search-text, --dataset-name, or --method"
             )
-        result = workflow_experiment_retrieval(
+        result = experiment_search_pro(
             token,
-            title=args.title,
             paper_id=args.paper_id or "",
-            experiment_name=args.experiment_name or "",
+            search_text=args.search_text or "",
             dataset_name=args.dataset_name or "",
             method=args.method or "",
             size=args.size,
