@@ -1177,7 +1177,7 @@ curl -X GET \
 ### 29. Experiment Search
 
 - **URL**: `POST /api/v3/paper/search/experiment_data/SearchPro`
-- **Price**: TBD (not Free; exclude from known-price totals until confirmed)
+- **Price**: ¥0.10/call
 - **Authentication**: `Authorization: ${AMINER_API_KEY}`, `X-Platform: openclaw`
 - **Description**: Retrieve original structured Experiment JSON. Exact filters plus Elasticsearch `search_text`. Use only for explicit experiment-level requests.
 
@@ -1258,7 +1258,7 @@ curl -X POST \
 | Institution | Org Search | Org Details(¥0.01), Org Scholars(¥0.50), Org Papers(¥0.10), Org Patents(¥0.10), Org Disambiguation(¥0.01), Org Disambiguation Pro(¥0.05) |
 | Journal | Venue Search | Venue Details(¥0.20), Venue Papers(¥0.10) |
 | Patent | Patent Search, Patent Info | Patent Details(¥0.01) |
-| Experiment | None | Experiment Search(TBD) |
+| Experiment | None | Experiment Search(¥0.10) |
 
 ---
 

@@ -23,7 +23,7 @@
 | Skill | 适合完成的任务 | Token 要求 | 使用说明 |
 | --- | --- | --- | --- |
 | `aminer-free-academic` | 使用 AMiner 免费接口查找和初筛论文、学者、机构、期刊或专利 | 接口免费，但仍需 Token | [SKILL.md](skills/aminer-free-academic/SKILL.md) |
-| `aminer-academic-search` | 对论文、学者、机构、期刊和专利进行完整检索、深度分析或显式结构化实验检索 | 必须配置；部分 API 计费；实验 API 价格待定 | [SKILL.md](skills/aminer-academic-search/SKILL.md) |
+| `aminer-academic-search` | 对论文、学者、机构、期刊和专利进行完整检索、深度分析或显式结构化实验检索 | 必须配置；部分 API 计费；实验检索 ¥0.10/次 | [SKILL.md](skills/aminer-academic-search/SKILL.md) |
 | `aminer-daily-paper` | 根据主题、学者、作者或 AMiner 账号获取个性化论文推荐 | 必须配置 | [SKILL.md](skills/aminer-daily-paper/SKILL.md) |
 | `aminer-deep-search` | 通过多轮检索、去重和引用扩展构建大规模综述文献集 | 必须配置 | [SKILL.zh.md](skills/aminer-deep-search/SKILL.zh.md) |
 

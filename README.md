@@ -23,7 +23,7 @@ A typical workflow moves from finding literature, to understanding a paper's sou
 | Skill | Use it when you want to | Token | Guide |
 | --- | --- | --- | --- |
 | `aminer-free-academic` | Find and screen papers, scholars, institutions, venues, or patents with free AMiner APIs | A token is still required; listed APIs are free | [SKILL.md](skills/aminer-free-academic/SKILL.md) |
-| `aminer-academic-search` | Run full academic searches, deeper analysis, or explicit structured experiment retrieval across papers, scholars, institutions, venues, and patents | Required; some APIs are billed; experiment pricing is TBD | [SKILL.md](skills/aminer-academic-search/SKILL.md) |
+| `aminer-academic-search` | Run full academic searches, deeper analysis, or explicit structured experiment retrieval across papers, scholars, institutions, venues, and patents | Required; some APIs are billed; experiment search is ¥0.10/call | [SKILL.md](skills/aminer-academic-search/SKILL.md) |
 | `aminer-daily-paper` | Get personalized paper recommendations from topics, scholars, authors, or an AMiner account | Required | [SKILL.md](skills/aminer-daily-paper/SKILL.md) |
 | `aminer-deep-search` | Build a large survey bibliography through multi-round search, deduplication, and citation expansion | Required | [SKILL.md](skills/aminer-deep-search/SKILL.md) |
 
