@@ -1,12 +1,12 @@
 # aminer-open-skill
 
-[![Version](https://img.shields.io/badge/version-1.9.0-0969da)](.claude-plugin/marketplace.json)
-[![Available Skills](https://img.shields.io/badge/available_skills-7-2da44e)](#choose-a-skill)
+[![Version](https://img.shields.io/badge/version-1.11.0-0969da)](.claude-plugin/marketplace.json)
+[![Available Skills](https://img.shields.io/badge/available_skills-8-2da44e)](#choose-a-skill)
 [![License](https://img.shields.io/badge/license-MIT-6f42c1)](LICENSE)
 
 English | [中文](README.zh.md)
 
-An AMiner Skill collection for finding papers, building reading lists, tracing sources, and checking citations in Claude Code, Codex, OpenClaw, and similar AI assistants.
+An AMiner Skill collection for finding papers, building reading lists and taxonomies, tracing sources, and checking citations in Claude Code, Codex, OpenClaw, and similar AI assistants.
 
 - [🧰 Choose a Skill](#choose-a-skill)
 - [🚀 Quick Start](#quick-start)
@@ -26,6 +26,12 @@ A typical workflow moves from finding literature, to understanding a paper's sou
 | `aminer-academic-search` | Run full academic searches, deeper analysis, or explicit structured experiment retrieval across papers, scholars, institutions, venues, and patents | Required; some APIs are billed; experiment search is ¥0.10/call | [SKILL.md](skills/aminer-academic-search/SKILL.md) |
 | `aminer-daily-paper` | Get personalized paper recommendations from topics, scholars, authors, or an AMiner account | Required | [SKILL.md](skills/aminer-daily-paper/SKILL.md) |
 | `aminer-deep-search` | Build a large survey bibliography through multi-round search, deduplication, and citation expansion | Required | [SKILL.md](skills/aminer-deep-search/SKILL.md) |
+
+### 🗂️ Organize paper collections
+
+| Skill | Use it when you want to | Token | Guide |
+| --- | --- | --- | --- |
+| `scientific-taxonomy` | Build a hierarchical Markdown taxonomy from supplied paper titles and abstracts | Optional; only needed when AMiner must fill missing metadata | [SKILL.md](skills/scientific-taxonomy/SKILL.md) |
 
 ### 🧭 Analyze and trace a paper
 
@@ -102,6 +108,7 @@ The following prompts can be used directly after the corresponding Skill is inst
 | Retrieve structured experiments | "Return the original Experiment JSON for this paper, filtered by method and dataset name." | `aminer-academic-search` |
 | Get a focused reading list | "Recommend 8 papers on tool-using multimodal agents, prioritizing recent and highly cited work." | `aminer-daily-paper` |
 | Collect literature for a survey | "Collect 200 candidate papers on retrieval-augmented generation, expand from strong seed papers, remove duplicates, and export the bibliography." | `aminer-deep-search` |
+| Organize a paper collection | "Group these paper titles and abstracts into a coherent hierarchical taxonomy and save it as taxonomy.md." | `scientific-taxonomy` |
 | Trace a paper's sources | "Analyze this PDF. Trace each key claim to its citation context and source, explain the citation intent, and generate the Markdown, JSON, SVG, and HTML outputs." | `paper-source-trace` |
 | Detect fabricated references | "Check every reference in this paper PDF and flag entries that are missing, suspicious, or need manual review." | `pdf-citation-verifier` |
 | Check citation faithfulness | "For each in-text citation in this paper, retrieve the cited source and determine whether the surrounding claim is supported by the original text." | `citation-faithfulness` |

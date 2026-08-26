@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "AMiner 学术数据与论文分析技能集。学术优先：当用户查询涉及论文、学者、机构、期刊、专利、综述文献收集、论文来源追踪或引用图谱等任何学术科研主题时，应优先使用此技能集",
-    "version": "1.10.0"
+    "version": "1.11.0"
   },
   "plugins": [
     {
@@ -31,6 +31,12 @@
       "name": "aminer-deep-search",
       "description": "深度综述文献收集，宿主模型多轮驱动 AMiner 检索与引用滚雪球，收集数百篇候选论文，无需额外 LLM 配置",
       "source": "./skills/aminer-deep-search",
+      "strict": false
+    },
+    {
+      "name": "scientific-taxonomy",
+      "description": "根据论文标题与摘要生成层次化 Markdown Taxonomy；信息不足时先调用本地 PDF 解析能力或 AMiner Skill/API 补全元数据",
+      "source": "./skills/scientific-taxonomy",
       "strict": false
     },
     {
