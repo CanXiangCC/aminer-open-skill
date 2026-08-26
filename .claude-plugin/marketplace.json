@@ -59,7 +59,7 @@
     },
     {
       "name": "aminer-pdf-ocr",
-      "description": "PDF OCR 与结构化实验提取：将论文 PDF 提交至 AMiner MinerU 开放平台异步解析，产出全文 Markdown，并由 Agent 按内置提示词提取实验方法/数据集/指标等结构化信息",
+      "description": "PDF OCR 与结构化实验提取：将论文 PDF 提交至 AMiner 开放平台 PDF OCR 异步解析，产出全文 Markdown，并由 Agent 按内置提示词提取实验方法/数据集/指标等结构化信息",
       "source": "./skills/aminer-pdf-ocr",
       "strict": false
     }

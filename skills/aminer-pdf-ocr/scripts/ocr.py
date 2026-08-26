@@ -1,4 +1,4 @@
-"""CLI orchestration for the AMiner MinerU open-platform API."""
+"""CLI orchestration for the AMiner PDF OCR open-platform API."""
 from __future__ import annotations
 
 import argparse
@@ -14,14 +14,17 @@ import requests
 
 try:
     from .artifacts import extract_result, write_metadata
-    from .mineru_client import MinerUApiError, MinerUClient
-    from .pdf_validation import validate_pdf
+    from .pdfocr_client import PdfOcrApiError, PdfOcrClient
+    from .pdf_validation import MAX_BYTES, validate_pdf
+    from .url_guard import UrlGuardError, fetch_public_url
 except ImportError:
     from artifacts import extract_result, write_metadata
-    from mineru_client import MinerUApiError, MinerUClient
-    from pdf_validation import validate_pdf
+    from pdfocr_client import PdfOcrApiError, PdfOcrClient
+    from pdf_validation import MAX_BYTES, validate_pdf
+    from url_guard import UrlGuardError, fetch_public_url
 
 DEFAULT_BASE_URL = "https://datacenter.aminer.cn/gateway/open_platform/api/v3"
+CONSOLE_URL = "https://open.aminer.cn/open/board?tab=control"
 URL_PREFIXES = ("http://", "https://")
 
 
@@ -33,25 +36,27 @@ def safe_stem(name: str) -> str:
 
 def _download_input(url: str, timeout: float) -> Path:
     try:
-        response = requests.get(url, timeout=timeout)
-        response.raise_for_status()
-    except requests.RequestException as exc:
+        content = fetch_public_url(url, timeout=timeout, max_bytes=MAX_BYTES)
+    except (UrlGuardError, requests.RequestException) as exc:
         raise SystemExit(f"ERROR: failed to download input URL: {exc}") from exc
     name = Path(urlparse(url).path).name or "download.pdf"
     if not name.lower().endswith(".pdf"):
         name += ".pdf"
-    fd, raw = tempfile.mkstemp(prefix="mineru_", suffix=".pdf")
+    fd, raw = tempfile.mkstemp(prefix="pdfocr_", suffix=".pdf")
     os.close(fd)
     path = Path(raw).with_name(name)
     Path(raw).replace(path)
-    path.write_bytes(response.content)
+    path.write_bytes(content)
     return path
 
 
 def resolve_token() -> str:
-    token = os.environ.get("OPEN_PLATFORM_TOKEN", "").strip()
+    token = (os.environ.get("AMINER_API_KEY") or os.environ.get("OPEN_PLATFORM_TOKEN") or "").strip()
     if not token:
-        raise SystemExit("ERROR: OPEN_PLATFORM_TOKEN is not set")
+        raise SystemExit(
+            "ERROR: AMINER_API_KEY is not set. Get a token from "
+            f"{CONSOLE_URL} and export AMINER_API_KEY=<token>."
+        )
     return token
 
 
@@ -68,25 +73,25 @@ def run_ocr(args: argparse.Namespace) -> int:
         info = validate_pdf(input_path)
         output_dir = Path(args.output_dir).expanduser()
         output_dir.mkdir(parents=True, exist_ok=True)
-        client = MinerUClient(token, base_url=os.environ.get("MINERU_OPEN_API_BASE_URL", DEFAULT_BASE_URL))
+        client = PdfOcrClient(token, base_url=os.environ.get("PDFOCR_OPEN_API_BASE_URL", DEFAULT_BASE_URL))
         started = time.monotonic()
         upload = client.upload_with_retry(input_path, timeout=args.request_timeout,
                                           max_attempts=args.max_upload_attempts)
         result = client.wait_for_result(upload.job_id, request_timeout=args.request_timeout,
                                         poll_timeout=args.poll_timeout,
-                                        on_status=lambda item: print(f"[mineru] status={item.status}", file=sys.stderr))
-        zip_path = output_dir / "mineru_result.zip"
+                                        on_status=lambda item: print(f"[pdfocr] status={item.status}", file=sys.stderr))
+        zip_path = output_dir / "pdfocr_result.zip"
         client.download(result.download_url or "", zip_path, timeout=args.request_timeout)
         artifacts = extract_result(zip_path, output_dir, save_images=not args.no_save_images)
         write_metadata(output_dir / "response.json", upload=upload, result=result, artifacts=artifacts)
-        summary = {"engine": "mineru-open-api", "status": "ok", "elapsed_seconds": round(time.monotonic() - started, 2),
+        summary = {"engine": "pdfocr-open-api", "status": "ok", "elapsed_seconds": round(time.monotonic() - started, 2),
                    "job_id": upload.job_id, "pages": info.pages, "output_dir": str(output_dir), "artifacts": artifacts}
         if args.output:
             Path(args.output).expanduser().write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
         json.dump(summary, sys.stdout, ensure_ascii=False, indent=2)
         sys.stdout.write("\n")
         return 0
-    except (MinerUApiError, ValueError, OSError) as exc:
+    except (PdfOcrApiError, ValueError, OSError) as exc:
         raise SystemExit(f"ERROR: {exc}") from exc
     finally:
         if temp_path:
@@ -94,7 +99,7 @@ def run_ocr(args: argparse.Namespace) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Parse a PDF through the AMiner MinerU open API.")
+    parser = argparse.ArgumentParser(description="Parse a PDF through the AMiner PDF OCR open API.")
     parser.add_argument("--input", required=True, help="Local PDF path or http(s) PDF URL.")
     parser.add_argument("--output-dir", default=None, help="Output directory for Markdown, ZIP, images and metadata.")
     parser.add_argument("--request-timeout", type=float, default=60, help="Timeout for each HTTP request in seconds.")

@@ -1,4 +1,4 @@
-"""Client for the AMiner MinerU asynchronous open-platform API."""
+"""Client for the AMiner PDF OCR asynchronous open-platform API."""
 from __future__ import annotations
 
 import time
@@ -9,13 +9,13 @@ from urllib.parse import urljoin
 import requests
 
 DEFAULT_BASE_URL = "https://datacenter.aminer.cn/gateway/open_platform/api/v3"
-UPLOAD_PATH = "/paper/mineru/upload"
-RESULT_PATH = "/paper/mineru/result"
+UPLOAD_PATH = "/paper/pdfocr/upload"
+RESULT_PATH = "/paper/pdfocr/result"
 TERMINAL_FAILURES = {"failed", "timeout", "queue_timeout", "expired"}
 ACTIVE_STATUSES = {"preparing", "queued", "running"}
 
 
-class MinerUApiError(RuntimeError):
+class PdfOcrApiError(RuntimeError):
     def __init__(self, message: str, *, http_status: int | None = None,
                  code: int | None = None, log_id: str | None = None):
         super().__init__(message)
@@ -24,17 +24,17 @@ class MinerUApiError(RuntimeError):
         self.log_id = log_id
 
 
-class MinerUQueueFullError(MinerUApiError):
+class PdfOcrQueueFullError(PdfOcrApiError):
     def __init__(self, retry_after_seconds: int, **kwargs: Any):
-        super().__init__("MinerU queue is full", **kwargs)
+        super().__init__("PDF OCR queue is full", **kwargs)
         self.retry_after_seconds = max(1, int(retry_after_seconds))
 
 
-class MinerUJobFailedError(MinerUApiError):
+class PdfOcrJobFailedError(PdfOcrApiError):
     def __init__(self, job_id: str, status: str, error_code: str | None,
                  error_message: str | None, **kwargs: Any):
         detail = error_message or error_code or "unknown error"
-        super().__init__(f"MinerU job {job_id} ended with {status}: {detail}", **kwargs)
+        super().__init__(f"PDF OCR job {job_id} ended with {status}: {detail}", **kwargs)
         self.job_id = job_id
         self.status = status
         self.error_code = error_code
@@ -63,13 +63,13 @@ class JobResult:
     log_id: str | None
 
 
-class MinerUClient:
+class PdfOcrClient:
     def __init__(self, token: str, *, base_url: str = DEFAULT_BASE_URL,
                  session: requests.Session | None = None,
                  sleep: Callable[[float], None] = time.sleep,
                  clock: Callable[[], float] = time.monotonic):
         if not token.strip():
-            raise ValueError("OPEN_PLATFORM_TOKEN must not be empty")
+            raise ValueError("AMINER_API_KEY must not be empty")
         self.token = token.strip()
         self.base_url = base_url.rstrip("/") + "/"
         self.session = session or requests.Session()
@@ -78,31 +78,31 @@ class MinerUClient:
 
     @property
     def _headers(self) -> dict[str, str]:
-        return {"Authorization": self.token}
+        return {"Authorization": self.token, "X-Platform": "openclaw"}
 
     def _json(self, response: requests.Response) -> Mapping[str, Any]:
         try:
             body = response.json()
         except ValueError as exc:
-            raise MinerUApiError("MinerU returned invalid JSON", http_status=response.status_code) from exc
+            raise PdfOcrApiError("PDF OCR returned invalid JSON", http_status=response.status_code) from exc
         if not isinstance(body, Mapping):
-            raise MinerUApiError("MinerU returned a non-object response", http_status=response.status_code)
+            raise PdfOcrApiError("PDF OCR returned a non-object response", http_status=response.status_code)
         return body
 
     def _check_gateway(self, response: requests.Response, body: Mapping[str, Any]) -> None:
         msg = body.get("msg")
         log_id = body.get("log_id")
         if msg == "该接口已停用":
-            raise MinerUApiError("MinerU interface is disabled", http_status=response.status_code,
+            raise PdfOcrApiError("PDF OCR interface is disabled", http_status=response.status_code,
                                  code=body.get("code"), log_id=log_id)
         if response.status_code == 500:
-            raise MinerUApiError("MinerU gateway returned a generic upstream error",
+            raise PdfOcrApiError("PDF OCR gateway returned a generic upstream error",
                                  http_status=500, code=body.get("code"), log_id=log_id)
         if response.status_code == 504:
-            raise MinerUApiError("MinerU gateway timed out", http_status=504,
+            raise PdfOcrApiError("PDF OCR gateway timed out", http_status=504,
                                  code=body.get("code"), log_id=log_id)
         if response.status_code >= 400:
-            raise MinerUApiError(f"MinerU HTTP error {response.status_code}",
+            raise PdfOcrApiError(f"PDF OCR HTTP error {response.status_code}",
                                  http_status=response.status_code, code=body.get("code"), log_id=log_id)
 
     def _request(self, method: str, path: str, *, timeout: float, **kwargs: Any) -> tuple[requests.Response, Mapping[str, Any]]:
@@ -110,7 +110,7 @@ class MinerUClient:
             response = self.session.request(method, urljoin(self.base_url, path.lstrip("/")),
                                             headers=self._headers, timeout=timeout, **kwargs)
         except requests.RequestException as exc:
-            raise MinerUApiError(f"MinerU request failed: {exc}") from exc
+            raise PdfOcrApiError(f"PDF OCR request failed: {exc}") from exc
         body = self._json(response)
         self._check_gateway(response, body)
         return response, body
@@ -119,7 +119,7 @@ class MinerUClient:
     def _data(body: Mapping[str, Any]) -> Mapping[str, Any]:
         data = body.get("data")
         if not isinstance(data, Mapping):
-            raise MinerUApiError("MinerU response is missing data", code=body.get("code"), log_id=body.get("log_id"))
+            raise PdfOcrApiError("PDF OCR response is missing data", code=body.get("code"), log_id=body.get("log_id"))
         return data
 
     def upload(self, file_path: Any, *, timeout: float = 60) -> UploadResult:
@@ -130,11 +130,11 @@ class MinerUClient:
             )
         data = self._data(body)
         if data.get("queue_full") is True:
-            raise MinerUQueueFullError(data.get("retry_after_seconds", 30),
+            raise PdfOcrQueueFullError(data.get("retry_after_seconds", 30),
                                        http_status=response.status_code, code=body.get("code"), log_id=body.get("log_id"))
         job_id = data.get("job_id")
         if not isinstance(job_id, str) or not job_id:
-            raise MinerUApiError("MinerU upload response has no job_id", http_status=response.status_code,
+            raise PdfOcrApiError("PDF OCR upload response has no job_id", http_status=response.status_code,
                                  code=body.get("code"), log_id=body.get("log_id"))
         return UploadResult(job_id, str(data.get("status", "queued")), bool(data.get("reused")),
                             int(body.get("code", 0)), body.get("log_id"))
@@ -156,7 +156,7 @@ class MinerUClient:
         for attempt in range(max_attempts):
             try:
                 return self.upload(file_path, timeout=timeout)
-            except MinerUQueueFullError as exc:
+            except PdfOcrQueueFullError as exc:
                 if attempt + 1 >= max_attempts:
                     raise
                 self.sleep(exc.retry_after_seconds)
@@ -175,20 +175,23 @@ class MinerUClient:
             if result.status == "success" and result.is_finish and result.download_url:
                 return result
             if result.status in TERMINAL_FAILURES:
-                raise MinerUJobFailedError(result.job_id, result.status, result.error_code,
+                raise PdfOcrJobFailedError(result.job_id, result.status, result.error_code,
                                            result.error_message, code=result.code, log_id=result.log_id)
             if result.status == "unknown":
-                raise MinerUApiError("MinerU job is unknown for this token", code=result.code, log_id=result.log_id)
+                raise PdfOcrApiError("PDF OCR job is unknown for this token", code=result.code, log_id=result.log_id)
             if self.clock() - started >= poll_timeout:
-                raise MinerUApiError(f"MinerU polling exceeded {poll_timeout:g} seconds", log_id=result.log_id)
+                raise PdfOcrApiError(f"PDF OCR polling exceeded {poll_timeout:g} seconds", log_id=result.log_id)
             elapsed = self.clock() - started
             self.sleep(2 if elapsed < 30 else 5)
 
     def download(self, url: str, target: Any, *, timeout: float = 120) -> None:
         try:
-            response = self.session.get(url, timeout=timeout, allow_redirects=True)
-            response.raise_for_status()
-        except requests.RequestException as exc:
-            raise MinerUApiError(f"MinerU result download failed: {exc}") from exc
+            from .url_guard import UrlGuardError, fetch_public_url
+        except ImportError:
+            from url_guard import UrlGuardError, fetch_public_url
+        try:
+            content = fetch_public_url(url, timeout=timeout, max_bytes=200 * 1024 * 1024)
+        except (UrlGuardError, requests.RequestException) as exc:
+            raise PdfOcrApiError(f"PDF OCR result download failed: {exc}") from exc
         with open(target, "wb") as fp:
-            fp.write(response.content)
+            fp.write(content)

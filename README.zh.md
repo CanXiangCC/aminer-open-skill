@@ -33,6 +33,7 @@
 | Skill | 适合完成的任务 | Token 要求 | 使用说明 |
 | --- | --- | --- | --- |
 | `paper-source-trace` | 将论文关键论点追踪到引用上下文和来源，并生成证据报告与引用图 | 可选；仅在使用 AMiner 增强时需要 | [SKILL.zh.md](skills/paper-source-trace/SKILL.zh.md) / [使用说明](skills/paper-source-trace/README_zh.md) |
+| `aminer-pdf-ocr` | 将论文 PDF 转为 Markdown，并抽取结构化实验方法、数据集与指标 | 必须配置 | [SKILL.zh.md](skills/aminer-pdf-ocr/SKILL.zh.md) |
 
 ### ✅ 核验引用
 
@@ -105,6 +106,7 @@ openclaw config set env.vars.AMINER_API_KEY "<YOUR_TOKEN>"
 | 为综述收集文献 | “收集 200 篇检索增强生成方向的候选论文，从高质量种子论文继续扩展，去重后导出文献清单。” | `aminer-deep-search` |
 | 产出带出处的研究报告 | “调研中国大模型行业，写一份带引用的报告，每个论断都有证据台账支撑。” | `deep-research` |
 | 追踪论文来源 | “分析这篇 PDF，将每个关键论点追踪到引用上下文和来源，解释引用意图，并生成 Markdown、JSON、SVG 和 HTML 产物。” | `paper-source-trace` |
+| 解析 PDF 并抽取实验 | “把这篇论文 PDF 转成 Markdown，并抽取实验方法、数据集和指标的 JSON。” | `aminer-pdf-ocr` |
 | 识别虚假参考文献 | “核验这篇论文 PDF 中的所有参考文献，标出不存在、可疑或需要人工复核的条目。” | `pdf-citation-verifier` |
 | 核查引用忠实性 | “逐条检查这篇论文的正文引用，获取被引来源，并判断上下文中的论断是否得到原文支持。” | `citation-faithfulness` |
 

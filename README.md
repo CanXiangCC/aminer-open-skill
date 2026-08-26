@@ -33,6 +33,7 @@ A typical workflow moves from finding literature, to understanding a paper's sou
 | Skill | Use it when you want to | Token | Guide |
 | --- | --- | --- | --- |
 | `paper-source-trace` | Trace a paper's key claims to its citation contexts and sources, then generate evidence reports and citation maps | Optional; only needed for AMiner enrichment | [SKILL.md](skills/paper-source-trace/SKILL.md) / [Usage guide](skills/paper-source-trace/README.md) |
+| `aminer-pdf-ocr` | Convert a paper PDF to Markdown and extract structured experiment methods, datasets, and metrics | Required | [SKILL.md](skills/aminer-pdf-ocr/SKILL.md) |
 
 ### ✅ Verify citations
 
@@ -105,6 +106,7 @@ The following prompts can be used directly after the corresponding Skill is inst
 | Collect literature for a survey | "Collect 200 candidate papers on retrieval-augmented generation, expand from strong seed papers, remove duplicates, and export the bibliography." | `aminer-deep-search` |
 | Produce a sourced research report | "Research the Chinese LLM industry and write a cited report with an evidence ledger backing every claim." | `deep-research` |
 | Trace a paper's sources | "Analyze this PDF. Trace each key claim to its citation context and source, explain the citation intent, and generate the Markdown, JSON, SVG, and HTML outputs." | `paper-source-trace` |
+| Parse a PDF and extract experiments | "OCR this paper PDF, convert it to Markdown, and extract the experiment methods, datasets, and metrics as JSON." | `aminer-pdf-ocr` |
 | Detect fabricated references | "Check every reference in this paper PDF and flag entries that are missing, suspicious, or need manual review." | `pdf-citation-verifier` |
 | Check citation faithfulness | "For each in-text citation in this paper, retrieve the cited source and determine whether the surrounding claim is supported by the original text." | `citation-faithfulness` |
 

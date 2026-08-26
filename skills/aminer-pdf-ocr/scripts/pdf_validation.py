@@ -1,4 +1,4 @@
-"""Local validation for PDFs accepted by the MinerU open API."""
+"""Local validation for PDFs accepted by the PDF OCR open API."""
 from __future__ import annotations
 
 from dataclasses import dataclass

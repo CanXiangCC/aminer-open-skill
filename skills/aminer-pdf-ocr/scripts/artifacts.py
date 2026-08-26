@@ -1,4 +1,4 @@
-"""Safely materialize MinerU's result ZIP into the Skill output directory."""
+"""Safely materialize the PDF OCR result ZIP into the Skill output directory."""
 from __future__ import annotations
 
 import json
@@ -29,12 +29,12 @@ def extract_result(zip_path: Path, output_dir: Path, *, save_images: bool = True
         members = [info for info in archive.infolist() if not info.is_dir()]
         total = sum(info.file_size for info in members)
         if total > MAX_UNCOMPRESSED_BYTES:
-            raise ArtifactError("MinerU ZIP exceeds the uncompressed size limit")
+            raise ArtifactError("PDF OCR ZIP exceeds the uncompressed size limit")
         safe = [(_safe_member(info.filename), info) for info in members]
         md = next((item for path, item in safe if path.suffix.lower() == ".md"), None)
         middle = next((item for path, item in safe if path.name.endswith("_middle.json")), None)
         if md is None:
-            raise ArtifactError("MinerU ZIP contains no Markdown file")
+            raise ArtifactError("PDF OCR ZIP contains no Markdown file")
         result_md = output_dir / "result.md"
         result_md.write_bytes(archive.read(md))
         middle_path = None
@@ -56,7 +56,7 @@ def extract_result(zip_path: Path, output_dir: Path, *, save_images: bool = True
 
 
 def write_metadata(path: Path, *, upload: Any, result: Any, artifacts: dict[str, Any]) -> None:
-    payload = {"engine": "mineru-open-api", "job_id": upload.job_id,
+    payload = {"engine": "pdfocr-open-api", "job_id": upload.job_id,
                "upload": {"status": upload.status, "reused": upload.reused, "code": upload.code,
                            "log_id": upload.log_id},
                "result": {"status": result.status, "is_finish": result.is_finish, "code": result.code,

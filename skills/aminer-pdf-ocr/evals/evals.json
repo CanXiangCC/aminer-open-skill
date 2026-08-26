@@ -4,10 +4,10 @@
     {
       "id": 1,
       "prompt": "Parse this paper PDF, extract the experiment information, and give me both a summary and the structured JSON. File: data/pdf/applsci-14-11736.pdf",
-      "expected_output": "Check OPEN_PLATFORM_TOKEN, run scripts/ocr.py on the PDF, write result.md / response.json / images/, extract experiments.json with no justification fields, then reply with a Markdown summary, an experiment summary, the full JSON in a json code block, and artifact paths.",
+      "expected_output": "Check AMINER_API_KEY, run scripts/ocr.py on the PDF, write result.md / response.json / images/, extract experiments.json with no justification fields, then reply with a Markdown summary, an experiment summary, the full JSON in a json code block, and artifact paths.",
       "files": ["data/pdf/applsci-14-11736.pdf"],
       "expectations": [
-        "Checked that OPEN_PLATFORM_TOKEN is set before calling the script",
+        "Checked that AMINER_API_KEY is set before calling the script",
         "Ran scripts/ocr.py with --input pointing at the given PDF",
         "Wrote result.md, response.json, and experiments.json under outputs/aminer-pdf-ocr/SCIREX/",
         "Chat reply includes a short Markdown summary of the paper",
@@ -17,14 +17,15 @@
     },
     {
       "id": 2,
-      "prompt": "OCR this PDF and extract experiments: data/pdf/applsci-14-11736.pdf. I have not set OPEN_PLATFORM_TOKEN.",
-      "expected_output": "Detect that OPEN_PLATFORM_TOKEN is missing; stop immediately; do not run ocr.py; tell the user to export OPEN_PLATFORM_TOKEN=http://<host>:<port> without printing a real host/IP.",
+      "prompt": "OCR this PDF and extract experiments: data/pdf/applsci-14-11736.pdf. I have not set AMINER_API_KEY.",
+      "expected_output": "Detect that AMINER_API_KEY is missing; stop immediately; do not run ocr.py; tell the user to generate a token at https://open.aminer.cn/open/board?tab=control and export AMINER_API_KEY=<token>. Never print a real token, host, or IP.",
       "files": ["data/pdf/applsci-14-11736.pdf"],
       "expectations": [
-        "Reported that OPEN_PLATFORM_TOKEN is missing",
+        "Reported that AMINER_API_KEY is missing",
         "Did not run scripts/ocr.py",
         "Did not fabricate OCR text or experiment JSON",
-        "Did not hardcode a MinerU host or IP in the reply"
+        "Pointed the user to https://open.aminer.cn/open/board?tab=control",
+        "Did not hardcode a PDF OCR host or IP in the reply"
       ]
     },
     {
@@ -78,7 +79,7 @@
     {
       "id": 7,
       "prompt": "Are the references in data/pdf/applsci-14-11736.pdf real? Please verify the citations.",
-      "expected_output": "Do not use this skill for citation verification. Route the user to pdf-citation-verifier. Do not run MinerU OCR for this request.",
+      "expected_output": "Do not use this skill for citation verification. Route the user to pdf-citation-verifier. Do not run PDF OCR for this request.",
       "files": ["data/pdf/applsci-14-11736.pdf"],
       "expectations": [
         "Did not run scripts/ocr.py for citation verification",
@@ -89,7 +90,7 @@
     {
       "id": 8,
       "prompt": "OCR this file: data/pdf/definitely_missing.pdf",
-      "expected_output": "After OPEN_PLATFORM_TOKEN exists, the script should fail because the local file is missing. Surface the error verbatim. Do not extract or invent experiments.",
+      "expected_output": "After AMINER_API_KEY exists, the script should fail because the local file is missing. Surface the error verbatim. Do not extract or invent experiments.",
       "files": [],
       "expectations": [
         "Did not present a fabricated result.md or experiments.json",
