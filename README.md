@@ -1,7 +1,7 @@
 # aminer-open-skill
 
-[![Version](https://img.shields.io/badge/version-1.11.0-0969da)](.claude-plugin/marketplace.json)
-[![Available Skills](https://img.shields.io/badge/available_skills-8-2da44e)](#choose-a-skill)
+[![Version](https://img.shields.io/badge/version-1.12.0-0969da)](.claude-plugin/marketplace.json)
+[![Available Skills](https://img.shields.io/badge/available_skills-10-2da44e)](#choose-a-skill)
 [![License](https://img.shields.io/badge/license-MIT-6f42c1)](LICENSE)
 
 English | [中文](README.zh.md)
@@ -26,6 +26,7 @@ A typical workflow moves from finding literature, to understanding a paper's sou
 | `aminer-academic-search` | Run full academic searches, deeper analysis, or explicit structured experiment retrieval across papers, scholars, institutions, venues, and patents | Required; some APIs are billed; experiment search is ¥0.10/call | [SKILL.md](skills/aminer-academic-search/SKILL.md) |
 | `aminer-daily-paper` | Get personalized paper recommendations from topics, scholars, authors, or an AMiner account | Required | [SKILL.md](skills/aminer-daily-paper/SKILL.md) |
 | `aminer-deep-search` | Build a large survey bibliography through multi-round search, deduplication, and citation expansion | Required | [SKILL.md](skills/aminer-deep-search/SKILL.md) |
+| `deep-research` | Produce a cited, hierarchically numbered research report plus a reusable Evidence Ledger from AMiner data and the host's web tools | Required; free-first, billed APIs capped (¥20 hard stop) | [SKILL.md](skills/deep-research/SKILL.md) |
 
 ### 🗂️ Organize paper collections
 
@@ -38,6 +39,7 @@ A typical workflow moves from finding literature, to understanding a paper's sou
 | Skill | Use it when you want to | Token | Guide |
 | --- | --- | --- | --- |
 | `paper-source-trace` | Trace a paper's key claims to its citation contexts and sources, then generate evidence reports and citation maps | Optional; only needed for AMiner enrichment | [SKILL.md](skills/paper-source-trace/SKILL.md) / [Usage guide](skills/paper-source-trace/README.md) |
+| `aminer-pdf-ocr` | Convert a paper PDF to Markdown and extract structured experiment methods, datasets, and metrics | Required | [SKILL.md](skills/aminer-pdf-ocr/SKILL.md) |
 
 ### ✅ Verify citations
 
@@ -109,7 +111,9 @@ The following prompts can be used directly after the corresponding Skill is inst
 | Get a focused reading list | "Recommend 8 papers on tool-using multimodal agents, prioritizing recent and highly cited work." | `aminer-daily-paper` |
 | Collect literature for a survey | "Collect 200 candidate papers on retrieval-augmented generation, expand from strong seed papers, remove duplicates, and export the bibliography." | `aminer-deep-search` |
 | Organize a paper collection | "Group these paper titles and abstracts into a coherent hierarchical taxonomy and save it as taxonomy.md." | `scientific-taxonomy` |
+| Produce a sourced research report | "Research the Chinese LLM industry and write a cited report with an evidence ledger backing every claim." | `deep-research` |
 | Trace a paper's sources | "Analyze this PDF. Trace each key claim to its citation context and source, explain the citation intent, and generate the Markdown, JSON, SVG, and HTML outputs." | `paper-source-trace` |
+| Parse a PDF and extract experiments | "OCR this paper PDF, convert it to Markdown, and extract the experiment methods, datasets, and metrics as JSON." | `aminer-pdf-ocr` |
 | Detect fabricated references | "Check every reference in this paper PDF and flag entries that are missing, suspicious, or need manual review." | `pdf-citation-verifier` |
 | Check citation faithfulness | "For each in-text citation in this paper, retrieve the cited source and determine whether the surrounding claim is supported by the original text." | `citation-faithfulness` |
 
