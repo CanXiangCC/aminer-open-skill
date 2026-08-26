@@ -26,6 +26,7 @@
 | `aminer-academic-search` | 对论文、学者、机构、期刊和专利进行完整检索、深度分析或显式结构化实验检索 | 必须配置；部分 API 计费；实验检索 ¥0.10/次 | [SKILL.md](skills/aminer-academic-search/SKILL.md) |
 | `aminer-daily-paper` | 根据主题、学者、作者或 AMiner 账号获取个性化论文推荐 | 必须配置 | [SKILL.md](skills/aminer-daily-paper/SKILL.md) |
 | `aminer-deep-search` | 通过多轮检索、去重和引用扩展构建大规模综述文献集 | 必须配置 | [SKILL.zh.md](skills/aminer-deep-search/SKILL.zh.md) |
+| `deep-research` | 驱动固定研究循环，结合 AMiner 开放平台与宿主原生 web 工具，产出带引用的分层研究报告与可复用的 Evidence Ledger | 必须配置；免费优先，计费上限 ¥20 | [SKILL.zh.md](skills/deep-research/SKILL.zh.md) |
 
 ### 🧭 分析与追踪论文
 
@@ -102,6 +103,7 @@ openclaw config set env.vars.AMINER_API_KEY "<YOUR_TOKEN>"
 | 检索结构化实验 | “返回这篇论文的原始 Experiment JSON，并按方法和数据集名称精确过滤。” | `aminer-academic-search` |
 | 获取聚焦阅读清单 | “推荐 8 篇关于工具调用型多模态智能体的论文，优先选择近期且高引用的工作。” | `aminer-daily-paper` |
 | 为综述收集文献 | “收集 200 篇检索增强生成方向的候选论文，从高质量种子论文继续扩展，去重后导出文献清单。” | `aminer-deep-search` |
+| 产出带出处的研究报告 | “调研中国大模型行业，写一份带引用的报告，每个论断都有证据台账支撑。” | `deep-research` |
 | 追踪论文来源 | “分析这篇 PDF，将每个关键论点追踪到引用上下文和来源，解释引用意图，并生成 Markdown、JSON、SVG 和 HTML 产物。” | `paper-source-trace` |
 | 识别虚假参考文献 | “核验这篇论文 PDF 中的所有参考文献，标出不存在、可疑或需要人工复核的条目。” | `pdf-citation-verifier` |
 | 核查引用忠实性 | “逐条检查这篇论文的正文引用，获取被引来源，并判断上下文中的论断是否得到原文支持。” | `citation-faithfulness` |
