@@ -56,6 +56,12 @@
       "description": "引用忠实性核查：读取论文 PDF，抽取每处正文引用及其声称，联网检索被引原文，判定引用是否忠于原文（支持/部分支持/曲解/查无此说/无法核实），免 key",
       "source": "./skills/citation-faithfulness",
       "strict": false
+    },
+    {
+      "name": "aminer-pdf-ocr",
+      "description": "PDF OCR 与结构化实验提取：将论文 PDF 提交至 AMiner MinerU 开放平台异步解析，产出全文 Markdown，并由 Agent 按内置提示词提取实验方法/数据集/指标等结构化信息",
+      "source": "./skills/aminer-pdf-ocr",
+      "strict": false
     }
   ]
 }
