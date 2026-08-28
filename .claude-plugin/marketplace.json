@@ -65,7 +65,7 @@
     },
     {
       "name": "aminer-exp-extraction",
-      "description": "实验数据提取：论文 Markdown 经 SciBERT 句子过滤与 LLM 结构化抽取，输出方法/数据集/指标/关键结果 JSON（线上网关两个接口：/extraction/bert/filter/batch 与 /extraction/v1/chat/completions）",
+      "description": "实验数据提取：论文 Markdown 经 GLM 句子过滤与结构化抽取（两个阶段均调用智谱 BigModel 公共 API，需 BIGMODEL_API_KEY），输出方法/数据集/指标/关键结果 JSON；PDF 请先用 aminer-pdf-ocr 转成 Markdown",
       "source": "./skills/aminer-exp-extraction",
       "strict": false
     }
