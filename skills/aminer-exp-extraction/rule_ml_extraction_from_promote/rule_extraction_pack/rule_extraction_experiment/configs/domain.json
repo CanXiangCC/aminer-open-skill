@@ -1,0 +1,37 @@
+{
+  "experiment_id": "rule_extraction_domain_v1",
+  "field_name": "domain",
+  "field_type": "str",
+  "description": "评估domain字段规则提取vs gold标准的效果",
+
+  "test_set": "dev_10",
+  "gold_set": "full_text_glm5_2",
+
+  "rule_module": "src.rule_extraction.rules.domain",
+  "rule_class": "DomainRule",
+  "rule_params": {
+    "use_title_weight": true,
+    "min_score": 0.1,
+    "normalize": true
+  },
+
+  "data_paths": {
+    "gold_data_dir": "data/gold",
+    "fixtures_dir": "data/fixtures",
+    "output_dir": "rule_extraction_experiment/results"
+  },
+
+  "metrics": [
+    "accuracy",
+    "coverage",
+    "extraction_rate",
+    "classification_report",
+    "statistics"
+  ],
+
+  "comparison_settings": {
+    "fuzzy_matching": true,
+    "include_partial_matches": true,
+    "similarity_threshold": 0.8
+  }
+}

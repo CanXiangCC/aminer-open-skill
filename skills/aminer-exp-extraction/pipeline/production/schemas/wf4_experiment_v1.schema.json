@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wf4_experiment_v1.schema.json",
+  "title": "WF4 Experiment v1",
+  "description": "One experiment object as written by MergerWf4 / post_llm.finalize_paper into prediction `experiments[]`. Authoritative contract for wf4 outputs since 0.6.2 (methods as objects, justification fields dropped). Supersedes the vendored rule_ml_extraction_from_promote/rule_extraction_pack/schemas/experiment_v1.schema.json for wf4 runs; that file describes the legacy `method: string` single-experiment contract. Notes: `research_problem*` are paper-level prediction fields and are NOT experiment keys (MergerWf4 pops them). Closed-set enums are advisory upstream — unknown values coerce to empty string, so '' is always legal. The optional `confidence` / `confidence_breakdown` dataset keys are added by the dataset-confidence post-processing step, not the merger.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "_id",
+    "paper_id",
+    "experiment_name",
+    "research_goal",
+    "experiment_subject",
+    "methods",
+    "datasets",
+    "sample_size",
+    "metrics",
+    "key_results",
+    "conclusion",
+    "limitations",
+    "evidence",
+    "domain",
+    "experiment_type",
+    "experiment_history",
+    "score"
+  ],
+  "properties": {
+    "_id": {
+      "type": "string"
+    },
+    "paper_id": {
+      "type": "string"
+    },
+    "experiment_name": {
+      "type": "string"
+    },
+    "research_goal": {
+      "type": "string"
+    },
+    "experiment_subject": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "methods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "description", "aliases"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "datasets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "aliases",
+          "dataset_type",
+          "description",
+          "sample_size",
+          "is_public",
+          "is_self_collected",
+          "urls",
+          "github_urls",
+          "doi_list",
+          "cstr_list"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dataset_type": {
+            "type": "string",
+            "enum": [
+              "",
+              "tabular",
+              "image",
+              "video",
+              "text",
+              "audio",
+              "graph",
+              "point_cloud",
+              "3d_mesh",
+              "time_series",
+              "multimodal",
+              "code",
+              "other"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "sample_size": {
+            "type": ["integer", "null"]
+          },
+          "is_public": {
+            "type": ["boolean", "null"]
+          },
+          "is_self_collected": {
+            "type": ["boolean", "null"]
+          },
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "github_urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "doi_list": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cstr_list": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "confidence": {
+            "type": "number"
+          },
+          "confidence_breakdown": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "sample_size": {
+      "type": ["integer", "null"]
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "key_results": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "conclusion": {
+      "type": "string"
+    },
+    "limitations": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "",
+        "computer_science",
+        "medicine",
+        "biology",
+        "chemistry",
+        "physics",
+        "materials",
+        "engineering",
+        "economics",
+        "education",
+        "energy",
+        "environment",
+        "social_science",
+        "other"
+      ]
+    },
+    "experiment_type": {
+      "type": "string",
+      "enum": [
+        "",
+        "benchmark",
+        "comparison",
+        "ablation",
+        "simulation",
+        "survey",
+        "human_study",
+        "field_study",
+        "lab_experiment",
+        "clinical_trial",
+        "case_study",
+        "empirical_study",
+        "data_analysis",
+        "other"
+      ]
+    },
+    "experiment_history": {
+      "type": "array"
+    },
+    "score": {
+      "type": ["number", "null"]
+    }
+  }
+}

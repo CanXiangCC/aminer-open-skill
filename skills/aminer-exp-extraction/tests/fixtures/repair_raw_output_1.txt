@@ -1,0 +1,46 @@
+{
+  "research_problem": "Indoor Scene Reconstruction",
+  "research_problem_description": "The challenge of accurately reconstructing indoor scenes from 2D images using geometric constraints.",
+  "experiments": [
+    {
+      "experiment_name": "NeuralRoom: Geometry-Constrained Neural Implicit Surfaces for Indoor Scene Reconstruction",
+      "key_results": [
+        "Our method achieves state-of-the-art both quantitatively and qualitatively.",
+        "The proposed method significantly improves reconstruction accuracy and completeness.",
+        "The system effectively handles texture-less regions and provides reliable spatial information."
+      ],
+      "method": "Neural Room",
+      "method_description": "A rendering-based neural surface reconstruction method that uses geometric priors to guide implicit surface optimization.",
+      "research_goal": "To develop a geometric-constrained neural implicit surface method for indoor scene reconstruction.",
+      "experiment_subject": [
+        "Indoor scene reconstruction",
+        "Geometric priors",
+        "Neural implicit surfaces"
+      ],
+      "metrics": [
+        "Prec\uparrow",
+        "Rec\uparrow",
+        "F-score\uparrow",
+        "Acc\downarrow",
+        "Comp\downarrow"
+      ],
+      "datasets": [
+        {
+          "name": "ScanNet",
+          "aliases": [],
+          "dataset_type": "point_cloud",
+          "description": "A dataset of indoor scenes with RGB images and depth maps.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [
+            "https://scannet.ai/"
+          ],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ]
+    }
+  ]
+}

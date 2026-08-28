@@ -1,0 +1,185 @@
+{
+  "paper_id": "66626af001d2a3fbfc8d428b",
+  "paper_title": "Scaling and evaluating sparse autoencoders",
+  "workflow_id": "prod-wf4-llm-datasets-experiment",
+  "workflow_version": "0.6.3-wf4-lilaoshi-llm-enums",
+  "run_id": "prod-lilaoshi-smoke10-llm-enums-20260814/job_batch_000",
+  "dry_run": false,
+  "experiments": [
+    {
+      "_id": "",
+      "paper_id": "66626af001d2a3fbfc8d428b",
+      "experiment_name": "Autoencoder scaling and evaluation",
+      "research_goal": "To determine how autoencoder performance scales with model size and sparsity, and to evaluate these properties effectively.",
+      "experiment_subject": [
+        "Autoencoder scaling",
+        "Sparsity control",
+        "Reconstruction quality"
+      ],
+      "methods": [
+        {
+          "name": "k-sparse autoencoders",
+          "description": "k-sparse autoencoders are proposed to directly control sparsity, simplifying tuning and improving the reconstruction-sparsity frontier. Modifications are introduced to reduce dead latents at large scales.",
+          "aliases": []
+        },
+        {
+          "name": "Downstream loss",
+          "description": "Measures how good the language model loss is when the residual stream latent is replaced with the autoencoder reconstruction of that latent.",
+          "aliases": []
+        },
+        {
+          "name": "Explainability",
+          "description": "Evaluates whether simple explanations are both necessary and sufficient for the activation of the autoencoder latent.",
+          "aliases": []
+        }
+      ],
+      "datasets": [
+        {
+          "name": "GPT-4 activations",
+          "aliases": [],
+          "dataset_type": "audio",
+          "description": "A dataset of activations from GPT-4, used to train and evaluate autoencoders.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": [],
+          "confidence": 0.500254,
+          "confidence_breakdown": {
+            "frequency": 0.458157,
+            "usage": 1.0,
+            "identifier": 0.0,
+            "completeness": 0.571429,
+            "c0": 0.500254,
+            "mention_matched": true,
+            "identifier_hit": false,
+            "fake_identifier": true,
+            "raw_count": 2
+          }
+        }
+      ],
+      "sample_size": null,
+      "metrics": [
+        "Downstream loss",
+        "Explainability"
+      ],
+      "key_results": [
+        "MSE follows a power law $L(C)$ of compute, though the smallest models are off trend (Figure 1).",
+        "Increasing $\\mathrm{L_{0}}$ makes explanations based on token patterns worse, but makes probe loss and ablation sparsity better."
+      ],
+      "conclusion": "We found that the AuxK loss very occasionally NaNs at large scale, and zero it when it is [MATH] to prevent training run collapse.",
+      "limitations": "For example, using [MATH] is enough to obtain a progre ive code over all [MATH] (note however that training with Multi-TopK does slightly worse than TopK at k). Training with the baseline ReLU only gives a progressive code up to a value that corresponds to using all positive latents.",
+      "evidence": [
+        "We find that MSE follows a power law $L(C)$ of compute, though the smallest models are off trend ( Figure 1 ).",
+        "Using these techniques, we find clean scaling laws with respect to autoencoder size and sparsity.",
+        ",2021 ], where explanations are overly broad, and thus have good recall but poor precision."
+      ],
+      "domain": "computer_science",
+      "experiment_type": "empirical_study",
+      "experiment_history": [],
+      "score": null
+    }
+  ],
+  "provenance": [
+    {
+      "extraction_sources": {
+        "experiment_name": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_problem": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_goal": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_subject": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "methods": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "key_results": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "metrics": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "datasets": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "paper_id": {
+          "extractor_id": "meta.paper_id",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "_id": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "experiment_history": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "score": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "conclusion": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "limitations": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "sample_size": {
+          "extractor_id": "rules.sample_size_policy_wf4",
+          "version": "0.1.0-wf4",
+          "status": "ok"
+        },
+        "evidence": {
+          "extractor_id": "rules.evidence",
+          "version": "v4_clean_mswr",
+          "status": "ok"
+        },
+        "domain": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_type": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        }
+      },
+      "experimental": true
+    }
+  ],
+  "research_problem": "Autoencoder scaling and evaluation",
+  "research_problem_description": "Autoencoders are used to reconstruct sparse bottleneck layers in language models, but the trade-off between reconstruction quality and sparsity is challenging to evaluate. The paper addresses the problem of determining how autoencoder performance scales with model size and sparsity, and how to evaluate these properties effectively.",
+  "research_problem_aliases": []
+}

@@ -1,0 +1,69 @@
+{
+  "research_problem": "Part-body association",
+  "research_problem_description": "The challenge of accurately detecting and associating parts of the human body with the entire body in various scenarios.",
+  "experiments": [
+    {
+      "experiment_name": "PBADet",
+      "key_results": [
+        "Accuracy$\uparrow$ Joint AP$\uparrow$ 4.2",
+        "Our approach surpasses competitors across all metrics, including hand AP, conditional accuracy, and joint AP by large margins."
+      ],
+      "method": "Anchor-free part-body association",
+      "method_description": "The paper proposes a one-stage, anchor-free approach for part-body association by introducing a single part-to-body center offset, which allows for efficient and accurate detection of body parts and their association.",
+      "research_goal": "To develop an efficient and accurate one-stage anchor-free method for part-body association.",
+      "experiment_subject": [
+        "Part-body association",
+        "Human body detection"
+      ],
+      "metrics": [
+        "Joint AP",
+        "Conditional Accuracy",
+        "Hand AP"
+      ],
+      "datasets": [
+        {
+          "name": "BodyHands",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "A dataset for human body detection and part-body association.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [
+            "https://github.com/Narasimhaswamy/BodyHands"
+          ],
+          "github_urls": [
+            "https://github.com/Narasimhaswamy/BodyHands"
+          ],
+          "doi_list": [
+            "10.1109/TVCG.2022.3162640"
+          ],
+          "cstr_list": [
+            "https://www.sciencedirect.com/science/article/pii/S0921358822001027"
+          ]
+        },
+        {
+          "name": "COCOHumanParts",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "A dataset for human part detection and association.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [
+            "https://github.com/ycm1994/COCOHumanParts"
+          ],
+          "github_urls": [
+            "https://github.com/ycm1994/COCOHumanParts"
+          ],
+          "doi_list": [
+            "10.1109/TVCG.2020.3031099"
+          ],
+          "cstr_list": [
+            "https://www.sciencedirect.com/science/article/pii/S0921358820303109"
+          ]
+        }
+      ]
+    }
+  ]
+}

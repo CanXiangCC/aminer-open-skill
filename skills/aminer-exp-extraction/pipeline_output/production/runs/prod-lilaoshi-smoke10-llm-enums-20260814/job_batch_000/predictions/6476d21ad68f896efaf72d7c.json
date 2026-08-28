@@ -1,0 +1,358 @@
+{
+  "paper_id": "6476d21ad68f896efaf72d7c",
+  "paper_title": "Grokking of Hierarchical Structure in Vanilla Transformers",
+  "workflow_id": "prod-wf4-llm-datasets-experiment",
+  "workflow_version": "0.6.3-wf4-lilaoshi-llm-enums",
+  "run_id": "prod-lilaoshi-smoke10-llm-enums-20260814/job_batch_000",
+  "dry_run": false,
+  "experiments": [
+    {
+      "_id": "",
+      "paper_id": "6476d21ad68f896efaf72d7c",
+      "experiment_name": "Main Results",
+      "research_goal": "To understand how hierarchical structure is discovered and utilized by transformers during training.",
+      "experiment_subject": [
+        "Hierarchical generalization",
+        "Transformer structure learning"
+      ],
+      "methods": [
+        {
+          "name": "Structural grokking",
+          "description": "Transformers exhibit structural grokking, where hierarchical structure is learned and generalized over time, even when training on structurally novel inputs.",
+          "aliases": []
+        }
+      ],
+      "datasets": [
+        {
+          "name": "Dyck",
+          "aliases": [],
+          "dataset_type": "text",
+          "description": "A language of well-nested brackets with 20 types and max nesting depth of 10, used for training models to predict next tokens.",
+          "sample_size": 100000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": [],
+          "confidence": 0.636221,
+          "confidence_breakdown": {
+            "frequency": 0.916314,
+            "usage": 1.0,
+            "identifier": 0.0,
+            "completeness": 0.714286,
+            "c0": 0.636221,
+            "mention_matched": true,
+            "identifier_hit": false,
+            "fake_identifier": true,
+            "raw_count": 8
+          }
+        },
+        {
+          "name": "QuestionFormation",
+          "aliases": [],
+          "dataset_type": "text",
+          "description": "A dataset for training models to generate questions from input text, used to evaluate first word accuracy.",
+          "sample_size": 10000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": [],
+          "confidence": 0.551675,
+          "confidence_breakdown": {
+            "frequency": 0.57813,
+            "usage": 1.0,
+            "identifier": 0.0,
+            "completeness": 0.714286,
+            "c0": 0.551675,
+            "mention_matched": true,
+            "identifier_hit": false,
+            "fake_identifier": true,
+            "raw_count": 3
+          }
+        }
+      ],
+      "sample_size": null,
+      "metrics": [
+        "Generalization accuracy",
+        "Structural grokking efficiency"
+      ],
+      "key_results": [
+        "Transformers exhibit structural grokking: generalization improves after indistribution accuracy has saturated.",
+        "Inverted U-shaped scaling behavior observed in QuestionFormation and Tense-Inflection: intermediate-depth models generalize better than very deep or very shallow models."
+      ],
+      "conclusion": "This work shows that transformers are capable of exhibiting structure-sensitive “hierarchical generalization” via a grokking mechanism. Their overall learning behavior gradually shifts from memorization (high in-domain accuracy, poor out-of-domain accuracy) to generalization (high in-domain and out-of-domain accuracy). While we show such behavior on relatively small datasets with small models, we believe these results may have broader implications, as training for longer has been shown to help even for web-scale language modeling (Hoffmann ., 2022) and on compositional generalization tasks (Csordás ., 2021).",
+      "limitations": "While there are clear limitations to the transformer architecture (such as the inability to implement unbounded recursion), our results show that it may have stronger inductive biases than previously believed: With sufficient training, transformers can represent hierarchical sentence structure and use this structure to generalize correctly.",
+      "evidence": [
+        "On multiple datasets, structural grokking exhibits inverted U-shaped scaling in model depth: intermediatedepth models generalize better than both very deep and very shallow transformers.",
+        "We find clear evidence of structural grokking: Across datasets, generalization improves many training steps after indistribution accuracy has saturated, sometimes approaching perfect accuracy.",
+        "Our results align with past findings on the role of extended training in other language processing problems (Csordás et al., 2021; Hoffmann et al., 2022)."
+      ],
+      "domain": "computer_science",
+      "experiment_type": "comparison",
+      "experiment_history": [],
+      "score": null
+    },
+    {
+      "_id": "",
+      "paper_id": "6476d21ad68f896efaf72d7c",
+      "experiment_name": "Optimal Models",
+      "research_goal": "To determine the relationship between model internal properties and structural grokking.",
+      "experiment_subject": [
+        "Model internal properties",
+        "Tree-structuredness"
+      ],
+      "methods": [
+        {
+          "name": "Tree-structuredness",
+          "description": "A metric that measures the tree-structuredness of model internal properties, used to identify the optimal depth for grokking.",
+          "aliases": []
+        }
+      ],
+      "datasets": [
+        {
+          "name": "Dyck",
+          "aliases": [],
+          "dataset_type": "text",
+          "description": "A language of well-nested brackets with 20 types and max nesting depth of 10, used to evaluate model performance.",
+          "sample_size": 10000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": [],
+          "confidence": 0.636221,
+          "confidence_breakdown": {
+            "frequency": 0.916314,
+            "usage": 1.0,
+            "identifier": 0.0,
+            "completeness": 0.714286,
+            "c0": 0.636221,
+            "mention_matched": true,
+            "identifier_hit": false,
+            "fake_identifier": true,
+            "raw_count": 8
+          }
+        }
+      ],
+      "sample_size": null,
+      "metrics": [
+        "Tree-structuredness",
+        "Generalization accuracy"
+      ],
+      "key_results": [
+        "Optimal depth for grokking can be identified using the tree-structuredness metric.",
+        "The 'optimal' model learns the most tree-structured solution compared to both deep and shallow models."
+      ],
+      "conclusion": "This work shows that transformers are capable of exhibiting structure-sensitive “hierarchical generalization” via a grokking mechanism. Their overall learning behavior gradually shifts from memorization (high in-domain accuracy, poor out-of-domain accuracy) to generalization (high in-domain and out-of-domain accuracy). While we show such behavior on relatively small datasets with small models, we believe these results may have broader implications, as training for longer has been shown to help even for web-scale language modeling (Hoffmann ., 2022) and on compositional generalization tasks (Csordás ., 2021).",
+      "limitations": "While there are clear limitations to the transformer architecture (such as the inability to implement unbounded recursion), our results show that it may have stronger inductive biases than previously believed: With sufficient training, transformers can represent hierarchical sentence structure and use this structure to generalize correctly.",
+      "evidence": [
+        "For both datasets, the “optimal” model learns the most tree-structured solution compared to both deep and shallow models.",
+        "When analyzing the relationship between model-internal properties and grokking, we find that optimal depth for grokking can be identified using the tree-structuredness metric of Murty et al.",
+        "Optimal models are most tree-structured Weight norms and attention sparsity grow for all model settings in both datasets."
+      ],
+      "domain": "computer_science",
+      "experiment_type": "ablation",
+      "experiment_history": [],
+      "score": null
+    }
+  ],
+  "provenance": [
+    {
+      "extraction_sources": {
+        "experiment_name": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_problem": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_goal": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_subject": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "methods": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "key_results": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "metrics": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "datasets": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "paper_id": {
+          "extractor_id": "meta.paper_id",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "_id": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "experiment_history": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "score": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "conclusion": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "limitations": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "sample_size": {
+          "extractor_id": "rules.sample_size_policy_wf4",
+          "version": "0.1.0-wf4",
+          "status": "ok"
+        },
+        "evidence": {
+          "extractor_id": "rules.evidence",
+          "version": "v4_clean_mswr",
+          "status": "ok"
+        },
+        "domain": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_type": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        }
+      },
+      "experimental": true
+    },
+    {
+      "extraction_sources": {
+        "experiment_name": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_problem": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_goal": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_subject": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "methods": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "key_results": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "metrics": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "datasets": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "paper_id": {
+          "extractor_id": "meta.paper_id",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "_id": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "experiment_history": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "score": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "conclusion": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "limitations": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "sample_size": {
+          "extractor_id": "rules.sample_size_policy_wf4",
+          "version": "0.1.0-wf4",
+          "status": "ok"
+        },
+        "evidence": {
+          "extractor_id": "rules.evidence",
+          "version": "v4_clean_mswr",
+          "status": "ok"
+        },
+        "domain": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_type": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        }
+      },
+      "experimental": true
+    }
+  ],
+  "research_problem": "Hierarchical generalization in transformers",
+  "research_problem_description": "The problem of understanding how hierarchical structure is learned and generalized by transformer models across different training settings and datasets. The core challenge is to determine how transformers effectively capture and utilize hierarchical relationships in language, especially when training on diverse and out-of-distribution data.",
+  "research_problem_aliases": []
+}

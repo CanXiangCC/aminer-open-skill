@@ -1,0 +1,33 @@
+{
+  "run_id": "prod-lilaoshi-smoke10-llm-enums-20260814/job_batch_000",
+  "workflow_id": "prod-wf4-llm-datasets-experiment",
+  "pipeline_mode": "chunked_overlap",
+  "chunks": [
+    {
+      "chunk_index": 0,
+      "paper_ids": [
+        "6476d21ad68f896efaf72d7c",
+        "66ff683801d2a3fbfcb81526",
+        "64702deed68f896efa5200e0",
+        "65d41682939a5f4082e1641d",
+        "67bfcf36163c01c8505f9d22",
+        "67d8e8dc163c01c850a62326",
+        "66626af001d2a3fbfc8d428b",
+        "66bd652001d2a3fbfc1f3b42",
+        "67fdbff9163c01c8503eab1f",
+        "64702deed68f896efa5201c3"
+      ],
+      "paper_count": 10,
+      "prepared_count": 10,
+      "missing_prep_count": 0,
+      "prep_sec": 0.0,
+      "prep_wait_sec": 0.0,
+      "bert_client_sec": 2.3333,
+      "bert_started_at": "2026-08-14T07:17:18.320697+00:00",
+      "bert_finished_at": "2026-08-14T07:17:20.654051+00:00"
+    }
+  ],
+  "chunk_count": 1,
+  "bert_pipeline_batch_size": 10,
+  "sum_chunk_bert_sec": 2.3333
+}

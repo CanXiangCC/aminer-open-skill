@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "experiment_v1.schema.json",
+  "title": "Experiment Extraction v1",
+  "description": "Single experiment object extracted from a scientific paper. Pipeline output is a JSON array of these objects.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "_id",
+    "paper_id",
+    "experiment_name",
+    "research_problem",
+    "research_goal",
+    "experiment_subject",
+    "method",
+    "datasets",
+    "sample_size",
+    "metrics",
+    "key_results",
+    "conclusion",
+    "limitations",
+    "evidence",
+    "domain",
+    "experiment_type",
+    "experiment_history",
+    "score"
+  ],
+  "properties": {
+    "_id": {
+      "type": ["string", "null"],
+      "description": "Experiment unique ID (Mongo primary key). Usually null at extraction time."
+    },
+    "paper_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Associated paper ID."
+    },
+    "experiment_name": {
+      "type": "string",
+      "description": "Experiment name or setup title."
+    },
+    "research_problem": {
+      "type": "string",
+      "description": "Research problem (Why)."
+    },
+    "research_goal": {
+      "type": "string",
+      "description": "Research goal (Goal)."
+    },
+    "experiment_subject": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Experiment subjects (What)."
+    },
+    "method": {
+      "type": "string",
+      "description": "Experiment method (How)."
+    },
+    "datasets": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/dataset"
+      },
+      "description": "Datasets used or constructed in this experiment."
+    },
+    "sample_size": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "description": "Overall sample size for this experiment."
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Evaluation metrics."
+    },
+    "key_results": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Key experimental results."
+    },
+    "conclusion": {
+      "type": "string",
+      "description": "Experiment conclusion."
+    },
+    "limitations": {
+      "type": "string",
+      "description": "Experiment limitations."
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Supporting sentences from the source paper."
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "computer_science",
+        "medicine",
+        "biology",
+        "chemistry",
+        "physics",
+        "materials",
+        "engineering",
+        "economics",
+        "education",
+        "energy",
+        "environment",
+        "social_science",
+        "other"
+      ],
+      "description": "Academic domain."
+    },
+    "experiment_type": {
+      "type": "string",
+      "enum": [
+        "benchmark",
+        "comparison",
+        "ablation",
+        "simulation",
+        "survey",
+        "human_study",
+        "field_study",
+        "lab_experiment",
+        "clinical_trial",
+        "case_study",
+        "empirical_study",
+        "data_analysis",
+        "other"
+      ],
+      "description": "Experiment type."
+    },
+    "experiment_history": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Experiment history entries."
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Extraction confidence score."
+    }
+  },
+  "$defs": {
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "aliases",
+        "dataset_type",
+        "description",
+        "sample_size",
+        "is_public",
+        "is_self_collected",
+        "urls",
+        "github_urls",
+        "doi_list",
+        "cstr_list"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Dataset name."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Dataset aliases for entity resolution."
+        },
+        "dataset_type": {
+          "type": "string",
+          "enum": [
+            "text",
+            "image",
+            "video",
+            "audio",
+            "multimodal",
+            "tabular",
+            "timeseries",
+            "sensor",
+            "medical",
+            "biological",
+            "chemical",
+            "material",
+            "simulation",
+            "industrial",
+            "other"
+          ],
+          "description": "Dataset modality or category."
+        },
+        "description": {
+          "type": "string",
+          "description": "Dataset description."
+        },
+        "sample_size": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Number of samples in the dataset."
+        },
+        "is_public": {
+          "type": ["boolean", "null"],
+          "description": "Whether the dataset is publicly available."
+        },
+        "is_self_collected": {
+          "type": ["boolean", "null"],
+          "description": "Whether the dataset was built by the authors."
+        },
+        "urls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Dataset access URLs."
+        },
+        "github_urls": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "GitHub repository URLs."
+        },
+        "doi_list": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Dataset DOI identifiers (not paper DOI)."
+        },
+        "cstr_list": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "China Science and Technology Resource identifiers."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,203 @@
+{
+  "paper_id": "66ff683801d2a3fbfcb81526",
+  "paper_title": "LLMs Know More Than They Show: On the IN-",
+  "workflow_id": "prod-wf4-llm-datasets-experiment",
+  "workflow_version": "0.6.3-wf4-lilaoshi-llm-enums",
+  "run_id": "prod-lilaoshi-smoke10-llm-enums-20260814/job_batch_000",
+  "dry_run": false,
+  "experiments": [
+    {
+      "_id": "",
+      "paper_id": "66ff683801d2a3fbfcb81526",
+      "experiment_name": "Error Detection with Probing Classifiers",
+      "research_goal": "To understand how LLMs encode truthfulness in their internal states and how this affects error detection and mitigation strategies.",
+      "experiment_subject": [
+        "error detection",
+        "truthfulness encoding",
+        "LLM internal representations"
+      ],
+      "methods": [
+        {
+          "name": "Probing Classifiers",
+          "description": "A classifier trained on intermediate LLM representations within the exact answer tokens to predict error types and improve detection accuracy.",
+          "aliases": []
+        }
+      ],
+      "datasets": [
+        {
+          "name": "TriviaQA",
+          "aliases": [],
+          "dataset_type": "text",
+          "description": "A dataset of trivia questions with answers, used to evaluate error detection in generated text.",
+          "sample_size": 10000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": [],
+          "confidence": 0.657143,
+          "confidence_breakdown": {
+            "frequency": 1.0,
+            "usage": 1.0,
+            "identifier": 0.0,
+            "completeness": 0.714286,
+            "c0": 0.657143,
+            "mention_matched": true,
+            "identifier_hit": false,
+            "fake_identifier": true,
+            "raw_count": 24
+          }
+        },
+        {
+          "name": "HotpotQA",
+          "aliases": [],
+          "dataset_type": "text",
+          "description": "A dataset of question-answer pairs with context, used to evaluate error detection in generated text.",
+          "sample_size": 10000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": [],
+          "confidence": 0.657143,
+          "confidence_breakdown": {
+            "frequency": 1.0,
+            "usage": 1.0,
+            "identifier": 0.0,
+            "completeness": 0.714286,
+            "c0": 0.657143,
+            "mention_matched": true,
+            "identifier_hit": false,
+            "fake_identifier": true,
+            "raw_count": 15
+          }
+        }
+      ],
+      "sample_size": null,
+      "metrics": [
+        "AUC",
+        "error detection performance",
+        "truthfulness encoding"
+      ],
+      "key_results": [
+        "Probing classifiers significantly improve error detection performance when trained on internal LLM representations.",
+        "The effectiveness of error detection varies across tasks, indicating task-specific truthfulness features.",
+        "Internal representations of LLMs encode more information about truthfulness than previously recognized."
+      ],
+      "conclusion": "Work by Chuang . (2024) shows improvements in truthfulness by leveraging knowledge encoded in earlier transformer layers, pointing to a promising area for further investigation. In conclusion, our findings suggest that LLMs' internal representations provide useful insights into their errors, highlights the complex link between the internal processes of models and their external outputs, and hopefully paves the way for further improvements in error detection and mitigation.",
+      "limitations": "From a practical perspective, this finding significantly enhances error detection methods applicable to production-level LL. However, our approach requires access to internal representations, limiting its applicability mainly to open-source models. Our findings also suggest that truthfulness features generalize poorly across tasks and datasets, performing better in tasks requiring similar skills.",
+      "evidence": [
+        "In this work, we show that the internal representations of LLMs encode much more information about truthfulness than previously recognized.",
+        "This supports using probing classifiers for error detection in production, but their generalizability across tasks remains unclear.",
+        "Given the diverse range of tasks these models are applied to, our focus is on general error detection across all categories, rather than isolating specific types.",
+        "Using a different set of probing classifiers trained on the exact answer tokens, we find that error types are predictable from the LLM representations, drawing a connection between the models's internal representations and its external behavior."
+      ],
+      "domain": "computer_science",
+      "experiment_type": "human_study",
+      "experiment_history": [],
+      "score": null
+    }
+  ],
+  "provenance": [
+    {
+      "extraction_sources": {
+        "experiment_name": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_problem": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_goal": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_subject": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "methods": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "key_results": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "metrics": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "datasets": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "paper_id": {
+          "extractor_id": "meta.paper_id",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "_id": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "experiment_history": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "score": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "conclusion": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "limitations": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "sample_size": {
+          "extractor_id": "rules.sample_size_policy_wf4",
+          "version": "0.1.0-wf4",
+          "status": "ok"
+        },
+        "evidence": {
+          "extractor_id": "rules.evidence",
+          "version": "v4_clean_mswr",
+          "status": "ok"
+        },
+        "domain": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_type": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        }
+      },
+      "experimental": true
+    }
+  ],
+  "research_problem": "LLMs Know More Than They Show",
+  "research_problem_description": "The paper investigates the phenomenon where Large Language Models (LLMs) encode more information about truthfulness in their outputs than what is explicitly visible in their responses. The core challenge is to determine how LLMs represent and encode truthfulness in their internal states, and how this affects error detection and mitigation strategies. This research is crucial for understanding the limitations and capabilities of LLMs in real-world applications.",
+  "research_problem_aliases": []
+}

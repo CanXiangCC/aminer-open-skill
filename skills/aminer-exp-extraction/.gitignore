@@ -1,0 +1,27 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Runtime outputs (regenerated at run time; keep only the tracked fixture run)
+pipeline_output/*
+!pipeline_output/production/
+pipeline_output/production/*
+!pipeline_output/production/runs/
+pipeline_output/production/runs/*
+!pipeline_output/production/runs/prod-lilaoshi-smoke10-llm-enums-20260814/
+# Explicit runtime dirs (never commit run artifacts)
+pipeline_output/production/logs/
+pipeline_output/production/exports/
+pipeline_output/production/partials/
+pipeline_output/production/backups/
+pipeline_output/md_cache/
+
+# User manifests (generate via `scripts/pipeline_cli.py ingest` or bring your own)
+manifests/**
+!manifests/.gitkeep
+
+# Misc
+*.tmp
+.zcode/

@@ -1,0 +1,78 @@
+# AI2000 bulk production defaults — v0.7.0 release (2026-08-21, TODO-V07-08).
+# Production admission = rolling R1 (rolling_target=128 / llm=128), adopted on
+# evidence: docs/V07_ROLLING_REFILL_REPORT_20260821.md (21-round matrix, parity,
+# kill-restart, ledger), docs/V07_P1000_SCALE_PROBE_20260821.md (1000-paper
+# scale, 1.62x vs window champion, RSS<=415MB), docs/V07_Q160_PROBE_20260821.md
+# (vLLM saturated at 128 in-flight — do not raise llm_concurrency without new
+# server capacity). This file is loaded WHOLE (no merge) when --config is
+# omitted; explicit snapshot configs are self-contained and unaffected.
+# Env overrides: BERT_SERVER_URL, LLM_CHAT_URL.
+
+bert_axis: bert-flat-60  # v0.5.1 branch; was bert-flat-50 at 0.5.0. MUST stay explicit — run_bulk WARNs on configs missing this key (l4 lesson, V07-13 §15).
+pipeline_mode: chunked_overlap   # informational (legacy no-op key)
+bert_pipeline_mode: global_batch # REQUIRED for staged/rolling (validated at startup)
+scheduler_mode: staged           # REQUIRED for rolling (validated at startup)
+bert_pipeline_batch_size: 10     # informational under staged (no PREP chunking)
+bert_batch_size: 32              # server-side GPU mini-batch (frozen)
+bert_batch_max_papers: 16
+bert_batch_max_sentences: 1500
+bert_batch_max_chars: 300000
+bert_batch_max_wait_ms: 20
+bert_endpoint_concurrency: 1     # single-flight (structural, enforced in code)
+bert_threshold: 0.6              # FROZEN semantic param
+bert_timeout: 30
+bert_retries: 2
+
+# rolling admission (TODO-V07-10): in_flight = admitted - terminal stays
+# < rolling_target; MD prefetch keeps ~md_prefetch_lookahead papers warm.
+# Ops policy (user ruling 2026-08-21): single pass, errors are terminal —
+# backfill later via same-run-id re-run or a dedicated backfill command.
+admission_mode: rolling
+rolling_target: 128
+md_prefetch_lookahead: 144       # = rolling_target + 2 * md_fetch_concurrency
+
+# staged queue capacities (elements are paper_id strings; heavy per-paper
+# objects are stripped after each paper's durable terminal)
+prep_queue_maxsize: 128
+bert_queue_maxsize: 0            # 0 -> Phase 1 default (2 * bert_batch_max_papers)
+llm_queue_maxsize: 512
+post_queue_maxsize: 256
+write_queue_maxsize: 128
+
+# staged worker pools
+prep_workers: 4
+post_workers: 8
+llm_concurrency: 128            # vLLM saturates here (q160 probe); server-side is the next lever
+llm_timeout: 30
+llm_backend: openai_chat
+enable_thinking: false           # FROZEN semantic param
+
+bert_server_url: "https://datacenter.aminer.cn/gateway/open_platform/api/v3/paper/extraction/bert"
+llm_api_url: "https://datacenter.aminer.cn/gateway/open_platform/api/v3/paper/extraction/v1/chat/completions"
+llm_model: ""
+
+job_batch_size: 500
+md_prefetch_window: 163          # inert under rolling; kept at window-champion value for window fallback
+md_fetch_concurrency: 8
+md_fetch_retries: 3
+md_cache_cleanup_on_batch_done: true  # delete pipeline_output/md_cache/{paper_id}.md after each job_batch
+
+# Quality gates (no Silver). Exceed → paused_gate
+gates:
+  error_rate: 0.15
+  parse_error_rate: 0.10
+  zero_datasets_rate: 0.25
+
+merge_every_n_job_batches: 5
+# TODO-V07-11 incremental compaction: every N durable per-paper predictions
+# (counted per session = on-disk files + already-compacted papers), checked
+# at job_batch boundaries. A window compaction merges the four per-paper
+# artifact types (predictions / monitors / partials / history) into an audit
+# window, dual-verifies (wf4_experiment_v1 schema + conservation), publishes
+# runs/<session>/compaction/flat_experiments.json, then deletes the per-paper
+# sources. Code default 0 = disabled; resume after compaction goes through
+# the session completion ledger (runs/<session>/ledger.jsonl).
+compaction_every_n_papers: 20000
+write_per_paper_monitor: true    # v0.7: on — per-paper prompt_chars powers the standing parity gate
+
+workflow: prod-wf4-llm-datasets-experiment

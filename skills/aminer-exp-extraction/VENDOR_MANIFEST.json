@@ -1,0 +1,50 @@
+{
+  "upstream_repo": "exp-extraction-project",
+  "upstream_commit": "49df0066bd48a3bb19f9e8078ea852892606017e",
+  "vendor_date": "2026-08-22T00:00:00Z",
+  "copied_paths": [
+    "pipeline/",
+    "preprocess/",
+    "reference_detector.py",
+    "rule_ml_extraction_from_promote/",
+    "scripts/run_bulk.py",
+    "scripts/pipeline_cli.py",
+    "scripts/backfill_errors.py",
+    "scripts/compact_run.py",
+    "scripts/merge_flat_experiments.py",
+    "scripts/merge_exports.py",
+    "scripts/collect_phase_metrics.py",
+    "scripts/prepare_aminer_manifest_pub_id.py",
+    "scripts/split_job_batches.py",
+    "scripts/build_ai2000_manifests.py",
+    "scripts/phase3_longrun_monitor.py",
+    "scripts/run_phase6_sweep.py",
+    "scripts/collect_phase6_results.py",
+    "scripts/phase7_compare_predictions.py",
+    "configs/default.yaml",
+    "tests/",
+    "dataset_evidence/",
+    "pipeline_output/production/runs/prod-lilaoshi-smoke10-llm-enums-20260814/",
+    "requirements.txt",
+    "requirements-dev.txt"
+  ],
+  "sanitization": [
+    "configs/default.yaml: bert_server_url / qwen_api_url / qwen_model values emptied (fill in or use BERT_SERVER_URL / QWEN_CHAT_URL / QWEN_MODEL env vars)",
+    "pipeline/benchmark/config.py: env-var fallback defaults emptied",
+    "scripts/pipeline_cli.py: DEFAULT_QWEN_CHAT_URL emptied",
+    "pipeline/production/batch_bert_pipeline_wf4.py: openai_chat api_url fallback emptied",
+    "pipeline/production/runners/batch_run_wf4.py: backend-info print fallbacks emptied",
+    "scripts/run_bulk.py: NO_PROXY extra hosts reduced to 127.0.0.1,localhost",
+    "pipeline/benchmark/stages/openai_chat_qwen_client.py: docstring URL neutralized",
+    "tests/test_LLM.py: service URLs env-only; module auto-skips when QWEN_CHAT_URL / BERT_SERVER_URL unset",
+    "tests/test_phase3_fault_injection.py: fixture error strings use neutral host names",
+    "pipeline/production/docs/: example URLs neutralized"
+  ],
+  "notes": [
+    "Vendored runtime for the aminer-exp-extraction skill package; prediction semantics unchanged since upstream 0.7.1 (upstream workflow version 0.8.0).",
+    "Semantic parameters frozen: qwen prompt/model/temperature, bert_threshold, schema/normalize/merge/commit.",
+    "Upstream repo layout mirrored at package root so all __file__-relative path anchoring works unchanged.",
+    "Layout v3: the package root IS the OpenClaw skill directory (SKILL.md at root, standard single-skill format); the runtime layout itself is unchanged from the initial vendor copy.",
+    "Layout v4: skill lives at skills/aminer-exp-extraction/ inside the multi-skill aminer-exp-skill repository; runtime layout inside the skill is unchanged (path anchoring is __file__-relative)."
+  ]
+}

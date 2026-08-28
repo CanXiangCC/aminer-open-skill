@@ -1,0 +1,185 @@
+{
+  "paper_id": "65d41682939a5f4082e1641d",
+  "paper_title": "EmoBench: Evaluating the Emotional Intelligence of Large Language Models",
+  "workflow_id": "prod-wf4-llm-datasets-experiment",
+  "workflow_version": "0.6.3-wf4-lilaoshi-llm-enums",
+  "run_id": "prod-lilaoshi-smoke10-llm-enums-20260814/job_batch_000",
+  "dry_run": false,
+  "experiments": [
+    {
+      "_id": "",
+      "paper_id": "65d41682939a5f4082e1641d",
+      "experiment_name": "EmoBench Evaluation",
+      "research_goal": "To develop a comprehensive and challenging benchmark for evaluating LLMs' emotional intelligence through a variety of scenarios and tasks.",
+      "experiment_subject": [
+        "Emotional Understanding",
+        "Emotional Application"
+      ],
+      "methods": [
+        {
+          "name": "EmoBench Evaluation Framework",
+          "description": "A theory-based comprehensive EI benchmark for LLM evaluation, consisting of a set of 400 handcrafted questions, available in English and Chinese.",
+          "aliases": [
+            "EMOBench"
+          ]
+        }
+      ],
+      "datasets": [
+        {
+          "name": "EMOBENCH",
+          "aliases": [
+            "EMOBench"
+          ],
+          "dataset_type": "text",
+          "description": "A set of 400 hand-crafted questions in English and Chinese, designed to require thorough reasoning and understanding of emotional concepts.",
+          "sample_size": 400,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [
+            "https://github.com/Sahandfer/EmoBench"
+          ],
+          "github_urls": [
+            "https://github.com/Sahandfer/EmoBench"
+          ],
+          "doi_list": [],
+          "cstr_list": [],
+          "confidence": 1.0,
+          "confidence_breakdown": {
+            "frequency": 1.0,
+            "usage": 1.0,
+            "identifier": 1.0,
+            "completeness": 1.0,
+            "c0": 1.0,
+            "mention_matched": true,
+            "identifier_hit": true,
+            "fake_identifier": false,
+            "raw_count": 20
+          }
+        }
+      ],
+      "sample_size": null,
+      "metrics": [
+        "Accuracy %",
+        "Performance Comparison"
+      ],
+      "key_results": [
+        "Our human participants outperformed the LLMs on both tasks.",
+        "GPT-4, the top-performing model, came close to the average human performance, particularly in the EA task."
+      ],
+      "conclusion": "Our results revealed that while larger LLMs significantly outperform smaller models, there is still a considerable gap between the best-performing LLM in our study and the average human's EI. In the future, we hope that by facilitating EI evaluation, EMOBENCH can encourage research on emotionally intelligent LLMs, leading to models that are more capable of understanding human emotions and applying this understanding in many promising tasks, such as emotional and mental health support (Sabour ., 2022). In addition, we plan to augment EMOBENCH with more data, exploring the more fine-grained features (., personal characteristics and language expression).",
+      "limitations": "However, despite our emphasis on prompt-tuning and the many iterations of prompt designs for our tasks, we cannot claim our prompts were optimal, and thus, the experimental results are not indicative of LLMs' peak performance in EI. Moreover, we only experimented with chain-of-thought reasoning to augment the output, which future work could expand upon and propose new reasoning techniques that better apply to emotional scenarios.",
+      "evidence": [
+        "As shown in Figure 4, our human participants outperformed the LLMs on both tasks.",
+        "Notably, although GPT-4, the top-performing model, came close to the average human performance, particularly in the EA task, it still fell short of surpassing individuals with higher emotional intelligence, highlighting a significant gap in current LLMs.",
+        "Towards this end, we propose EMOBENCH, a theory-based comprehensive EI benchmark for LLM evaluation, consisting of a set of 400 handcrafted questions, available in English and Chinese."
+      ],
+      "domain": "computer_science",
+      "experiment_type": "human_study",
+      "experiment_history": [],
+      "score": null
+    }
+  ],
+  "provenance": [
+    {
+      "extraction_sources": {
+        "experiment_name": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_problem": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_goal": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_subject": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "methods": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "key_results": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "metrics": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "datasets": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "paper_id": {
+          "extractor_id": "meta.paper_id",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "_id": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "experiment_history": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "score": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "conclusion": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "limitations": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "sample_size": {
+          "extractor_id": "rules.sample_size_policy_wf4",
+          "version": "0.1.0-wf4",
+          "status": "ok"
+        },
+        "evidence": {
+          "extractor_id": "rules.evidence",
+          "version": "v4_clean_mswr",
+          "status": "ok"
+        },
+        "domain": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_type": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        }
+      },
+      "experimental": true
+    }
+  ],
+  "research_problem": "Emotional Intelligence Evaluation",
+  "research_problem_description": "EmoBench is a benchmark designed to evaluate the emotional intelligence of large language models (LLMs) by assessing their ability to understand and apply emotional concepts in various scenarios. The research problem is to develop a comprehensive and challenging benchmark that can effectively measure LLMs' capacity to comprehend emotional states, regulate emotions, and apply this understanding in practical situations.",
+  "research_problem_aliases": [
+    "Emotional Intelligence Evaluation",
+    "EmoBench"
+  ]
+}

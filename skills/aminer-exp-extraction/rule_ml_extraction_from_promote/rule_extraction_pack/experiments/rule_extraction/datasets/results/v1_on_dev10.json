@@ -1,0 +1,1717 @@
+{
+  "strategy_id": "v1",
+  "strategy_name": "datasets--策略v1--Section+Table提取 (Layer 2)",
+  "test_time": "2026-07-03T14:24:23.034868",
+  "batch": "dev_10",
+  "papers": [
+    {
+      "paper_id": "5b1643ba8fbcbf6e5a9bc884",
+      "gold_count": 43,
+      "rule_count": 2,
+      "matched_count": 2,
+      "missed_count": 41,
+      "extra_count": 0,
+      "exact_match_count": 2,
+      "recall": 0.046511627906976744,
+      "precision": 1.0,
+      "gold_names": [
+        "fgnet",
+        "ar",
+        "cplfw",
+        "rfw",
+        "guoetal.",
+        "casiafasd",
+        "nirvis2.0",
+        "fam",
+        "celebfaces+",
+        "replayattack",
+        "casiahfb",
+        "casiawebface",
+        "calfw",
+        "frgcv2",
+        "vggface2",
+        "cufs",
+        "lfw",
+        "facebook",
+        "sllfw",
+        "feret",
+        "cfp",
+        "asianceleb",
+        "ytf",
+        "bosphorus",
+        "webcaricature",
+        "google",
+        "cufsf",
+        "cacd",
+        "umdfacesvideos",
+        "ijba",
+        "morph",
+        "msv1c",
+        "bu3dfe",
+        "msceleb1m",
+        "megaface",
+        "delfw",
+        "pasc",
+        "dfw",
+        "umdfaces",
+        "elfw",
+        "ijbc",
+        "vggface",
+        "ijbb"
+      ],
+      "rule_names": [
+        "fgnet",
+        "cacd"
+      ],
+      "matched_names": [
+        "fgnet",
+        "cacd"
+      ],
+      "missed_names": [
+        "ar",
+        "cplfw",
+        "rfw",
+        "guoetal.",
+        "casiafasd",
+        "nirvis2.0",
+        "fam",
+        "celebfaces+",
+        "replayattack",
+        "casiahfb",
+        "casiawebface",
+        "calfw",
+        "frgcv2",
+        "vggface2",
+        "cufs",
+        "lfw",
+        "facebook",
+        "sllfw",
+        "feret",
+        "cfp",
+        "asianceleb",
+        "ytf",
+        "bosphorus",
+        "webcaricature",
+        "google",
+        "cufsf",
+        "umdfacesvideos",
+        "ijba",
+        "morph",
+        "msv1c",
+        "bu3dfe",
+        "msceleb1m",
+        "megaface",
+        "delfw",
+        "pasc",
+        "dfw",
+        "umdfaces",
+        "elfw",
+        "ijbc",
+        "vggface",
+        "ijbb"
+      ],
+      "extra_names": [],
+      "gold": [
+        {
+          "name": "LFW",
+          "aliases": [
+            "Labeled Faces in the Wild"
+          ],
+          "dataset_type": "image",
+          "description": "用于研究无约束环境下人脸识别的数据库。",
+          "sample_size": 13000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "MS-Celeb-1M",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "大规模人脸识别数据集和基准，包含多个挑战。",
+          "sample_size": 10000000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "MegaFace",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "用于大规模人脸识别的基准，包含100万个干扰者。",
+          "sample_size": 4700000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "VGGFace2",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "用于跨姿态和年龄识别人脸的数据集，具有深度特征。",
+          "sample_size": 3310000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "CASIA-WebFace",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "第一个广泛使用的公开训练数据集，包含10K名人的0.5M图像。",
+          "sample_size": 494414,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "IJB-A",
+          "aliases": [
+            "IARPA Janus Benchmark A"
+          ],
+          "dataset_type": "image",
+          "description": "用于推进无约束人脸检测和识别前沿的基准。",
+          "sample_size": 25809,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "IJB-B",
+          "aliases": [
+            "IARPA Janus Benchmark B"
+          ],
+          "dataset_type": "image",
+          "description": "用于人脸识别的基准数据集。",
+          "sample_size": 11754,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "IJB-C",
+          "aliases": [
+            "IARPA Janus Benchmark C"
+          ],
+          "dataset_type": "image",
+          "description": "用于人脸识别的基准数据集。",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "RFW",
+          "aliases": [
+            "Racial Faces in-the-Wild"
+          ],
+          "dataset_type": "image",
+          "description": "用于公平评估和比较算法对不同种族的识别能力以及减少种族偏见的数据库。",
+          "sample_size": 40607,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "VGGFace",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "从互联网收集的大规模数据集，包含2.6M图像。",
+          "sample_size": 2600000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "UMDFaces-Videos",
+          "aliases": [],
+          "dataset_type": "video",
+          "description": "用于训练深度网络的人脸视频数据集。",
+          "sample_size": 22075,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "CelebFaces+",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "私有训练数据集，包含0.2M图像。",
+          "sample_size": 202599,
+          "is_public": false,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Google",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "私有训练数据集，包含超过500M图像。",
+          "sample_size": 500000000,
+          "is_public": false,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Facebook",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "私有训练数据集，包含4.4M图像。",
+          "sample_size": 4400000,
+          "is_public": false,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "CPLFW",
+          "aliases": [
+            "Cross-Pose LFW"
+          ],
+          "dataset_type": "image",
+          "description": "从LFW扩展而来，具有不同姿态的数据集。",
+          "sample_size": 11652,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "CFP",
+          "aliases": [
+            "Celebrities in Frontal-Profile"
+          ],
+          "dataset_type": "image",
+          "description": "专注于正面和侧面人脸的数据集。",
+          "sample_size": 7000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "SLLFW",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "用于细粒度人脸验证的数据集。",
+          "sample_size": 13000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "UMDFaces",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "用于训练深度网络的带注释人脸数据集。",
+          "sample_size": 367920,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "YTF",
+          "aliases": [
+            "YouTube Faces"
+          ],
+          "dataset_type": "video",
+          "description": "用于在无约束视频中研究人脸识别的数据集。",
+          "sample_size": 3425,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "CALFW",
+          "aliases": [
+            "Cross-Age LFW"
+          ],
+          "dataset_type": "image",
+          "description": "用于研究跨年龄人脸识别的数据集。",
+          "sample_size": 12174,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "PaSC",
+          "aliases": [
+            "Point and Shoot Challenge"
+          ],
+          "dataset_type": "video",
+          "description": "用于研究数码相机人脸识别挑战的数据集。",
+          "sample_size": 2802,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "MORPH",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "正常成年人年龄进展的纵向图像数据库。",
+          "sample_size": 55134,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "CACD",
+          "aliases": [
+            "Cross-Age Celebrity Dataset"
+          ],
+          "dataset_type": "image",
+          "description": "用于跨年龄人脸识别和检索的数据集。",
+          "sample_size": 163446,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "FG-NET",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "年龄数据库。",
+          "sample_size": 1002,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [
+            "http://www.fgnet.rsunit.com"
+          ],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "NIR-VIS 2.0",
+          "aliases": [
+            "CASIA NIR-VIS 2.0"
+          ],
+          "dataset_type": "image",
+          "description": "用于异构人脸生物识别研究的数据库。",
+          "sample_size": 17580,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "CASIA-HFB",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "用于异构人脸生物识别研究的数据库。",
+          "sample_size": 5097,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "CUFSF",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "照片-素描数据集，比CUFS更难，因为有光照变化和形状夸张。",
+          "sample_size": 1194,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "CUFS",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "照片-素描数据集。",
+          "sample_size": 1212,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Bosphorus",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "用于3D人脸分析的数据库。",
+          "sample_size": 4652,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "BU-3DFE",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "用于面部行为研究的3D面部表情数据库。",
+          "sample_size": 2500,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "FRGCv2",
+          "aliases": [
+            "Face Recognition Grand Challenge v2"
+          ],
+          "dataset_type": "image",
+          "description": "人脸识别大挑战的数据库。",
+          "sample_size": 4007,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "CASIA-FASD",
+          "aliases": [],
+          "dataset_type": "video",
+          "description": "包含多种攻击的人脸反欺骗数据库。",
+          "sample_size": 1002,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Replay-Attack",
+          "aliases": [],
+          "dataset_type": "video",
+          "description": "用于人脸反欺骗的数据库。",
+          "sample_size": 1300,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "WebCaricature",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "用于漫画人脸识别的基准数据集。",
+          "sample_size": 12016,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "DFW",
+          "aliases": [
+            "Disguised Faces in the Wild"
+          ],
+          "dataset_type": "image",
+          "description": "用于评估跨伪装人脸识别的数据集。",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "ELFW",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "用于低照度人脸识别的数据集。",
+          "sample_size": 5700,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "DELFW",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "用于低照度人脸识别的数据集。",
+          "sample_size": 1580000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Guo et al.",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "用于化妆人脸验证的数据集。",
+          "sample_size": 1038,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "FAM",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "用于化妆人脸验证的数据集。",
+          "sample_size": 1009,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Asian-Celeb",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "包含10万亚洲名人的280万张对齐图像的数据集。",
+          "sample_size": 2800000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "MSv1c",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "从MS-Celeb-1M数据集中清理出的400万张图像的数据集。",
+          "sample_size": 4000000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "FERET",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "用于人脸识别算法评估的数据库。",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "AR",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "人脸数据库。",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ],
+      "rule": [
+        {
+          "name": "CACD",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "For example, CALFW , MORPH , CACD and FG-NET are commonly used datasets with different age range; CFP only focuses on frontal and profile face, CPLFW is extended from LFW with different poses",
+          "sample_size": null,
+          "is_public": null,
+          "is_self_collected": null,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "FG-NET",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "For example, CALFW , MORPH , CACD and FG-NET are commonly used datasets with different age range; CFP only focuses on frontal and profile face, CPLFW is extended from LFW with different poses",
+          "sample_size": null,
+          "is_public": null,
+          "is_self_collected": null,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ],
+      "success": true,
+      "trace": {}
+    },
+    {
+      "paper_id": "627c6cfe5aee126c0f83214c",
+      "gold_count": 7,
+      "rule_count": 4,
+      "matched_count": 3,
+      "missed_count": 4,
+      "extra_count": 1,
+      "exact_match_count": 3,
+      "recall": 0.42857142857142855,
+      "precision": 0.75,
+      "gold_names": [
+        "macs",
+        "msrvtt",
+        "audiocaps",
+        "audioset",
+        "wavcaps",
+        "clotho",
+        "mscoco"
+      ],
+      "rule_names": [
+        "macs",
+        "althoughthere",
+        "audiocaps",
+        "clotho"
+      ],
+      "matched_names": [
+        "macs",
+        "audiocaps",
+        "clotho"
+      ],
+      "missed_names": [
+        "audioset",
+        "msrvtt",
+        "wavcaps",
+        "mscoco"
+      ],
+      "extra_names": [
+        "althoughthere"
+      ],
+      "gold": [
+        {
+          "name": "AudioCaps",
+          "aliases": [],
+          "dataset_type": "multimodal",
+          "description": "The largest dataset for audio captioning in the wild. The audios are a subset of AudioSet.",
+          "sample_size": 51308,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Clotho",
+          "aliases": [],
+          "dataset_type": "multimodal",
+          "description": "The benchmark dataset used in DCASE challenges. Audios are collected from Freesound platform, trimmed to 15 to 30 seconds and annotated in a three-step framework.",
+          "sample_size": 5929,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "MACS",
+          "aliases": [],
+          "dataset_type": "multimodal",
+          "description": "A dataset originated from TAU Urban Acoustic Scenes 2019. 3,930 audios recorded in three scenes (airport, public square and park) are sampled and annotated.",
+          "sample_size": 3930,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "AudioSet",
+          "aliases": [],
+          "dataset_type": "audio",
+          "description": "A large-scale weakly-annotated sound event dataset. Many works pre-train an audio encoding backbone on it before transferring to the target task.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "WavCaps",
+          "aliases": [],
+          "dataset_type": "multimodal",
+          "description": "A chatgpt-assisted weakly-labelled audio captioning dataset for audio-language multimodal research.",
+          "sample_size": null,
+          "is_public": null,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "MSCOCO",
+          "aliases": [
+            "Microsoft Common Objects in COntext"
+          ],
+          "dataset_type": "multimodal",
+          "description": "Image captioning dataset contains more than 300K images.",
+          "sample_size": 300000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "MSR-VTT",
+          "aliases": [
+            "MSR-Video to Text"
+          ],
+          "dataset_type": "multimodal",
+          "description": "Video captioning dataset contains fewer video clips (10K) but much more caption annotations (200K).",
+          "sample_size": 10000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ],
+      "rule": [
+        {
+          "name": "Although there",
+          "aliases": [],
+          "dataset_type": "other",
+          "description": "Although there are AAC datasets on other languages , or specific domains , we focus on English, general domain AAC datasets since they are universally used as benchmarks",
+          "sample_size": null,
+          "is_public": null,
+          "is_self_collected": null,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "AudioCaps",
+          "aliases": [],
+          "dataset_type": "text",
+          "description": "1) Dataset Description: AudioCaps: AudioCaps is the largest dataset for audio captioning in the wild They are all limited in sound event types: MACS contains only recordings in specific urban scenes so some sound events are not contained while AudioCaps and Clotho also exclude some sound events",
+          "sample_size": null,
+          "is_public": null,
+          "is_self_collected": null,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Clotho",
+          "aliases": [],
+          "dataset_type": "audio",
+          "description": "Clotho: Clotho is the benchmark dataset used in DCASE challenges They are all limited in sound event types: MACS contains only recordings in specific urban scenes so some sound events are not contained while AudioCaps and Clotho also exclude some sound events",
+          "sample_size": null,
+          "is_public": null,
+          "is_self_collected": null,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "MACS",
+          "aliases": [],
+          "dataset_type": "audio",
+          "description": "MACS: MACS is a dataset originated from TAU Urban Acoustic Scenes 2019 They are all limited in sound event types: MACS contains only recordings in specific urban scenes so some sound events are not contained while AudioCaps and Clotho also exclude some sound events",
+          "sample_size": null,
+          "is_public": null,
+          "is_self_collected": null,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ],
+      "success": true,
+      "trace": {}
+    },
+    {
+      "paper_id": "62fdae3890e50fcafdd6387b",
+      "gold_count": 2,
+      "rule_count": 3,
+      "matched_count": 2,
+      "missed_count": 0,
+      "extra_count": 1,
+      "exact_match_count": 2,
+      "recall": 1.0,
+      "precision": 0.6666666666666666,
+      "gold_names": [
+        "pascalvoc2012",
+        "cityscapes"
+      ],
+      "rule_names": [
+        "pascalvoc",
+        "pascalvoc2012",
+        "cityscapes"
+      ],
+      "matched_names": [
+        "pascalvoc2012",
+        "cityscapes"
+      ],
+      "missed_names": [],
+      "extra_names": [
+        "pascalvoc"
+      ],
+      "gold": [
+        {
+          "name": "Cityscapes",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "A dataset for urban street scene understanding. It consists of 2,975 training images and 500 validation images of high resolution among 19 different semantic classes.",
+          "sample_size": 3475,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Pascal VOC 2012",
+          "aliases": [
+            "Pascal VOC"
+          ],
+          "dataset_type": "image",
+          "description": "A generic object dataset across 21 distinct semantic classes. It contains 1,464 training images and 1,449 validation images of medium resolution. Following common practice, we additionally include the augmented partition for a combined training set (10,582 images in total).",
+          "sample_size": 12031,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ],
+      "rule": [
+        {
+          "name": "Cityscapes",
+          "aliases": [],
+          "dataset_type": "other",
+          "description": "Cityscapes is a dataset for urban street scene understanding For data augmentation, we use random scaling, flipping, cropping [MATH] 1024 for Cityscapes and [MATH] for Pascal VOC), and color jitter to produce two different views, and apply CutMix in a view-coherent manner",
+          "sample_size": null,
+          "is_public": null,
+          "is_self_collected": null,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Pascal VOC",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "Pascal VOC 2012 is a generic object dataset across 21 distinct semantic classes For data augmentation, we use random scaling, flipping, cropping [MATH] 1024 for Cityscapes and [MATH] for Pascal VOC), and color jitter to produce two different views, and apply CutMix in a view-coherent manner",
+          "sample_size": null,
+          "is_public": null,
+          "is_self_collected": null,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Pascal VOC 2012",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "Pascal VOC 2012 is a generic object dataset across 21 distinct semantic classes",
+          "sample_size": null,
+          "is_public": null,
+          "is_self_collected": null,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ],
+      "success": true,
+      "trace": {}
+    },
+    {
+      "paper_id": "6632f3d201d2a3fbfc5b36bb",
+      "gold_count": 2,
+      "rule_count": 0,
+      "matched_count": 0,
+      "missed_count": 2,
+      "extra_count": 0,
+      "exact_match_count": 0,
+      "recall": 0.0,
+      "precision": 0,
+      "gold_names": [
+        "jaad",
+        "psi"
+      ],
+      "rule_names": [],
+      "matched_names": [],
+      "missed_names": [
+        "jaad",
+        "psi"
+      ],
+      "extra_names": [],
+      "gold": [
+        {
+          "name": "JAAD",
+          "aliases": [
+            "Joint Attention for Autonomous Driving"
+          ],
+          "dataset_type": "video",
+          "description": "This dataset comprises 348 short video clips, each extensively annotated to depict various road actors and scenarios across diverse driving locations, traffic, and weather conditions.",
+          "sample_size": 348,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "PSI",
+          "aliases": [
+            "Pedestrian Situated Intent"
+          ],
+          "dataset_type": "video",
+          "description": "The dataset comprises 104 training videos, 34 validation videos, and 48 testing videos, collectively covering 196 scenes. It includes bounding box annotations for traffic objects and agents, accompanied by text descriptions and reasoning explanations.",
+          "sample_size": 186,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ],
+      "rule": null,
+      "success": false,
+      "trace": {}
+    },
+    {
+      "paper_id": "63b63fca90e50fcafd8f4461",
+      "gold_count": 7,
+      "rule_count": 1,
+      "matched_count": 0,
+      "missed_count": 7,
+      "extra_count": 1,
+      "exact_match_count": 0,
+      "recall": 0.0,
+      "precision": 0.0,
+      "gold_names": [
+        "marsv2",
+        "suhifimask",
+        "replayattack",
+        "casiamfsd",
+        "siw",
+        "hifimask",
+        "oulunpu"
+      ],
+      "rule_names": [
+        "resnet18"
+      ],
+      "matched_names": [],
+      "missed_names": [
+        "marsv2",
+        "suhifimask",
+        "replayattack",
+        "casiamfsd",
+        "siw",
+        "hifimask",
+        "oulunpu"
+      ],
+      "extra_names": [
+        "resnet18"
+      ],
+      "gold": [
+        {
+          "name": "SuHiFiMask",
+          "aliases": [
+            "Surveillance High-Fidelity Mask"
+          ],
+          "dataset_type": "video",
+          "description": "A large-scale FAS dataset captured under 40 surveillance scenes, with 101 subjects, 232 3D attacks, 200 2D attacks, and 2 adversarial attacks. Contains 10,195 videos.",
+          "sample_size": 10195,
+          "is_public": true,
+          "is_self_collected": true,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "OULU-NPU",
+          "aliases": [],
+          "dataset_type": "video",
+          "description": "Used to train the super-resolution network by degrading into a low-quality dataset.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "CASIA-MFSD",
+          "aliases": [
+            "CASIA-FASD"
+          ],
+          "dataset_type": "video",
+          "description": "Used for cross-dataset testing.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "ReplayAttack",
+          "aliases": [],
+          "dataset_type": "video",
+          "description": "Used for cross-dataset testing.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "MARsV2",
+          "aliases": [],
+          "dataset_type": "video",
+          "description": "Used for cross-quality testing after degradation with different sizes of the gaussian kernel.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "HiFiMask",
+          "aliases": [
+            "CASIA-SURF HiFiMask"
+          ],
+          "dataset_type": "video",
+          "description": "Used for feature distribution comparison.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "SiW",
+          "aliases": [],
+          "dataset_type": "video",
+          "description": "Used for performance comparison.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ],
+      "rule": [
+        {
+          "name": "ResNet18",
+          "aliases": [],
+          "dataset_type": "other",
+          "description": "We use the ResNet18 , ViT , and the CDCN network as the backbone, and report their results in experiments",
+          "sample_size": null,
+          "is_public": null,
+          "is_self_collected": null,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ],
+      "success": true,
+      "trace": {}
+    },
+    {
+      "paper_id": "659b6a62939a5f4082e8e6d7",
+      "gold_count": 7,
+      "rule_count": 1,
+      "matched_count": 1,
+      "missed_count": 6,
+      "extra_count": 0,
+      "exact_match_count": 1,
+      "recall": 0.14285714285714285,
+      "precision": 1.0,
+      "gold_names": [
+        "imagenet21k",
+        "cifar10",
+        "openimageo",
+        "inaturalist",
+        "imageneto",
+        "texture",
+        "imagenet1k"
+      ],
+      "rule_names": [
+        "openimageo"
+      ],
+      "matched_names": [
+        "openimageo"
+      ],
+      "missed_names": [
+        "imagenet21k",
+        "cifar10",
+        "inaturalist",
+        "imageneto",
+        "texture",
+        "imagenet1k"
+      ],
+      "extra_names": [],
+      "gold": [
+        {
+          "name": "ImageNet-21K",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "Dataset used for pre-training the vision encoder models.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "ImageNet-1K",
+          "aliases": [
+            "ImageNet"
+          ],
+          "dataset_type": "image",
+          "description": "In-distribution dataset used for fine-tuning the models and evaluating OOD detection. 200,000 images were randomly sampled from the training set for estimating the principal space.",
+          "sample_size": 200000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "CIFAR-10",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "In-distribution dataset used for evaluating multi-class and one-class OOD detection.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "OpenImage-O",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "A newly collected large-scale out-of-distribution dataset.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [
+            "https://github.com/openimages"
+          ],
+          "github_urls": [
+            "https://github.com/openimages"
+          ],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Texture",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "Out-of-distribution dataset comprising natural textural images, with four overlapping categories removed since they coincide with ImageNet.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "iNaturalist",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "A fine-grained species classification dataset used as an out-of-distribution dataset, from which a specific subset is used.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "ImageNet-O",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "An out-of-distribution dataset containing images that are adversarially filtered to challenge OOD detectors.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ],
+      "rule": [
+        {
+          "name": "OpenImage-O",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "Our experiments include the following OOD datasets: 1) OpenImage-O is a newly collected large-scale OOD dataset",
+          "sample_size": null,
+          "is_public": null,
+          "is_self_collected": null,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ],
+      "success": true,
+      "trace": {}
+    },
+    {
+      "paper_id": "53e9a3fbb7602d9702d13e26",
+      "gold_count": 3,
+      "rule_count": 0,
+      "matched_count": 0,
+      "missed_count": 3,
+      "extra_count": 0,
+      "exact_match_count": 0,
+      "recall": 0.0,
+      "precision": 0,
+      "gold_names": [
+        "kitti",
+        "shapenetvipc",
+        "scannet"
+      ],
+      "rule_names": [],
+      "matched_names": [],
+      "missed_names": [
+        "kitti",
+        "shapenetvipc",
+        "scannet"
+      ],
+      "extra_names": [],
+      "gold": [
+        {
+          "name": "ShapeNet-ViPC",
+          "aliases": [],
+          "dataset_type": "multimodal",
+          "description": "A benchmark dataset derived from ShapeNet, containing 13 categories and 38,328 objects. Each object has a complete point cloud, 24 rendered images, and 24 corresponding incomplete point clouds.",
+          "sample_size": 38328,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "KITTI",
+          "aliases": [],
+          "dataset_type": "sensor",
+          "description": "Real-world LiDAR scans used for testing point cloud completion methods.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Scannet",
+          "aliases": [],
+          "dataset_type": "sensor",
+          "description": "RGB-D scans used for testing point cloud completion methods on real-world data.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ],
+      "rule": null,
+      "success": false,
+      "trace": {}
+    },
+    {
+      "paper_id": "661ddba813fb2c6cf6b5d7e6",
+      "gold_count": 1,
+      "rule_count": 1,
+      "matched_count": 0,
+      "missed_count": 1,
+      "extra_count": 1,
+      "exact_match_count": 0,
+      "recall": 0.0,
+      "precision": 0.0,
+      "gold_names": [
+        "safetydetect"
+      ],
+      "rule_names": [
+        "behavior1k"
+      ],
+      "matched_names": [],
+      "missed_names": [
+        "safetydetect"
+      ],
+      "extra_names": [
+        "behavior1k"
+      ],
+      "gold": [
+        {
+          "name": "SafetyDetect",
+          "aliases": [],
+          "dataset_type": "simulation",
+          "description": "A dataset built off the VirtualHome simulator aimed at enabling researchers to create embodied agents that can detect unsafe or unsanitary conditions in the home. It contains 1000 anomalous home scenarios with 967 unique anomalies split among 13 hazard classes.",
+          "sample_size": 1000,
+          "is_public": true,
+          "is_self_collected": true,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ],
+      "rule": [
+        {
+          "name": "Behavior1K",
+          "aliases": [],
+          "dataset_type": "simulation",
+          "description": "Behavior1K is a simulation benchmark where the robots must complete 1000 everyday tasks",
+          "sample_size": null,
+          "is_public": null,
+          "is_self_collected": null,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ],
+      "success": true,
+      "trace": {}
+    },
+    {
+      "paper_id": "6544571e939a5f4082e79311",
+      "gold_count": 5,
+      "rule_count": 0,
+      "matched_count": 0,
+      "missed_count": 5,
+      "extra_count": 0,
+      "exact_match_count": 0,
+      "recall": 0.0,
+      "precision": 0,
+      "gold_names": [
+        "widerpedestrian",
+        "laiondataset",
+        "crowdhuman",
+        "mscoco",
+        "descriptioncorpus"
+      ],
+      "rule_names": [],
+      "matched_names": [],
+      "missed_names": [
+        "laiondataset",
+        "crowdhuman",
+        "mscoco",
+        "descriptioncorpus",
+        "widerpedestrian"
+      ],
+      "extra_names": [],
+      "gold": [
+        {
+          "name": "CrowdHuman",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "A widely-known pedestrian detection benchmark collected from huge web-crawling data, containing images collected in various environments. It is composed of 15,000 training, 4,370 validation, and 5,000 test images, and contains around 340,000 pedestrian instances in the training set.",
+          "sample_size": "24,370 images",
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "WiderPedestrian",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "A large pedestrian detection benchmark collected from driving and surveillance scenes for the safety of pedestrians. It consists of 11,500 training, 5,000 validation, and 3,500 testing images.",
+          "sample_size": "20,000 images",
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Description corpus",
+          "aliases": [],
+          "dataset_type": "text",
+          "description": "A self-established corpus containing millions of descriptions illustrating diverse appearance variations of pedestrian and background instances. It includes 1.2M descriptions for pedestrian and 10M for background.",
+          "sample_size": "11.2M descriptions",
+          "is_public": null,
+          "is_self_collected": true,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "MS-COCO",
+          "aliases": [],
+          "dataset_type": "image",
+          "description": "A dataset used to collect background classes which are irrelevant from pedestrian among its categories (e.g., car, dog, potted plant).",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "LAION dataset",
+          "aliases": [],
+          "dataset_type": "multimodal",
+          "description": "A dataset used to supplement background descriptions by removing text data related to pedestrians and using the residuals for background descriptions illustrating extensive contexts.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        }
+      ],
+      "rule": null,
+      "success": false,
+      "trace": {}
+    },
+    {
+      "paper_id": "64f00ff43fda6d7f06ececda",
+      "gold_count": 4,
+      "rule_count": 0,
+      "matched_count": 0,
+      "missed_count": 4,
+      "extra_count": 0,
+      "exact_match_count": 0,
+      "recall": 0.0,
+      "precision": 0,
+      "gold_names": [
+        "bengalivisualgenome",
+        "hindivisualgenome",
+        "samanantar",
+        "malayalamvisualgenome"
+      ],
+      "rule_names": [],
+      "matched_names": [],
+      "missed_names": [
+        "bengalivisualgenome",
+        "hindivisualgenome",
+        "samanantar",
+        "malayalamvisualgenome"
+      ],
+      "extra_names": [],
+      "gold": [
+        {
+          "name": "Hindi Visual Genome",
+          "aliases": [
+            "Hindi VG"
+          ],
+          "dataset_type": "multimodal",
+          "description": "A dataset for multimodal English-to-Hindi machine translation containing source text, target text, image ID, and coordinates of the image bounding box.",
+          "sample_size": 33223,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Bengali Visual Genome",
+          "aliases": [
+            "Bengali VG"
+          ],
+          "dataset_type": "multimodal",
+          "description": "A multimodal dataset for English-to-Bengali machine translation and image captioning.",
+          "sample_size": 33223,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Malayalam Visual Genome",
+          "aliases": [
+            "Malayalam VG"
+          ],
+          "dataset_type": "multimodal",
+          "description": "Malayalam Visual Genome 1.0 dataset for multimodal machine translation.",
+          "sample_size": 33223,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [
+            "http://hdl.handle.net/11234/1-3533"
+          ],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": []
+        },
+        {
+          "name": "Samanantar",
+          "aliases": [],
+          "dataset_type": "text",
+          "description": "The largest publicly available parallel corpora collection for 11 Indic languages, containing 49.6 million sentence pairs between English and 11 Indian languages, used for pre-training the baseline model.",
+          "sample_size": 49600000,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [
+            "10.1162/tacl_a_00452"
+          ],
+          "cstr_list": []
+        }
+      ],
+      "rule": null,
+      "success": false,
+      "trace": {}
+    }
+  ],
+  "summary": {
+    "total_papers": 10,
+    "total_gold_datasets": 81,
+    "total_rule_datasets": 12,
+    "total_matched": 8,
+    "total_missed": 73,
+    "total_extra": 4,
+    "recall": 0.09876543209876543,
+    "precision": 0.6666666666666666,
+    "f1": 0.17204301075268816
+  }
+}

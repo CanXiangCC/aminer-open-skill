@@ -1,0 +1,29 @@
+{
+  "session_id": "bulk-20260814-071713",
+  "pid": 14568,
+  "log_dir": "/home/xingshioumiga/projects/exp_extraction_project/pipeline_output/production/logs/bulk-20260814-071713",
+  "session_run_id": "prod-lilaoshi-smoke10-llm-enums-20260814",
+  "run_id": "prod-lilaoshi-smoke10-llm-enums-20260814/job_batch_000",
+  "job_batch_id": "job_batch_000",
+  "status": "done",
+  "rates": {
+    "error_rate": 0.0,
+    "parse_error_rate": 0.0,
+    "zero_datasets_rate": 0.1
+  },
+  "heartbeat_at": "2026-08-14T07:17:44Z",
+  "papers_ok": 10,
+  "papers_error": 0,
+  "papers_skipped": 0,
+  "error_classes": {
+    "md_fetch": 0,
+    "bert": 0,
+    "qwen_timeout": 0,
+    "qwen_http": 0,
+    "parse_error": 0,
+    "post_llm": 0,
+    "other": 0
+  },
+  "job_wall_sec": 29.9304,
+  "total_wall_sec": 30.0849
+}

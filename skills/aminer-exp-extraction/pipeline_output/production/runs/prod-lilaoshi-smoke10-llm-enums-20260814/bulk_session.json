@@ -1,0 +1,15 @@
+{
+  "session_id": "bulk-20260814-071713",
+  "session_run_id": "prod-lilaoshi-smoke10-llm-enums-20260814",
+  "started_at": "2026-08-14T07:17:14Z",
+  "date": "20260814",
+  "start_from": null,
+  "job_batches": null,
+  "job_batches_planned": [
+    "job_batch_000"
+  ],
+  "config_path": "/home/xingshioumiga/projects/exp_extraction_project/configs/default.yaml",
+  "bert_axis": "bert-flat-60",
+  "qwen_concurrency": 30,
+  "bert_pipeline_batch_size": 10
+}

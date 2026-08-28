@@ -1,0 +1,74 @@
+{
+  "strategy_id": "v2",
+  "strategy_name": "conclusion--策略v2--标题匹配",
+  "test_time": "2026-07-01T17:03:22.804495",
+  "batch": "dev_10",
+  "papers": [
+    {
+      "paper_id": "5b1643ba8fbcbf6e5a9bc884",
+      "gold": "深度学习极大地提高了人脸识别的性能，但在跨年龄、跨姿态、低分辨率、安全性等方面仍存在挑战，且数据偏见和隐私问题亟待解决。",
+      "rule": null,
+      "success": false
+    },
+    {
+      "paper_id": "627c6cfe5aee126c0f83214c",
+      "gold": "Although remarkable progress has been achieved, the current AAC system outputs are far from accurate, detailed, diverse and useful to humans. There are still several crucial challenges to be tackled, such as re-evaluating new metrics, knowledge transfer, model compression, diverse/controllable captioning, detailed captioning, and revisiting the definition of AAC.",
+      "rule": "In this paper, we make a comprehensive survey on AAC. We present the characteristics of AAC from its definition and its comparison with other audio understanding and cross-modal text generation tasks. We introduce the standard encoderdecoder architecture and discuss several pre-training practices.",
+      "success": true
+    },
+    {
+      "paper_id": "62fdae3890e50fcafdd6387b",
+      "gold": "The proposed multi-view correlation consistency (MVCC) approach outperforms its consistency learning only and contrastive learning variants. This approach additionally contains a view-coherent data augmentation strategy for the dense prediction task, which allows for differentiable and invertible image-level geometric augmentation and view-coherent region-level augmentation. In a series of semi-supervised settings, our method has very competitive performance compared with the state of the art.",
+      "rule": null,
+      "success": false
+    },
+    {
+      "paper_id": "6632f3d201d2a3fbfc5b36bb",
+      "gold": "The KG-based models outperform other methods focusing on black box strategies or explainability in terms of F1-score. The inclusion of fuzzy rules enhances the robustness of the KG and provides additional evidence for Bayesian inference.",
+      "rule": null,
+      "success": false
+    },
+    {
+      "paper_id": "63b63fca90e50fcafd8f4461",
+      "gold": "The authors release the first large-scale FAS dataset based on surveillance scenes, SuHiFiMask, and propose the CQIL network. Comprehensive experiments verify the importance of the datasets for the FAS task and the effectiveness of the proposed method.",
+      "rule": "In this paper, we release the first large-scale FAS dataset based on surveillance scenes, SuHiFiMask, with three challenging protocols. We hope that this will fill the gap in FAS research in long-distance surveillance scenes. In addition, we propose a Contrastive Quality-Invariance Learning (CQIL) network to recover image information using super-resolution and enhance the robustness of the algorithm to quality variations by fitting the quality variance distribution.",
+      "success": true
+    },
+    {
+      "paper_id": "659b6a62939a5f4082e8e6d7",
+      "gold": "Feature representations pre-trained through reconstruction yield a notable enhancement in OOD detection and narrow the performance gap among various score functions. Even simple score functions can rival complex ones when leveraging reconstruction-based pretext tasks. MOODv2 employs the masked image modeling pretext task and achieves remarkable enhancements on both ImageNet and CIFAR-10.",
+      "rule": null,
+      "success": false
+    },
+    {
+      "paper_id": "53e9a3fbb7602d9702d13e26",
+      "gold": "The fusion of features from cross-modalities facilitates the generation of reliable geometries to complete partial point clouds. Features learned from images not only constrain the generation of the overall shape of an object but also help to refine its local details.",
+      "rule": null,
+      "success": false
+    },
+    {
+      "paper_id": "661ddba813fb2c6cf6b5d7e6",
+      "gold": "Utilizing a scene graph is the most effective way of informing the LLMs of the proper scene context and semantic information for scene understanding and spatial reasoning. The proposed LLM-based method identifies over 90% of anomalous scenarios in the dataset.",
+      "rule": null,
+      "success": false
+    },
+    {
+      "paper_id": "6544571e939a5f4082e79311",
+      "gold": "The proposed method of formulating language-driven appearance knowledge units via an LLM and incorporating them with visual cues effectively improves pedestrian detection performance across various frameworks, achieving state-of-the-art results on public benchmarks.",
+      "rule": "In this paper, we introduced a novel method to take advantage of an LLM in contextual appearance variation understanding and to leverage its knowledge into a pedestrian detection. We built description corpus that contains abundant narratives for diverse appearances of pedestrians and others. We took them into an LLM and extracted appearance knowledge sets composed of the plentiful representations of appearance variations.",
+      "success": true
+    },
+    {
+      "paper_id": "64f00ff43fda6d7f06ececda",
+      "gold": "Images are often redundant in non-noisy settings when using a strong text-based baseline. Visual context is valuable when the source text is noisy, with cropped image features being best for low-noise and full image features for high-noise. However, improvements were not due to useful information from images but because images act as noise making the model more robust. Datasets where the image is necessary are needed for models to learn to use visual features effectively.",
+      "rule": null,
+      "success": false
+    }
+  ],
+  "summary": {
+    "total": 10,
+    "success": 3,
+    "fail": 7,
+    "success_rate": 0.3
+  }
+}

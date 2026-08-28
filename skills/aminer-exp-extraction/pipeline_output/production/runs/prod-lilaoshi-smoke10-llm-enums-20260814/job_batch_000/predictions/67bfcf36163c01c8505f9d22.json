@@ -1,0 +1,164 @@
+{
+  "paper_id": "67bfcf36163c01c8505f9d22",
+  "paper_title": "(MIS)FITTING: A SURVEY OF SCALING LAWS",
+  "workflow_id": "prod-wf4-llm-datasets-experiment",
+  "workflow_version": "0.6.3-wf4-lilaoshi-llm-enums",
+  "run_id": "prod-lilaoshi-smoke10-llm-enums-20260814/job_batch_000",
+  "dry_run": false,
+  "experiments": [
+    {
+      "_id": "",
+      "paper_id": "67bfcf36163c01c8505f9d22",
+      "experiment_name": "Survey of Scaling Laws",
+      "research_goal": "To evaluate the range of models trained to fit a scaling law and understand the impact of different metrics and parameters.",
+      "experiment_subject": [
+        "Scaling Laws",
+        "Model Performance",
+        "Optimization"
+      ],
+      "methods": [
+        {
+          "name": "Power Law Fitting",
+          "description": "A method to fit scaling laws by evaluating model performance on target metrics and estimating optimal ratios.",
+          "aliases": []
+        },
+        {
+          "name": "Bootstrapping",
+          "description": "A technique to estimate variability by resampling data points, as reported by Ivgi et al. (2022).",
+          "aliases": []
+        },
+        {
+          "name": "Performance Interpolation",
+          "description": "A method to estimate model performance between multiple checkpoints, as described in (2024).",
+          "aliases": []
+        }
+      ],
+      "datasets": [],
+      "sample_size": null,
+      "metrics": [
+        "Validation Loss",
+        "ELO Score",
+        "Reward Model Score",
+        "Accuracy",
+        "Classification Error Rate"
+      ],
+      "key_results": [
+        "A comprehensive list of power law forms may be found in Table 6.",
+        "Using validation loss or other metrics like ELO score, reward model score, or downstream task metrics can yield different results."
+      ],
+      "conclusion": "In addition to discussing several prior replication studies in literature, we empirically demonstrate the fragility of this process, by systematically varying these choices on available checkpoints and models that we train from scratch. We choose to avoid overly prescriptive recommendations, because there is no known set of actions which can guarantee a good scaling law fit, but we make some suggestions based on patterns in our findings (Appendix [MATH] ). Despite our preliminary investigations, our understanding of which decisions may skew the results of a scaling law study is sparse, and defines the path for",
+      "limitations": "",
+      "evidence": [
+        "A comprehensive list of the power law forms in the surveyed papers may be found in Table 6.",
+        "Scaling scaling laws with board games.",
+        "To evaluate the range of models trained to fit a scaling law, train or validation loss are most commonly used, but some works consider other metrics, such as ELO score (Jones, 2021; Neumann & Gros, 2022), reward model score (Gao et al., 2023), or downstream task metrics like accuracy or classification error rate (Henighan et al., 2020; Zhai et al., 2022; Cherti et al., 2023; Goyal et al., 2024; Gao et al., 2023)."
+      ],
+      "domain": "computer_science",
+      "experiment_type": "survey",
+      "experiment_history": [],
+      "score": null
+    }
+  ],
+  "provenance": [
+    {
+      "extraction_sources": {
+        "experiment_name": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_problem": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_goal": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_subject": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "methods": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "key_results": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "metrics": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "datasets": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "paper_id": {
+          "extractor_id": "meta.paper_id",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "_id": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "experiment_history": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "score": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "conclusion": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "limitations": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "sample_size": {
+          "extractor_id": "rules.sample_size_policy_wf4",
+          "version": "0.1.0-wf4",
+          "status": "ok"
+        },
+        "evidence": {
+          "extractor_id": "rules.evidence",
+          "version": "v4_clean_mswr",
+          "status": "ok"
+        },
+        "domain": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_type": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        }
+      },
+      "experimental": true
+    }
+  ],
+  "research_problem": "Scaling laws",
+  "research_problem_description": "Scaling laws describe how model performance and efficiency change with model size and dataset size, offering insights into optimal configurations for deployment. The core challenge is determining the best metrics and methods to fit these laws accurately, considering the variability introduced by different parameters and input variables.",
+  "research_problem_aliases": [
+    "Scaling Laws"
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "parent_workflow_id": "prod-wf4-llm-datasets-experiment",
+  "baseline": {
+    "slug": "qwen3-baseline",
+    "ollama_model": "sam860/qwen3:1.7b-Q4_K_XL",
+    "description": "现有 wf4 dev_10 基准（复用 prod-dev10-wf4-v0.1.0，可不重跑）"
+  },
+  "candidates": [
+    {
+      "slug": "nuextract-t15",
+      "ollama_model": "nuextract-tiny-v1.5:q4_k_xl",
+      "workflow_id": "prod-wf4-llm-datasets-nuextract-t15"
+    },
+    {
+      "slug": "nuextract-sroecker",
+      "ollama_model": "sroecker/nuextract-tiny-v1.5:latest",
+      "workflow_id": "prod-wf4-llm-datasets-nuextract-sroecker"
+    },
+    {
+      "slug": "gemma3-1b",
+      "ollama_model": "gemma3:1b",
+      "workflow_id": "prod-wf4-llm-datasets-gemma3-1b"
+    },
+    {
+      "slug": "llama32-1b-instruct",
+      "ollama_model": "Llama-3.2-1B-Instruct-Q4_K_M:latest",
+      "workflow_id": "prod-wf4-llm-datasets-llama32-1b-instruct",
+      "ollama_format": "json",
+      "num_predict": 1024
+    },
+    {
+      "slug": "lfm2-12b-extract",
+      "ollama_model": "LFM2-1.2B-Extract-Q4_K_M:latest",
+      "workflow_id": "prod-wf4-llm-datasets-lfm2-12b-extract",
+      "ollama_format": "json",
+      "num_predict": 1024
+    },
+    {
+      "slug": "qwen35-08b",
+      "ollama_model": "Qwen3.5-0.8B-Q4_K_M:latest",
+      "workflow_id": "prod-wf4-llm-datasets-qwen35-08b",
+      "ollama_format": "json",
+      "num_predict": 1024
+    }
+  ]
+}

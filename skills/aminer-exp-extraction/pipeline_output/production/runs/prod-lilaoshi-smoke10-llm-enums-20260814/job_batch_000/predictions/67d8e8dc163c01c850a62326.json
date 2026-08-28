@@ -1,0 +1,177 @@
+{
+  "paper_id": "67d8e8dc163c01c850a62326",
+  "paper_title": "SuperBPE: Space Travel for Language Models",
+  "workflow_id": "prod-wf4-llm-datasets-experiment",
+  "workflow_version": "0.6.3-wf4-lilaoshi-llm-enums",
+  "run_id": "prod-lilaoshi-smoke10-llm-enums-20260814/job_batch_000",
+  "dry_run": false,
+  "experiments": [
+    {
+      "_id": "",
+      "paper_id": "67d8e8dc163c01c850a62326",
+      "experiment_name": "SuperBPE: Space Travel for Language Models",
+      "research_goal": "To improve tokenization efficiency and semantic representation in language models, particularly for handling multi-word expressions and whitespace bridging.",
+      "experiment_subject": [
+        "tokenization",
+        "language models",
+        "semantic representation"
+      ],
+      "methods": [
+        {
+          "name": "SuperBPE",
+          "description": "A tokenization algorithm that uses a pretokenization curriculum to learn subwords and superwords, improving encoding efficiency and semantic representation.",
+          "aliases": []
+        }
+      ],
+      "datasets": [
+        {
+          "name": "OLMO2",
+          "aliases": [],
+          "dataset_type": "text",
+          "description": "A pretraining corpus used for training the models, containing a subset of the OLMO2 pretraining mix.",
+          "sample_size": null,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": [],
+          "confidence": 0.57252,
+          "confidence_breakdown": {
+            "frequency": 0.747222,
+            "usage": 1.0,
+            "identifier": 0.0,
+            "completeness": 0.571429,
+            "c0": 0.57252,
+            "mention_matched": true,
+            "identifier_hit": false,
+            "fake_identifier": true,
+            "raw_count": 5
+          }
+        }
+      ],
+      "sample_size": null,
+      "metrics": [
+        "tokenization efficiency",
+        "downstream task performance"
+      ],
+      "key_results": [
+        "SuperBPE achieves 33% fewer tokens than BPE for fixed text when using 200k vocabulary size.",
+        "SuperBPE improves downstream task performance by 4.0% on average.",
+        "SuperBPE outperforms BPE in 25 out of 30 tasks, with the largest gains in multiple-choice tasks."
+      ],
+      "conclusion": "SuperBPE builds on the natural observation that tokens need not be limited to subwords, extending the BPE algorithm to superword tokens. When replacing subword BPE tokenizers with SuperBPE tokenizers in pretraining, we find that language models achieve better performance over a large suite of downstream tasks, while also being substantially more efficient at inference time. These benefits are achieved without modifying the underlying model architecture, making SuperBPE a compelling alternative to BPE that seamlessly integrates with modern language model ecosyste.",
+      "limitations": "SuperBPE builds on the natural observation that tokens need not be limited to subwords, extending the BPE algorithm to superword tokens. When replacing subword BPE tokenizers with SuperBPE tokenizers in pretraining, we find that language models achieve better performance over a large suite of downstream tasks, while also being substantially more efficient at inference time.",
+      "evidence": [
+        "The SuperBPE model outperforms the baseline on 25 out of 30 tasks, while also requiring $2 7 \\%$ less compute at inference time.",
+        "This brings dramatic improvements in encoding efficiency: when fixing the vocabulary size to $2 0 0 \\mathbf { k } ,$ SuperBPE encodes a fixed piece of text with up to $3 3 \\%$ fewer tokens than BPE on average.",
+        "Language models are few-shot learners.",
+        "4 9$ for our most efficient tokenizer.) Table 5: Performance of BPE and SuperBPE models on 30 downstream tasks."
+      ],
+      "domain": "computer_science",
+      "experiment_type": "empirical_study",
+      "experiment_history": [],
+      "score": null
+    }
+  ],
+  "provenance": [
+    {
+      "extraction_sources": {
+        "experiment_name": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_problem": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_goal": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_subject": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "methods": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "key_results": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "metrics": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "datasets": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "paper_id": {
+          "extractor_id": "meta.paper_id",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "_id": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "experiment_history": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "score": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "conclusion": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "limitations": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "sample_size": {
+          "extractor_id": "rules.sample_size_policy_wf4",
+          "version": "0.1.0-wf4",
+          "status": "ok"
+        },
+        "evidence": {
+          "extractor_id": "rules.evidence",
+          "version": "v4_clean_mswr",
+          "status": "ok"
+        },
+        "domain": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_type": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        }
+      },
+      "experimental": true
+    }
+  ],
+  "research_problem": "Tokenization efficiency and semantic representation in language models",
+  "research_problem_description": "The problem of improving tokenization efficiency and semantic representation in language models, particularly in handling multi-word expressions and whitespace bridging, is critical for enhancing model performance and computational efficiency.",
+  "research_problem_aliases": []
+}

@@ -1,0 +1,286 @@
+{
+  "field_name": "experiment_type",
+  "accuracy": 0.5588235294117647,
+  "n_samples": 340,
+  "n_classes": 12,
+  "classes": [
+    "ablation",
+    "benchmark",
+    "case_study",
+    "comparison",
+    "data_analysis",
+    "empirical_study",
+    "field_study",
+    "human_study",
+    "lab_experiment",
+    "other",
+    "simulation",
+    "survey"
+  ],
+  "per_class_metrics": {
+    "ablation": {
+      "accuracy": 0.868421052631579,
+      "precision": 0.75,
+      "recall": 0.868421052631579,
+      "f1": 0.8048780487804879,
+      "support": 38
+    },
+    "benchmark": {
+      "accuracy": 0.6041666666666666,
+      "precision": 0.5686274509803921,
+      "recall": 0.6041666666666666,
+      "f1": 0.5858585858585859,
+      "support": 96
+    },
+    "case_study": {
+      "accuracy": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 1
+    },
+    "comparison": {
+      "accuracy": 0.4,
+      "precision": 0.5405405405405406,
+      "recall": 0.4,
+      "f1": 0.45977011494252873,
+      "support": 100
+    },
+    "data_analysis": {
+      "accuracy": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 3
+    },
+    "empirical_study": {
+      "accuracy": 0.4444444444444444,
+      "precision": 0.4827586206896552,
+      "recall": 0.4444444444444444,
+      "f1": 0.4628099173553719,
+      "support": 63
+    },
+    "field_study": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 1
+    },
+    "human_study": {
+      "accuracy": 1.0,
+      "precision": 0.6666666666666666,
+      "recall": 1.0,
+      "f1": 0.8,
+      "support": 4
+    },
+    "lab_experiment": {
+      "accuracy": 1.0,
+      "precision": 0.6,
+      "recall": 1.0,
+      "f1": 0.75,
+      "support": 3
+    },
+    "other": {
+      "accuracy": 0.6666666666666666,
+      "precision": 0.3333333333333333,
+      "recall": 0.6666666666666666,
+      "f1": 0.4444444444444444,
+      "support": 3
+    },
+    "simulation": {
+      "accuracy": 0.5454545454545454,
+      "precision": 0.20689655172413793,
+      "recall": 0.5454545454545454,
+      "f1": 0.3,
+      "support": 11
+    },
+    "survey": {
+      "accuracy": 0.8823529411764706,
+      "precision": 1.0,
+      "recall": 0.8823529411764706,
+      "f1": 0.9375,
+      "support": 17
+    }
+  },
+  "confusion_matrix": [
+    [
+      33,
+      0,
+      0,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0
+    ],
+    [
+      1,
+      58,
+      0,
+      16,
+      0,
+      12,
+      0,
+      2,
+      1,
+      1,
+      5,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0
+    ],
+    [
+      5,
+      32,
+      0,
+      40,
+      0,
+      14,
+      0,
+      0,
+      0,
+      1,
+      8,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      1,
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      4,
+      11,
+      0,
+      11,
+      0,
+      28,
+      0,
+      0,
+      1,
+      2,
+      6,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      4,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      3,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2,
+      1,
+      0
+    ],
+    [
+      1,
+      1,
+      0,
+      1,
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      6,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      15
+    ]
+  ],
+  "error_count": 150,
+  "error_rate": 0.4411764705882353,
+  "confidence_stats": {
+    "mean": 0.2386971278074384,
+    "min": 0.147246515129066,
+    "max": 0.7993553735995209,
+    "n_below_0_5": 324,
+    "n_below_0_7": 336,
+    "n_below_0_9": 340
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "strategy_id": "vF",
+  "strategy_name": "limitations--策略F--预处理vE（删除Introduction/References）",
+  "test_time": "2026-07-02T10:17:32.313999",
+  "batch": "dev_10",
+  "papers": [
+    {
+      "paper_id": "5b1643ba8fbcbf6e5a9bc884",
+      "gold": "由于隐私问题，公开可用的训练数据库大多从名人的照片中收集，与日常生活中捕获的图像相去甚远。",
+      "rule": null,
+      "success": false
+    },
+    {
+      "paper_id": "627c6cfe5aee126c0f83214c",
+      "gold": "Current datasets and evaluation metrics are not sufficient to achieve diverse and detailed captioning. Current AAC models are found only to describe the main sound events with few details. Conventional metrics correlate badly with human judgments.",
+      "rule": null,
+      "success": false
+    },
+    {
+      "paper_id": "62fdae3890e50fcafdd6387b",
+      "gold": "Despite its robustness under limited supervision, L_CC applies weaker supervision than L_NCE. It means for fully-labeled scenarios with reliable human labels, the traditional InfoNCE loss will likely outperform the proposed loss function.",
+      "rule": "Contrastive learning [MATH] is more susceptible to noisy pseudo labels than our method [MATH] Both methods promote or punish feature similarities with pseudo labels as supervision signals (. 3 and Section 3.2.3), but have different sensitivities to pseudo label noise. Suppose we have a pair of pixels that are incorrectly assigned with slightly different pseudo labels.",
+      "success": true
+    },
+    {
+      "paper_id": "6632f3d201d2a3fbfc5b36bb",
+      "gold": "Accuracy values in black box methods are higher than the proposed KG models.",
+      "rule": "Despite the progress exhibited in the current work, a number of improvements are envisaged with a view to extending and testing the predictive capabilities in new use cases, such as: 1) near-miss (or crash) lane change maneuvers, and 2) occluded children on urban scenarios. Similarly, further research is necessary for getting to understand road users’ behaviors in a more holistic manner, especially in cross-cultural settings.",
+      "success": true
+    },
+    {
+      "paper_id": "63b63fca90e50fcafd8f4461",
+      "gold": "There is a domain gap between the manually degraded low-quality dataset and the dataset based on the surveillance scenes, resulting in CQIL not being able to take full advantage of encoders trained on low-quality data in real surveillance scenes.",
+      "rule": "In addition, we propose a Contrastive Quality-Invariance Learning (CQIL) network to recover image information using super-resolution and enhance the robustness of the algorithm to quality variations by fitting the quality variance distribution. Finally, we conduct comprehensive experiments on SuHiFiMask and three other datasets to verify the importance of the datasets for the FAS task and the effectiveness of the proposed method.",
+      "success": true
+    },
+    {
+      "paper_id": "659b6a62939a5f4082e8e6d7",
+      "gold": "All methods were pre-trained on ImageNet-21k and fine-tuned on ImageNet-1k, which may have had some influence on the results to varying degrees.",
+      "rule": "He served as a program chair of the workshop and challenge on “Out-of-Distribution Generalization in Computer Vision” at ECCV’22. He served as a reviewer for CVPR, Neurips, and ICML.",
+      "success": true
+    },
+    {
+      "paper_id": "53e9a3fbb7602d9702d13e26",
+      "gold": "CSDN may generate poor completion results when the partial point cloud lacks the main body and the assembled image has very low resolution. It relies on the dual-domain training dataset.",
+      "rule": "Zhu, âBottom-up/top-down image parsing with attribute grammar,â IEEE transactions on pattern analysis and machine intelligence, vol. 31, no.",
+      "success": true
+    },
+    {
+      "paper_id": "661ddba813fb2c6cf6b5d7e6",
+      "gold": "The methods are limited by perception, specifically how the scene graph is created. Perfect perception was assumed in creating the scene graph in the simulator, and alternate approaches without this assumption would produce weaker results.",
+      "rule": "Manocha, “Efficient generation of motion plans from attribute-based natural language instructions using dynamic constraint mapping,” in 2019 International Conference on Robotics and Automation (ICRA). IEEE, 2019, pp.",
+      "success": true
+    },
+    {
+      "paper_id": "64f00ff43fda6d7f06ececda",
+      "gold": "Only a small percentage of examples in the datasets require images for correct translation, preventing models from getting proper training signals to use multimodal information effectively. The improvements achieved with actual images can also be achieved with random images, indicating the model uses visual features as noise rather than complementary useful information.",
+      "rule": "However, we found that the improvements were not due to useful information from the images, as we achieved similar results with random image features. We show that the models need to use images more effectively, even when noise is introduced in the text, making it less adequate.",
+      "success": true
+    }
+  ],
+  "summary": {
+    "total": 9,
+    "success": 7,
+    "fail": 2,
+    "success_rate": 0.7777777777777778
+  }
+}

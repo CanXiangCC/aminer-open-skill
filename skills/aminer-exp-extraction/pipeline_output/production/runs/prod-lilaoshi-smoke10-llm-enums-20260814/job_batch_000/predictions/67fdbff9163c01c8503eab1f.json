@@ -1,0 +1,185 @@
+{
+  "paper_id": "67fdbff9163c01c8503eab1f",
+  "paper_title": "CodeRAG: Supportive Code Retrieval on Bigraph for Real-World Code Generation",
+  "workflow_id": "prod-wf4-llm-datasets-experiment",
+  "workflow_version": "0.6.3-wf4-lilaoshi-llm-enums",
+  "run_id": "prod-lilaoshi-smoke10-llm-enums-20260814/job_batch_000",
+  "dry_run": false,
+  "experiments": [
+    {
+      "_id": "",
+      "paper_id": "67fdbff9163c01c8503eab1f",
+      "experiment_name": "Ablation Study on CodeRAG Components",
+      "research_goal": "To determine the contribution of each component in CodeRAG to the overall performance in real-world code generation.",
+      "experiment_subject": [
+        "Real-world code generation",
+        "Code retrieval",
+        "Code generation"
+      ],
+      "methods": [
+        {
+          "name": "Code Anchor",
+          "description": "A component that serves as a reference point for retrieving supportive codes, enabling adaptive reasoning during code generation.",
+          "aliases": []
+        },
+        {
+          "name": "Web Search",
+          "description": "A component that retrieves external knowledge through web search, enhancing the LLM's ability to generate correct programs.",
+          "aliases": []
+        }
+      ],
+      "datasets": [
+        {
+          "name": "DevEval",
+          "aliases": [
+            "DevEval"
+          ],
+          "dataset_type": "code",
+          "description": "A representative repo-level code generation dataset that aligns with real-world repositories in multiple dimensions, including code distributions and dependency distributions.",
+          "sample_size": 1825,
+          "is_public": true,
+          "is_self_collected": false,
+          "urls": [],
+          "github_urls": [],
+          "doi_list": [],
+          "cstr_list": [],
+          "confidence": 0.678571,
+          "confidence_breakdown": {
+            "frequency": 1.0,
+            "usage": 1.0,
+            "identifier": 0.0,
+            "completeness": 0.857143,
+            "c0": 0.678571,
+            "mention_matched": true,
+            "identifier_hit": false,
+            "fake_identifier": true,
+            "raw_count": 13
+          }
+        }
+      ],
+      "sample_size": null,
+      "metrics": [
+        "Pass@1"
+      ],
+      "key_results": [
+        "The code anchor component significantly improves retrieval accuracy, as Pass@1 increases by 6.31 points.",
+        "The web search component contributes 0.29 Pass@1 improvement, demonstrating its utility in providing external knowledge."
+      ],
+      "conclusion": "It maps these requirement nodes into code nodes on DS-code graph, where these code nodes are treated as anchors. CODERAG then introduce an agentic process, allowing LLMs to comprehensively retrieve supportive codes through reasoning from these anchors on DS-code graph. Experiments show that CODERAG achieves a significant improvement compared to advanced RAG methods and commercial programming products, highlighting its potential in real-world coding challenges.",
+      "limitations": "",
+      "evidence": [
+        "WebSearch) results in 0.29 Pass@1 decreasing (from 58.14 to 57.85), demonstrating that the websearch tool can bring useful information to LLMs.",
+        "GraphReason) lead to a significant degradation in performance, with Pass@1 decreasing by 6.31 points (from 58.14 to 51.83).",
+        "How do different components in CODERAG contribute to performance improvement?"
+      ],
+      "domain": "computer_science",
+      "experiment_type": "ablation",
+      "experiment_history": [],
+      "score": null
+    }
+  ],
+  "provenance": [
+    {
+      "extraction_sources": {
+        "experiment_name": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_problem": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "research_goal": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_subject": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "methods": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "key_results": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "metrics": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "datasets": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "paper_id": {
+          "extractor_id": "meta.paper_id",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "_id": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "experiment_history": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "score": {
+          "extractor_id": "meta.placeholder",
+          "version": "0.1.0",
+          "status": "ok"
+        },
+        "conclusion": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "limitations": {
+          "extractor_id": "rules.conclusion_limitations",
+          "version": "v5_layered+vK_enhanced_filter",
+          "status": "ok"
+        },
+        "sample_size": {
+          "extractor_id": "rules.sample_size_policy_wf4",
+          "version": "0.1.0-wf4",
+          "status": "ok"
+        },
+        "evidence": {
+          "extractor_id": "rules.evidence",
+          "version": "v4_clean_mswr",
+          "status": "ok"
+        },
+        "domain": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        },
+        "experiment_type": {
+          "extractor_id": "llm.wf4_dev20_v2_wash_datasets",
+          "version": "0.6.3-wf4-lilaoshi-llm-enums",
+          "status": "ok"
+        }
+      },
+      "experimental": true
+    }
+  ],
+  "research_problem": "Real-world code generation",
+  "research_problem_description": "Real-world code generation involves retrieving supportive codes for generating correct programs, which is challenging due to complex dependencies and domain knowledge. The paper addresses the need for a retrieval-augmented code generation framework to handle these complexities.",
+  "research_problem_aliases": [
+    "Code Retrieval",
+    "Code Generation",
+    "Retrieval-Augmented Code Generation"
+  ]
+}

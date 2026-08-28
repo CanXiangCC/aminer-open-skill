@@ -1,0 +1,68 @@
+{
+  "strategy_id": "vC",
+  "strategy_name": "limitations--策略C--Conclusion末尾找",
+  "test_time": "2026-07-01T20:09:13.634722",
+  "batch": "dev_10",
+  "papers": [
+    {
+      "paper_id": "5b1643ba8fbcbf6e5a9bc884",
+      "gold": "由于隐私问题，公开可用的训练数据库大多从名人的照片中收集，与日常生活中捕获的图像相去甚远。",
+      "rule": null,
+      "success": false
+    },
+    {
+      "paper_id": "627c6cfe5aee126c0f83214c",
+      "gold": "Current datasets and evaluation metrics are not sufficient to achieve diverse and detailed captioning. Current AAC models are found only to describe the main sound events with few details. Conventional metrics correlate badly with human judgments.",
+      "rule": "Datasets and evaluation metrics along with their characteristics and shortcomings are discussed. Although remarkable progress has been achieved, the current AAC system outputs are far from accurate, detailed, diverse and useful to humans.",
+      "success": true
+    },
+    {
+      "paper_id": "62fdae3890e50fcafdd6387b",
+      "gold": "Despite its robustness under limited supervision, L_CC applies weaker supervision than L_NCE. It means for fully-labeled scenarios with reliable human labels, the traditional InfoNCE loss will likely outperform the proposed loss function.",
+      "rule": "Limitation. Despite its robustness under limited supervision (see Section 4.3), [MATH] applies weaker supervision than [MATH] .",
+      "success": true
+    },
+    {
+      "paper_id": "6632f3d201d2a3fbfc5b36bb",
+      "gold": "Accuracy values in black box methods are higher than the proposed KG models.",
+      "rule": "Finally, explainable descriptions of the behavioral predictions have been implemented using Retrieval Augmented Generation Techniques (RAG), as a means to combine the reasoning ability of Knowledge Graphs and the expressive capacity of Large Language Models. Despite the progress exhibited in the current work, a number of improvements are envisaged with a view to extending and testing the predictive capabilities in new use cases, such as: 1) near-miss (or crash) lane change maneuvers, and 2) occluded children on urban scenarios.",
+      "success": true
+    },
+    {
+      "paper_id": "63b63fca90e50fcafd8f4461",
+      "gold": "There is a domain gap between the manually degraded low-quality dataset and the dataset based on the surveillance scenes, resulting in CQIL not being able to take full advantage of encoders trained on low-quality data in real surveillance scenes.",
+      "rule": "We hope that this will fill the gap in FAS research in long-distance surveillance scenes. In addition, we propose a Contrastive Quality-Invariance Learning (CQIL) network to recover image information using super-resolution and enhance the robustness of the algorithm to quality variations by fitting the quality variance distribution.",
+      "success": true
+    },
+    {
+      "paper_id": "659b6a62939a5f4082e8e6d7",
+      "gold": "All methods were pre-trained on ImageNet-21k and fine-tuned on ImageNet-1k, which may have had some influence on the results to varying degrees.",
+      "rule": "In our work, we focus on the critical aspect of effective outof-distribution (OOD) detection, which involves acquiring a robust in-distribution (ID) representation that distinguishes it from OOD samples.",
+      "success": true
+    },
+    {
+      "paper_id": "53e9a3fbb7602d9702d13e26",
+      "gold": "CSDN may generate poor completion results when the partial point cloud lacks the main body and the assembled image has very low resolution. It relies on the dual-domain training dataset.",
+      "rule": "Our work has revealed that the fusion of features from cross-modalities facilitates the generation of reliable geometries to complete partial point clouds. This benefits from the fact that features learned from images not only constrain the generation of the overall shape of an object but also help to refine its local details, indicating the potential of using images to recover finer geometry of objects from partial point clouds.",
+      "success": true
+    },
+    {
+      "paper_id": "661ddba813fb2c6cf6b5d7e6",
+      "gold": "The methods are limited by perception, specifically how the scene graph is created. Perfect perception was assumed in creating the scene graph in the simulator, and alternate approaches without this assumption would produce weaker results.",
+      "rule": "Yan, and A. Zeng, “Do as i can and not as i say: Grounding language in robotic affordances,” in arXiv preprint arXiv:2204.01691, 2022.",
+      "success": true
+    },
+    {
+      "paper_id": "64f00ff43fda6d7f06ececda",
+      "gold": "Only a small percentage of examples in the datasets require images for correct translation, preventing models from getting proper training signals to use multimodal information effectively. The improvements achieved with actual images can also be achieved with random images, indicating the model uses visual features as noise rather than complementary useful information.",
+      "rule": "This indicates that the impact of visual features increases with an increment in the source text’s noise level. However, we found that the improvements were not due to useful information from the images, as we achieved similar results with random image features.",
+      "success": true
+    }
+  ],
+  "summary": {
+    "total": 9,
+    "success": 8,
+    "fail": 1,
+    "success_rate": 0.8888888888888888
+  }
+}
