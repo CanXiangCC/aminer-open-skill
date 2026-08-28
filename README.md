@@ -39,7 +39,8 @@ A typical workflow moves from finding literature, to understanding a paper's sou
 | Skill | Use it when you want to | Token | Guide |
 | --- | --- | --- | --- |
 | `paper-source-trace` | Trace a paper's key claims to its citation contexts and sources, then generate evidence reports and citation maps | Optional; only needed for AMiner enrichment | [SKILL.md](skills/paper-source-trace/SKILL.md) / [Usage guide](skills/paper-source-trace/README.md) |
-| `aminer-pdf-ocr` | Convert a paper PDF to Markdown and extract structured experiment methods, datasets, and metrics | Required | [SKILL.md](skills/aminer-pdf-ocr/SKILL.md) |
+| `aminer-pdf-ocr` | Convert a paper PDF to Markdown via the AMiner PDF OCR service, then have the Agent extract experiment methods, datasets, and metrics with the built-in prompt | Required | [SKILL.md](skills/aminer-pdf-ocr/SKILL.md) |
+| `aminer-exp-extraction` | Extract structured experiment JSON (methods, datasets, metrics, key results) from paper Markdown via a deterministic two-stage GLM pipeline (sentence filter + extraction); if you only have a PDF, run `aminer-pdf-ocr` first to get the Markdown | Requires `BIGMODEL_API_KEY` (Zhipu BigModel); no AMiner token needed | [SKILL.md](skills/aminer-exp-extraction/SKILL.md) |
 
 ### ✅ Verify citations
 
@@ -114,12 +115,14 @@ The following prompts can be used directly after the corresponding Skill is inst
 | Produce a sourced research report | "Research the Chinese LLM industry and write a cited report with an evidence ledger backing every claim." | `deep-research` |
 | Trace a paper's sources | "Analyze this PDF. Trace each key claim to its citation context and source, explain the citation intent, and generate the Markdown, JSON, SVG, and HTML outputs." | `paper-source-trace` |
 | Parse a PDF and extract experiments | "OCR this paper PDF, convert it to Markdown, and extract the experiment methods, datasets, and metrics as JSON." | `aminer-pdf-ocr` |
+| Extract experiments from Markdown | "Read this paper's Markdown file and extract the experiment methods, datasets, metrics, and key results as one JSON file." | `aminer-exp-extraction` |
 | Detect fabricated references | "Check every reference in this paper PDF and flag entries that are missing, suspicious, or need manual review." | `pdf-citation-verifier` |
 | Check citation faithfulness | "For each in-text citation in this paper, retrieve the cited source and determine whether the surrounding claim is supported by the original text." | `citation-faithfulness` |
 
 ## Notes
 
 - Never print, log, or commit `AMINER_API_KEY`.
+- `aminer-exp-extraction` calls the Zhipu BigModel API instead: set `BIGMODEL_API_KEY` for it (`OPENAI_API_KEY` accepted as fallback). It never uses the AMiner token.
 - Free AMiner APIs still require a token. Start with `aminer-free-academic` before using paid APIs.
 - Some tasks may incur API charges. Review the estimated cost before approving large searches or expensive calls.
 - The setup tools under `tools/` configure local chat sessions only. Set the token separately for OpenClaw, CLI, CI, and scheduled jobs.

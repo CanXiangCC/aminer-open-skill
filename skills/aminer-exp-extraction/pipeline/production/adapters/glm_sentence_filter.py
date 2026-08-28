@@ -25,7 +25,9 @@ FILTER_SYSTEM_PROMPT = (
     "about the research problem, methods, datasets, evaluation metrics, "
     "experimental setup, quantitative results, conclusions, or limitations "
     "score high. Background, related work, author/affiliation info, "
-    "acknowledgements, and references score low. Output JSON only."
+    "acknowledgements, and references score low. "
+    "Work FAST: one short judgement per sentence, no deep analysis, "
+    "minimal reasoning. Output JSON only."
 )
 
 
@@ -34,14 +36,12 @@ def build_filter_prompt(paper_title: str, sentences: list[str]) -> str:
     lines = [f"{i}. {s}" for i, s in enumerate(sentences)]
     return (
         f"Paper title: {paper_title}\n\n"
-        "Below is a numbered list of sentences from this paper "
-        "(indices start at 0). Score each sentence's experiment relevance "
-        "from 0.0 to 1.0.\n"
-        "Return exactly one JSON object of the form "
-        '{"kept": [{"i": <index>, "score": <float>}, ...]} listing ONLY the '
-        "sentences with score >= 0.6, ordered by ascending index. "
-        "If no sentence qualifies, return {\"kept\": []}. "
-        "No other text.\n\n"
+        "Numbered sentences from this paper (indices start at 0). Score each "
+        "one's experiment relevance 0.0-1.0.\n"
+        "Return ONE compact JSON object: "
+        '{"kept": [[<index>, <score>], ...]} listing ONLY entries with '
+        "score >= 0.6, ascending index, no spaces beyond necessities. "
+        'If none qualifies: {"kept": []}. No other text, no explanation.\n\n'
         "Sentences:\n" + "\n".join(lines)
     )
 

@@ -145,16 +145,85 @@ def extract_paper(
     }
 
 
-def download_md(paper_id: str, md_url: str, cache_dir: Path, timeout: int = 60) -> Path:
-    """Download a paper md by URL into cache_dir/<paper_id>.md (skip if cached)."""
+# Public-URL guard for --csv downloads (same policy as aminer-pdf-ocr's
+# url_guard): http(s) only, host must resolve to public addresses, every
+# redirect hop re-validated, response size capped.
+MAX_REDIRECTS = 5
+MD_MAX_BYTES = 32 * 1024 * 1024  # far above any paper markdown
+
+
+class UrlGuardError(ValueError):
+    """A --csv md_url points at a non-public or malformed target."""
+
+
+def assert_public_http_url(url: str) -> None:
+    """Allow only http(s) URLs whose host resolves to public addresses."""
+    import ipaddress
+    import socket
+    from urllib.parse import urlparse
+
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"}:
+        raise UrlGuardError("only http(s) URLs are allowed")
+    host = (parsed.hostname or "").strip("[]")
+    if not host:
+        raise UrlGuardError("URL is missing a hostname")
+    lowered = host.lower()
+    if lowered in {"localhost", "metadata.google.internal"} or lowered.endswith(".localhost"):
+        raise UrlGuardError("refusing to fetch a local or metadata host")
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except socket.gaierror as exc:
+        raise UrlGuardError(f"cannot resolve host {host}: {exc}") from exc
+    for info in infos or []:
+        ip = ipaddress.ip_address(info[4][0])
+        if (ip.is_private or ip.is_loopback or ip.is_link_local
+                or ip.is_reserved or ip.is_multicast or ip.is_unspecified):
+            raise UrlGuardError("refusing to fetch a private or local URL")
+
+
+def fetch_public_text(url: str, *, timeout: float, max_bytes: int = MD_MAX_BYTES) -> str:
+    """GET a public URL as utf-8 text; redirects re-validated, size-capped."""
+    from urllib.parse import urljoin
+
     import requests
 
+    current = url
+    for _ in range(MAX_REDIRECTS):
+        assert_public_http_url(current)
+        resp = requests.get(current, timeout=timeout, allow_redirects=False, stream=True)
+        try:
+            if resp.is_redirect or resp.is_permanent_redirect:
+                location = resp.headers.get("Location")
+                if not location:
+                    raise UrlGuardError("redirect is missing Location")
+                current = urljoin(current, location)
+                continue
+            resp.raise_for_status()
+            chunks: list[bytes] = []
+            total = 0
+            for chunk in resp.iter_content(8192):
+                if not chunk:
+                    continue
+                total += len(chunk)
+                if total > max_bytes:
+                    raise UrlGuardError(f"download exceeds {max_bytes} bytes")
+                chunks.append(chunk)
+            return b"".join(chunks).decode("utf-8", errors="replace")
+        finally:
+            resp.close()
+    raise UrlGuardError("too many redirects")
+
+
+def download_md(paper_id: str, md_url: str, cache_dir: Path, timeout: int = 60) -> Path:
+    """Download a paper md by URL into cache_dir/<paper_id>.md (skip if cached).
+
+    Refuses non-http(s), localhost/private-network, and metadata-host URLs.
+    """
     target = cache_dir / f"{paper_id}.md"
     if target.exists() and target.stat().st_size > 0:
         return target
-    resp = requests.get(md_url, timeout=timeout)
-    resp.raise_for_status()
-    target.write_text(resp.text, encoding="utf-8")
+    target.write_text(fetch_public_text(md_url, timeout=timeout), encoding="utf-8")
     return target
 
 
@@ -183,7 +252,7 @@ def main() -> int:
     ap.add_argument("-o", "--output", type=Path, help="output JSON path (single mode)")
     ap.add_argument("-o-dir", "--output-dir", type=Path, help="output dir (batch mode)")
     ap.add_argument("--llm-url", default=None, help="LLM chat URL (env LLM_CHAT_URL, default Zhipu BigModel)")
-    ap.add_argument("--llm-model", default=None, help="LLM model id (env LLM_MODEL, default glm-5.3)")
+    ap.add_argument("--llm-model", default=None, help="LLM model id (env LLM_MODEL, default glm-5.3-flash)")
     ap.add_argument("--request-timeout", type=int, default=180)
     args = ap.parse_args()
 

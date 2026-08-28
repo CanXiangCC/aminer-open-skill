@@ -39,7 +39,8 @@
 | Skill | 适合完成的任务 | Token 要求 | 使用说明 |
 | --- | --- | --- | --- |
 | `paper-source-trace` | 将论文关键论点追踪到引用上下文和来源，并生成证据报告与引用图 | 可选；仅在使用 AMiner 增强时需要 | [SKILL.zh.md](skills/paper-source-trace/SKILL.zh.md) / [使用说明](skills/paper-source-trace/README_zh.md) |
-| `aminer-pdf-ocr` | 将论文 PDF 转为 Markdown，并抽取结构化实验方法、数据集与指标 | 必须配置 | [SKILL.zh.md](skills/aminer-pdf-ocr/SKILL.zh.md) |
+| `aminer-pdf-ocr` | 将论文 PDF 提交 AMiner PDF OCR 服务转为 Markdown，再由 Agent 按内置提示词抽取实验方法、数据集与指标 | 必须配置 | [SKILL.zh.md](skills/aminer-pdf-ocr/SKILL.zh.md) |
+| `aminer-exp-extraction` | 从论文 Markdown 出发，用固定脚本的两阶段 GLM 流水线（句子过滤 + 结构化抽取）产出方法/数据集/指标/关键结果 JSON；如果只有 PDF，先用 `aminer-pdf-ocr` 转出 Markdown | 需要 `BIGMODEL_API_KEY`（智谱 BigModel）；不需要 AMiner Token | [SKILL.md](skills/aminer-exp-extraction/SKILL.md) |
 
 ### ✅ 核验引用
 
@@ -114,12 +115,14 @@ openclaw config set env.vars.AMINER_API_KEY "<YOUR_TOKEN>"
 | 产出带出处的研究报告 | “调研中国大模型行业，写一份带引用的报告，每个论断都有证据台账支撑。” | `deep-research` |
 | 追踪论文来源 | “分析这篇 PDF，将每个关键论点追踪到引用上下文和来源，解释引用意图，并生成 Markdown、JSON、SVG 和 HTML 产物。” | `paper-source-trace` |
 | 解析 PDF 并抽取实验 | “把这篇论文 PDF 转成 Markdown，并抽取实验方法、数据集和指标的 JSON。” | `aminer-pdf-ocr` |
+| 从 Markdown 抽取实验 | “读取这篇论文的 Markdown 文件，抽取实验方法、数据集、指标和关键结果，输出为一个 JSON 文件。” | `aminer-exp-extraction` |
 | 识别虚假参考文献 | “核验这篇论文 PDF 中的所有参考文献，标出不存在、可疑或需要人工复核的条目。” | `pdf-citation-verifier` |
 | 核查引用忠实性 | “逐条检查这篇论文的正文引用，获取被引来源，并判断上下文中的论断是否得到原文支持。” | `citation-faithfulness` |
 
 ## 注意事项
 
 - 不要打印、记录或提交 `AMINER_API_KEY`。
+- `aminer-exp-extraction` 调用的是智谱 BigModel API：请为它配置 `BIGMODEL_API_KEY`（可回退 `OPENAI_API_KEY`），它不使用 AMiner Token。
 - AMiner 免费接口仍需 Token。建议先用 `aminer-free-academic`，仅在必要时调用计费 API。
 - 部分任务会产生 API 费用。执行大规模检索或高成本调用前，应先查看预估成本。
 - `tools/` 下的配置工具只面向本地对话式环境。OpenClaw、CLI、CI 和定时任务需要单独配置。
