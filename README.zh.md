@@ -1,12 +1,12 @@
 # aminer-open-skill
 
-[![版本](https://img.shields.io/badge/version-1.11.0-0969da)](.claude-plugin/marketplace.json)
+[![版本](https://img.shields.io/badge/version-1.12.0-0969da)](.claude-plugin/marketplace.json)
 [![可用 Skill](https://img.shields.io/badge/available_skills-10-2da44e)](#选择-skill)
 [![许可证](https://img.shields.io/badge/license-MIT-6f42c1)](LICENSE)
 
 [English](README.md) | 中文
 
-面向 Claude Code、Codex、OpenClaw 等 AI 助手的 AMiner Skill 集，用于查找论文、构建阅读清单、追踪论文来源和核查引用。
+面向 Claude Code、Codex、OpenClaw 等 AI 助手的 AMiner Skill 集，用于查找论文、构建阅读清单与 Taxonomy、追踪论文来源和核查引用。
 
 - [🧰 选择 Skill](#选择-skill)
 - [🚀 快速开始](#快速开始)
@@ -27,6 +27,12 @@
 | `aminer-daily-paper` | 根据主题、学者、作者或 AMiner 账号获取个性化论文推荐 | 必须配置 | [SKILL.md](skills/aminer-daily-paper/SKILL.md) |
 | `aminer-deep-search` | 通过多轮检索、去重和引用扩展构建大规模综述文献集 | 必须配置 | [SKILL.zh.md](skills/aminer-deep-search/SKILL.zh.md) |
 | `deep-research` | 驱动固定研究循环，结合 AMiner 开放平台与宿主原生 web 工具，产出带引用的分层研究报告与可复用的 Evidence Ledger | 必须配置；免费优先，计费上限 ¥20 | [SKILL.zh.md](skills/deep-research/SKILL.zh.md) |
+
+### 🗂️ 整理论文集合
+
+| Skill | 适合完成的任务 | Token 要求 | 使用说明 |
+| --- | --- | --- | --- |
+| `scientific-taxonomy` | 根据已有论文标题与摘要生成层次化 Markdown Taxonomy | 可选；仅在需要 AMiner 补全元数据时使用 | [SKILL.md](skills/scientific-taxonomy/SKILL.md) |
 
 ### 🧭 分析与追踪论文
 
@@ -105,6 +111,7 @@ openclaw config set env.vars.AMINER_API_KEY "<YOUR_TOKEN>"
 | 检索结构化实验 | “返回这篇论文的原始 Experiment JSON，并按方法和数据集名称精确过滤。” | `aminer-academic-search` |
 | 获取聚焦阅读清单 | “推荐 8 篇关于工具调用型多模态智能体的论文，优先选择近期且高引用的工作。” | `aminer-daily-paper` |
 | 为综述收集文献 | “收集 200 篇检索增强生成方向的候选论文，从高质量种子论文继续扩展，去重后导出文献清单。” | `aminer-deep-search` |
+| 整理论文集合 | “把这些论文的标题和摘要组织成层次清晰的 Taxonomy，并保存为 taxonomy.md。” | `scientific-taxonomy` |
 | 产出带出处的研究报告 | “调研中国大模型行业，写一份带引用的报告，每个论断都有证据台账支撑。” | `deep-research` |
 | 追踪论文来源 | “分析这篇 PDF，将每个关键论点追踪到引用上下文和来源，解释引用意图，并生成 Markdown、JSON、SVG 和 HTML 产物。” | `paper-source-trace` |
 | 解析 PDF 并抽取实验 | “把这篇论文 PDF 转成 Markdown，并抽取实验方法、数据集和指标的 JSON。” | `aminer-pdf-ocr` |
