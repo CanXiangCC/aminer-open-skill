@@ -62,6 +62,12 @@
       "description": "PDF OCR 与结构化实验提取：将论文 PDF 提交至 AMiner 开放平台 PDF OCR 异步解析，产出全文 Markdown，并由 Agent 按内置提示词提取实验方法/数据集/指标等结构化信息",
       "source": "./skills/aminer-pdf-ocr",
       "strict": false
+    },
+    {
+      "name": "aminer-exp-extraction",
+      "description": "实验数据提取：论文 Markdown 经 SciBERT 句子过滤与 LLM 结构化抽取，输出方法/数据集/指标/关键结果 JSON（线上网关两个接口：/extraction/bert/filter/batch 与 /extraction/v1/chat/completions）",
+      "source": "./skills/aminer-exp-extraction",
+      "strict": false
     }
   ]
 }
