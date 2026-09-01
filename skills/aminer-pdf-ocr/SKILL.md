@@ -32,7 +32,7 @@ Options include `--output-dir`, `--request-timeout`, `--poll-timeout`, `--max-up
 ## API contract
 
 - Endpoints: `POST /api/v3/paper/pdfocr/upload` and `GET /api/v3/paper/pdfocr/result` on `https://datacenter.aminer.cn/gateway/open_platform`.
-- Upload and polling use the same token (`AMINER_API_KEY`) and send `Authorization` plus `X-Platform: openclaw`.
+- Upload and polling use the same token (`AMINER_API_KEY`) and send `Authorization`, `X-Platform` (current host: `claude-code` / `cursor` / `codex` / `openclaw`; `unknown` if it cannot be determined), `X-Skill-Name: aminer-pdf-ocr`, and `X-Skill-Version` (this file's frontmatter `version`).
 - Upload `code: 202` means queued, not completed. A reused upload may return `code: 200`; always use its returned `job_id`.
 - Do not use `success`, HTTP status, or `code` alone to decide success. Inspect `data.status` and `data.is_finish`.
 - `preparing`, `queued`, and `running` are polled. `success` downloads the ZIP. `failed`, `timeout`, `queue_timeout`, `expired`, and `unknown` stop.

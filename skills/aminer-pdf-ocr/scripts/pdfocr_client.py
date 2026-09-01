@@ -1,18 +1,65 @@
 """Client for the AMiner PDF OCR asynchronous open-platform API."""
 from __future__ import annotations
 
+import os
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable, Mapping
 from urllib.parse import urljoin
 
 import requests
 
 DEFAULT_BASE_URL = "https://datacenter.aminer.cn/gateway/open_platform/api/v3"
+SKILL_NAME = "aminer-pdf-ocr"
+SKILL_VERSION = "3.0.1"
 UPLOAD_PATH = "/paper/pdfocr/upload"
 RESULT_PATH = "/paper/pdfocr/result"
 TERMINAL_FAILURES = {"failed", "timeout", "queue_timeout", "expired"}
 ACTIVE_STATUSES = {"preparing", "queued", "running"}
+
+
+def detect_skill_runtime() -> str:
+    explicit = (os.environ.get("AMINER_SKILL_RUNTIME") or "").strip().lower().replace("_", "-")
+    if explicit:
+        return explicit
+    if os.environ.get("CLAUDE_CODE") or os.environ.get("CLAUDECODE") or os.environ.get("CLAUDE_PROJECT_DIR"):
+        return "claude-code"
+    if os.environ.get("CURSOR_TRACE_ID") or os.environ.get("CURSOR_AGENT"):
+        return "cursor"
+    if os.environ.get("CODEX_HOME") or os.environ.get("CODEX_CLI"):
+        return "codex"
+    if os.environ.get("OPENCLAW") or os.environ.get("OPENCLAW_HOME"):
+        return "openclaw"
+    return "unknown"
+
+
+def _skill_md_version(fallback: str) -> str:
+    path = Path(__file__).resolve().parents[1] / "SKILL.md"
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return fallback
+    if not text.startswith("---"):
+        return fallback
+    end = text.find("\n---", 3)
+    if end < 0:
+        return fallback
+    for line in text[3:end].splitlines():
+        key, sep, value = line.partition(":")
+        if sep and key.strip() == "version":
+            version = value.strip().strip("'\"")
+            if version:
+                return version
+    return fallback
+
+
+def skill_identity_headers() -> dict[str, str]:
+    return {
+        "X-Platform": detect_skill_runtime(),
+        "X-Skill-Name": SKILL_NAME,
+        "X-Skill-Version": _skill_md_version(SKILL_VERSION),
+    }
 
 
 class PdfOcrApiError(RuntimeError):
@@ -78,7 +125,7 @@ class PdfOcrClient:
 
     @property
     def _headers(self) -> dict[str, str]:
-        return {"Authorization": self.token, "X-Platform": "openclaw"}
+        return {"Authorization": self.token, **skill_identity_headers()}
 
     def _json(self, response: requests.Response) -> Mapping[str, Any]:
         try:

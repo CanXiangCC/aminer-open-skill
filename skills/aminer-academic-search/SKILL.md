@@ -56,7 +56,7 @@ Check `AMINER_API_KEY` exists before any API call. Never expose token in plain t
 
 - If `${AMINER_API_KEY}` exists: proceed. If not: check `--token` parameter. If neither: **stop**, guide user to [Console](https://open.aminer.cn/open/board?tab=control) to generate one.
 - If the user provides `AMINER_API_KEY` inline (e.g. "My token is xxx"), accept it for the current session, but recommend setting it as an environment variable for better security.
-- Default headers: `Authorization: ${AMINER_API_KEY}`, `X-Platform: openclaw`, `Content-Type: application/json;charset=utf-8` (POST).
+- Default headers: `Authorization: ${AMINER_API_KEY}`, `X-Platform` (current host: `claude-code` / `cursor` / `codex` / `openclaw`; `unknown` if it cannot be determined), `X-Skill-Name: aminer-academic-search`, `X-Skill-Version` (this file's frontmatter `version`), `Content-Type: application/json;charset=utf-8` (POST). Always send `X-Platform` and the two `X-Skill-*` headers.
 
 ---
 

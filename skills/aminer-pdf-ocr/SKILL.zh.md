@@ -32,7 +32,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/ocr.py" --input "/abs/path/to/paper.pdf"
 ## 接口约束
 
 - 接口：`POST /api/v3/paper/pdfocr/upload` 与 `GET /api/v3/paper/pdfocr/result`，基础域名为 `https://datacenter.aminer.cn/gateway/open_platform`。
-- 上传和轮询必须使用同一个 token（`AMINER_API_KEY`），并带上 `Authorization` 与 `X-Platform: openclaw`。
+- 上传和轮询必须使用同一个 token（`AMINER_API_KEY`），并带上 `Authorization`、`X-Platform`（当前宿主：`claude-code` / `cursor` / `codex` / `openclaw`；无法判断时为 `unknown`）、`X-Skill-Name: aminer-pdf-ocr`、`X-Skill-Version`（本文件 frontmatter 的 `version`）。
 - 上传 `code: 202` 只代表入队；复用任务可能是 `code: 200`，必须使用返回的 `job_id`。
 - 不能只看 `success`、HTTP 状态或 `code`；必须看 `data.status` 和 `data.is_finish`。
 - `preparing`、`queued`、`running` 继续轮询；`success` 下载 ZIP；`failed`、`timeout`、`queue_timeout`、`expired`、`unknown` 停止。

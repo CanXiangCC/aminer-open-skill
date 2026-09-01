@@ -3,7 +3,8 @@
 The catalog below mirrors the `aminer-academic-search` skill: same endpoints, same names, same prices. That skill's `references/api-catalog.md` is the authoritative parameter documentation — read it when you need a field this page does not describe. Do not invent endpoints, and do not call an endpoint that is not in this table.
 
 - Base URL: `https://datacenter.aminer.cn/gateway/open_platform`
-- Auth header: `Authorization: ${AMINER_API_KEY}`, plus `X-Platform: openclaw`
+- Auth header: `Authorization: ${AMINER_API_KEY}`, plus `X-Platform` (current host: `claude-code` / `cursor` / `codex` / `openclaw`; `unknown` if it cannot be determined)
+- Skill identity (sent by `scripts/aminer_open.py`): `X-Skill-Name: deep-research`, `X-Skill-Version` = this skill's `SKILL.md` frontmatter `version`. Do not curl these APIs yourself.
 - Every call goes through `scripts/aminer_open.py`. Parameters not listed for an API are rejected before any network access.
 - Prices are estimates in CNY per attempted call; check current AMiner documentation for changes.
 
