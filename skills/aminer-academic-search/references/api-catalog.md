@@ -1194,7 +1194,7 @@ curl -X GET \
 At least one of `paper_id`, `method`, `dataset_name`, or `search_text` must be non-empty.
 
 **`search_text` covers these indexed text fields:**
-`paper_title`, `experiment_name`, `research_problem`, `research_problem_description`, `research_goal`, `method`, `method_description`, `conclusion`, `limitations`, `key_results`.
+`paper_title`, `experiment_name`, `research_problem`, `research_problem_description`, `research_goal`, method name/description text, `conclusion`, `limitations`, `key_results`.
 
 **Backend Request Body:**
 
@@ -1227,9 +1227,11 @@ A single Experiment object is recognized by the presence of `paper_id` or `exper
 | experiment_name | Experiment name |
 | research_problem / research_problem_description | Research problem text |
 | research_goal | Research goal |
-| method / method_description | Method text |
+| methods | Method list; each entry is an object with `name` / `description` (see migration note below) |
 | datasets | Dataset objects; `dataset_name` maps to backend `dataset` |
 | conclusion / limitations / key_results | Result narrative fields |
+
+> **Method field migration.** Each result now returns `methods` as a list (`[{name, description, ...}]`) instead of the flat `method` / `method_description` pair; some older records may still carry the flat fields. When reading results, take `methods` first and fall back to the flat pair; never flatten a `methods` list into a single `method` string (that silently drops all but the first entry). The backend `method` request filter is unchanged and still takes a single string.
 
 **Matching and Output Rules:**
 - `paper_id` / `method` / `dataset` are exact filters; `search_text` is ES full-text. No client-side re-filtering.
