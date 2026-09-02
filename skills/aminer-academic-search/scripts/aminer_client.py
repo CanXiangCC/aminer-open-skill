@@ -394,7 +394,9 @@ def paper_detail_by_condition(token: str, year: int, venue_id: str = None) -> An
 # ──────────────────────────────────────────────────────────────────────────────
 
 # Exact filters + ES search_text (paper_title, experiment_name, research_problem(+_description),
-# research_goal, method(+_description), conclusion, limitations, key_results).
+# research_goal, method name/description text, conclusion, limitations, key_results).
+# Results carry methods: [{name, description, ...}] (legacy flat method/method_description
+# may still appear); objects are passed through unmodified.
 # No client-side result filtering and no paper-title resolution.
 
 
@@ -1158,7 +1160,7 @@ Docs: https://open.aminer.cn/open/docs
         "--search-text",
         help=(
             "[experiment] ES full-text query over paper_title, experiment_name, "
-            "research_problem(+_description), research_goal, method(+_description), "
+            "research_problem(+_description), research_goal, method name/description text, "
             "conclusion, limitations, key_results. Map experiment-name intent here."
         ),
     )
