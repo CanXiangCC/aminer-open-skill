@@ -3,8 +3,7 @@
 The catalog below mirrors the `aminer-academic-search` skill: same endpoints, same names, same prices. That skill's `references/api-catalog.md` is the authoritative parameter documentation — read it when you need a field this page does not describe. Do not invent endpoints, and do not call an endpoint that is not in this table.
 
 - Base URL: `https://datacenter.aminer.cn/gateway/open_platform`
-- Auth header: `Authorization: ${AMINER_API_KEY}`, plus `X-Platform` (current host: `claude-code` / `cursor` / `codex` / `openclaw`; `unknown` if it cannot be determined)
-- Skill identity (sent by `scripts/aminer_open.py`): `X-Skill-Name: deep-research`, `X-Skill-Version` = this skill's `SKILL.md` frontmatter `version`. Do not curl these APIs yourself.
+- Auth header: `Authorization: ${AMINER_API_KEY}`, plus `X-Platform: openclaw`
 - Every call goes through `scripts/aminer_open.py`. Parameters not listed for an API are rejected before any network access.
 - Prices are estimates in CNY per attempted call; check current AMiner documentation for changes.
 
@@ -34,7 +33,7 @@ Paper search routing:
 2. **Known title → `paper_search`** (free) to get the ID, then `paper_detail`.
 3. **Structured filter on author / org / venue / keyword with citation or year ordering → `paper_search_pro`** (¥0.01) — 70× cheaper than Pro when the query is already structured, which after a scout it usually is. Its `keyword` field matches a single controlled term and `title` / `abstract` match a short phrase; a sentence returns `"msg": "no data"` and is still billed.
 4. **Legacy `paper_qa_search` only** when `topic_high` / `topic_middle` / `topic_low` OR-AND structure is explicitly required. `query` and the topic fields are mutually exclusive.
-5. Batch cheap metadata with free `paper_info` (`ids` array); never loop `paper_detail` for bulk triage. A slice is truncated at roughly 190 characters — it identifies a paper, it does not report its findings.
+5. Batch cheap metadata with free `paper_info` (`ids` array); never loop `paper_detail` for bulk triage. A slice is truncated at roughly 190 characters — it identifies a paper, it does not report its findings. And `paper_detail` is the AMiner ceiling, not the reading ceiling — the full text lives outside this API (see §Open-access fulltext).
 
 ### `query_type` on `paper_qa_search_pro`
 
@@ -124,6 +123,8 @@ Free `org_search` first; escalate to `org_disambiguate_pro` only when aliases or
 | `patent_info` | GET `/api/patent/info` | `id` | Free |
 | `patent_detail` | GET `/api/patent/detail` | `id` | ¥0.01 |
 
+`patent_search` accepts only `query` / `page` / `size` — no sort or filter parameters, unlike `paper_search_pro`'s citation / year ordering; relevance is the channel's only order. Quality priority is therefore host-side: widen the pool (`size` up to 100, paginate) and screen by tier once `patent_detail` has run (see the research loop's quality-screening rule).
+
 ## Chains that work
 
 - Topic review: `paper_qa_search_pro` → free `paper_info` triage → selected `paper_detail` → at most three `paper_relation`.
@@ -132,9 +133,9 @@ Free `org_search` first; escalate to `org_disambiguate_pro` only when aliases or
 - Institution: `org_search` (or `org_disambiguate_pro`) → the one or two relation APIs that matter.
 - Venue year scan: `venue_search` → `venue_paper_relation`, or `paper_detail_by_condition` when year plus venue detail is the point.
 - Patent landscape (industry-report tasks only — see `research-loop.md` §Patents). Patents are mandatory for an industry report but are not pre-assigned to fixed sections; the chains below are common uses, not a checklist — retrieve wherever patents strengthen the analysis:
-  - Technology ownership / evolution: `patent_search` (free) by tech term → free `patent_info` triage → `patent_detail` (¥0.01) for the few a claim leans on.
-  - Enterprise portfolio: `org_search` (free) → `org_patent_relation` (¥0.10) for a named org's patents. `evidence.py` drops the patent `assignee` field, so aggregate by org via this endpoint rather than from bare `patent_search` results; otherwise record the assignee in a claim or web-source note.
-  - Filing-trend evolution: `patent_search` across year windows (free) → free `patent_info` triage. The ledger may carry no year for a patent, so record filing-year counts in a claim or note rather than aggregating from the ledger.
+  - Technology ownership / evolution: `patent_search` (free) by tech term → free `patent_info` triage → `patent_detail` (¥0.01) for the few a claim leans on → the Google Patents original for those few (see §Open-access fulltext).
+  - Enterprise portfolio: `org_search` (free) → `org_patent_relation` (¥0.10) for a named org's full portfolio. `patent_detail` also persists each patent's `assignee`, so a per-assignee chart assembles straight from the ledger once the detail calls have run; for a named org's exhaustive set, `org_patent_relation` keeps the org dimension intact.
+  - Filing-trend evolution: `patent_search` across year windows (free) → free `patent_info` triage → `patent_detail` for the patents a chart will use (`evidence.py` coerces `app_year`/`pub_year` and `app_date`/`pub_date` into an integer `year`, so the chart assembles from the ledger).
 - Generic patent lookup (any task): `patent_search` → free `patent_info`, then `patent_detail` only for the few that matter.
 
 ## Entity URLs (always attach)
@@ -145,3 +146,15 @@ Free `org_search` first; escalate to `org_disambiguate_pro` only when aliases or
 - Venue: `https://www.aminer.cn/open/journal/detail/{venue_id}`
 
 `scripts/evidence.py` fills these in automatically for `paper`, `scholar`, `patent`, and `venue` sources when it has an ID. Institutions and scholar projects have no public AMiner page, so `org` and `project` sources stay link-free — cite them by name, never invent a URL for them.
+
+## Open-access fulltext (outside AMiner)
+
+No endpoint in this catalog returns a paper or patent body — `paper_detail` / `patent_detail` stop at the full abstract. The original, when it is open, is read with the host's own web tools and recorded with `scripts/evidence.py fulltext --source N --url … --via …` (or `--unavailable` when no open copy exists). Resolution order, cheapest signal first:
+
+| Object | Where the original lives | `--via` |
+| --- | --- | --- |
+| Paper with an arXiv id | `https://arxiv.org/abs/<id>` — the abstract page links HTML, PDF, and TeX source; HTML renders best through a page fetcher, the PDF when the host can parse it | `arxiv-html` / `arxiv-pdf` / `arxiv-tex` |
+| Paper without an arXiv id | Search arXiv by exact title (if it lands, the row above applies); then a publisher open-access page (green or gold) | `arxiv-html` / `arxiv-pdf` / `arxiv-tex` / `publisher` / `other` |
+| Patent | `https://patents.google.com/patent/<publication-number>` — full claims and description. The number comes from the ledger itself: a `patent_detail` ingest persists `pub_num` / `app_num` / `pub_kind` (see them with `source show`). The two number fields swap places between records — take whichever holds the ~9-digit publication number and build `CN{digits}{pub_kind}`; the 12-digit `YYYY…` value is the application number. No AMiner page visit is needed (they are JS-rendered shells a fetcher cannot read anyway). | `google-patents` |
+
+Fulltext-first rule: a claim that leans on a paper or patent reads the original whenever one is obtainable, and degrades to the abstract only when it is not — with the downgrade recorded, so `check` (`cited_sources_without_fulltext`) can tell "could not" from "did not". These fetches cost nothing against the AMiner budget. The ledger keeps no body text: numbers lifted from the original go in the read's `--note`, which is what the number-provenance check searches. Marking `--unavailable` after a recorded read undoes the read and restores the source's AMiner depth — the correction path when an "open" copy turns out paywalled.

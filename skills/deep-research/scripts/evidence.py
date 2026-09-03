@@ -10,13 +10,21 @@ run when a claim has no source or a top-level section has no evidence.
     python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" init --topic "..."
     python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" probe --axis keyword --via paper_search_pro --query "..."
     python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" outline set --json '[{"title":"...","from_probes":["p1"],
-        "children":[{"title":"..."},{"title":"...","kind":"disagreement"}]}]'
+        "target_chars":5000,"children":[{"title":"..."},{"title":"...","kind":"disagreement"}]}]'
     python3 "${CLAUDE_SKILL_DIR}/scripts/aminer_open.py" --api paper_qa_search_pro --params '{...}' \
         | python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" add --aminer --section 1.1 --probe p1
-    python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" claim --text "..." --supports 1 3 --section 1.1
+    python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" claim --text "..." --supports 1 3 --section 1.1 \
+        --evidence "..."   # verbatim excerpt M2 checks against the source text
+    python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" tier --level moderate --reason "..."
+    python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" round --why-stopped "..." --direction 1 --probe p2
+    python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" memo --section 1 --text "..."
+    python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" decide --action continue --reason "..."
+    python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" signals
+    python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" verify --claim c1 --unsupported --confidence 0.8
     python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" gaps
     python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" check
-    python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" render
+    python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" render --material   # the writing-preparation surface
+    python3 "${CLAUDE_SKILL_DIR}/scripts/evidence.py" render --renumber --draft report-draft.md --out report.md
 """
 
 from __future__ import annotations
@@ -53,7 +61,122 @@ FIGURE_TYPES = ("bar", "hbar", "line", "pie", "heatmap", "timeline")
 QUANTITATIVE_TYPES = ("bar", "hbar", "line", "pie", "heatmap")
 FIGURE_BUDGET_PER_REPORT = 6
 FIGURE_BUDGET_PER_SECTION = 2
+# A planned quantitative figure topic is "data-sufficient" once this many live
+# datums cite it — below that the topic-driven retrieval keeps running. A
+# timeline-intent plan is exempt: its raw material is dated events, not datums,
+# so the registered figure itself closes it.
+PLAN_MIN_DATUMS = 3
 PROBE_AXES = ("topic", "question", "keyword", "title", "abstract", "author", "org", "venue", "time", "web", "patent", "other")
+
+# ── Research-loop economy, ported from the DeepDive harness ──────────────────
+# Source: test_cwd/autoglm/app/aminer/deepdive/ — prompts/evaluate.py (the
+# evaluator input surface), config.py (thresholds), verify.py (the citation
+# faithfulness gates). The judgments stay with the host; every threshold, cap
+# and mapping below executes here. In DeepDive a "direction" is a research
+# angle explored by runs; in this ledger the top-level outline sections play
+# that role (the loop already retrieves per section), so directions need no
+# collection of their own — the outline IS the direction registry.
+TIERS = ("simple", "moderate", "complex")
+DEFAULT_TIER = "moderate"  # config.DEFAULT_COMPLEXITY
+# config.COMPLEXITY_PROFILES, numbers verbatim. The budget_scale / wall-clock /
+# tool-turn fields do not port: this engine has no tool-budget economy (a
+# recorded architectural difference — round summaries carry a self-reported
+# "why stopped" instead of a forced-stop signal).
+TIER_PROFILES = {
+    "simple":   {"max_directions": 2, "max_runs_per_direction": 1, "max_rounds": 3},
+    "moderate": {"max_directions": 3, "max_runs_per_direction": 2, "max_rounds": 6},
+    "complex":  {"max_directions": 5, "max_runs_per_direction": 3, "max_rounds": 10},
+}
+# A direction whose citable evidence rests on fewer distinct sources than this
+# is a restatement of one source, not research (config.SINGLE_SOURCE_MIN_DISTINCT).
+SINGLE_SOURCE_MIN_DISTINCT = 2
+# Soft target for the academic genre: scholarly sources the report could cite.
+# Best-effort like upstream — it pushes retrieval wider, never blocks and never
+# justifies fabrication (config.SCHOLARLY_MIN_REFS comment).
+SCHOLARLY_MIN_REFS = 15
+# A memo is shown to the evaluator truncated at this many chars
+# (config.EVALUATE_MEMO_MAX_CHARS); the full text stays in the ledger.
+MEMO_MAX_CHARS = 2000
+# The discipline asks 600–1200 chars of mechanism, setups, numbers,
+# comparisons. The slot is structural; this floor is the observation that
+# keeps the discipline honest — a memo under it is a placeholder, not depth.
+MEMO_MIN_CHARS = 600
+# A verbatim excerpt shorter than this (after folding) proves nothing: a
+# single character or a bare number is a substring of almost any haystack.
+# Upstream never needed this floor — its evidence is sliced from the fetched
+# document by code — but our excerpts are host-typed, and a run was caught
+# decomposing a phrase into one-character "excerpts" to slide past the
+# substring check. An excerpt must quote a sentence fragment.
+EVIDENCE_MIN_CHARS = 8
+# Recording-time volume floors, from upstream's subagent prompt
+# (prompts/subagent.py:437-447): finding detail is a review-grade paragraph
+# of 建议 300-800 字; each verbatim excerpt is a passage of 100-500 字.
+# Upstream enforces none of this in code — prompt discipline plus a
+# self-reported memo_word_count. These engine observations are a declared
+# beyond-upstream enforcement that uses upstream's own numbers: a cited
+# source with no note at all blocks delivery; a thin note and
+# fragment-only evidence warn.
+NOTE_MIN_CHARS = 300
+EVIDENCE_PARAGRAPH_CHARS = 100
+# Verify judgments whose reasons collapse to one template string are
+# signatures of rubber-stamping, not of per-claim checking. Observation, not
+# a gate: this many identical reasons at this share triggers a warning so the
+# boilerplate is at least visible.
+VERIFY_BOILERPLATE_MIN = 5
+VERIFY_BOILERPLATE_SHARE = 0.8
+# One-line claim digests shown by `signals`, most recent last
+# (config.EVALUATE_FINDINGS_SHOWN).
+SIGNALS_CLAIMS_SHOWN = 40
+# Citation-faithfulness gates (verify.py), two of them, 疑罪从无 throughout:
+# 1) a "not supported" judgment only downgrades the claim when the judge is
+#    confident (>= this); a low-confidence False means "not sure" and passes;
+# 2) a batch never downgrades more than VERIFY_MAX_DOWNGRADE_RATIO of its
+#    candidates — a systematically harsh judge cannot wipe the reference list.
+#    The floor of 1 is deliberate: with 1-2 candidates floor(ratio·n) is 0 and
+#    a confident hallucination would be un-downgradable, defeating the gate.
+VERIFY_DOWNGRADE_MIN_CONFIDENCE = 0.6
+VERIFY_MAX_DOWNGRADE_RATIO = 0.5
+VERIFY_STATES = ("passed", "downgraded", "inconclusive")
+DECISION_ACTIONS = ("stop", "continue", "add_section", "rerun", "patch")
+
+# ── Report-stage richness, ported from the DeepDive harness ──────────────────
+# Source: config.py (REPORT_* block), utils.py (cjk_equivalent_len,
+# _LEN_BUDGET_MAX, LENGTH_TOLERANCE), prompts/report.py
+# (_select_chapter_raw_docs, the chapter material assembly). What motivated
+# the port: a report 1/3 the length with 2/5 the references of a DeepDive
+# report, on a ledger holding MORE sources — the loss is all report-stage
+# (original → one-line claim → prose). DeepDive's own words for the mechanism:
+# the raw-doc channel exists to fix "原文->摘要->finding->报告 逐跳压缩导致的
+# 深度信息丢失". Three pieces port verbatim below: the writing targets, the
+# write-time deviation observation, and the read-back/material view.
+# Length metric, same口径 as utils.cjk_equivalent_len: CJK characters count 1
+# each, ASCII words × this factor, punctuation/whitespace excluded, citation
+# marks and bare URLs stripped first (markup, not prose).
+LENGTH_WORD_TO_CJK = 1.7  # utils._WORD_TO_CJK
+# config.py: the outline stage assigns each chapter a target by material
+# sufficiency (thick chapters get more; they need not be equal). Default full
+# text 2–3万 characters with this soft ceiling; a user budget is hard-capped
+# at utils._LEN_BUDGET_MAX ("超过 8 万字按 8 万算" — clamped, not refused).
+TARGET_TOTAL_SOFT_MAX = 50000
+LENGTH_BUDGET_HARD_MAX = 80000
+# utils.LENGTH_TOLERANCE — the target is a goal, not a constraint; deviation
+# inside ±20% counts as on-target (and outside it is recorded, never rewritten).
+LENGTH_TOLERANCE = 0.2
+# Beyond-upstream observation threshold (declared): upstream has no
+# per-section material metric at all — its outline plans the total by
+# thoroughness and material only distributes chapter thickness. A target
+# under this share of the section's material is the inverted-anchor defect
+# made visible (measured: a section holding 48,440 chars of patent-corpus
+# material was targeted at 2,800 — the host used material as a cap to
+# arithmetic its way down, instead of as a distributor of thickness).
+TARGET_MATERIAL_FLOOR_SHARE = 0.25
+# Read-back channel (config.REPORT_CHAPTER_RAW_DOCS_MAX / REPORT_BODY_RAW_DOCS_MAX,
+# the non-long-context values): at most this many core originals per section,
+# and at most this many distinct originals across the whole-report view. A
+# source already listed for an earlier section keeps its slot at half weight —
+# same original again beats none, but new originals rank first.
+READBACK_PER_SECTION_MAX = 5
+READBACK_GLOBAL_MAX = 12
 
 # Stop and hand over partial results rather than spending past this on one task.
 HARD_LIMIT_CNY = 20.0
@@ -80,6 +203,18 @@ DIGIT_RUN_PATTERN = re.compile(r"(?<=\d)[\s,](?=\d)")
 # figure was rescaled on its way into the prose, so a literal match can never
 # succeed and flagging it is pure noise.
 MYRIAD_UNITS = "万亿兆"
+# Engineering quantities the provenance check cannot see: "8 m/s" and "6 kg"
+# are one- and two-digit runs, below NUMBER_PATTERN's 3-digit floor, yet they
+# are exactly the parameters a weak patent should not vouch for alone. A digit
+# run scoped to a unit is quantitative wherever it appears.
+UNIT_SCOPED_NUMBER = re.compile(
+    r"\d+(?:[.,]\d+)?\s*(?:"
+    r"m/s|kHz|MHz|GHz|MPa|kPa|rpm|mAh|Nm|DoF|dof|"
+    r"mm|cm|km|kg|mg|ms|us|ns|Hz|"
+    r"m|g|N|s|h|V|A|W|%|°|"
+    r"度|毫米|厘米|千米|公斤|千克|克|吨|牛|帕|巴|赫兹|赫|转|安培|安|伏|瓦|毫安|秒|微秒|纳秒|小时|升|毫升|分贝|个?自由度"
+    r")"
+)
 
 # Kinds absent from this map have no public AMiner page; they stay link-free.
 URL_TEMPLATES = {
@@ -110,7 +245,16 @@ def _empty_state() -> dict[str, Any]:
         "sources": [],
         "claims": [],
         "figures": [],
+        "figure_plans": [],
         "datums": [],
+        # Research-loop telemetry (DeepDive evaluate/verify input surface):
+        # tier = the host-judged effort level the engine clamps against;
+        # rounds = per-round summaries; memos = per-direction depth notes;
+        # decisions = the host's stop/continue calls, replayed by `signals`.
+        "tier": "",
+        "rounds": [],
+        "memos": [],
+        "decisions": [],
         "spend": {},
     }
 
@@ -254,7 +398,24 @@ def _assign_outline(nodes: Any, probe_ids: set[str], require_probes: bool) -> li
                 f"Section {i} '{title}' needs one subsection with \"kind\":\"disagreement\" — "
                 f"the counter-evidence subsection every top-level section carries"
             )
-        outline.append({"id": str(i), "title": title, "from_probes": from_probes, "children": children})
+        # Optional per-section writing target (DeepDive's outline assigns each
+        # chapter a target_chars by material sufficiency; thick chapters get
+        # more, they need not be equal). Missing targets are tolerated — the
+        # observation surface (`sections_without_target_chars`) carries the
+        # pressure, and old outlines stay valid.
+        section = {"id": str(i), "title": title, "from_probes": from_probes, "children": children}
+        target = node.get("target_chars")
+        if target is not None:
+            try:
+                target = int(target)
+            except (TypeError, ValueError):
+                raise LedgerError(
+                    f"Section {i} '{title}': target_chars must be an integer (字当量), got {target!r}"
+                ) from None
+            if target <= 0:
+                raise LedgerError(f"Section {i} '{title}': target_chars must be positive, got {target}")
+            section["target_chars"] = target
+        outline.append(section)
     return outline
 
 
@@ -348,9 +509,22 @@ def _coerce_source(
         "probes": [probe] if probe else [],
         "depth": str(raw.get("depth") or "search"),
     }
-    for optional in ("year", "venue", "authors", "assignee", "note", "abstract", "abstract_slice", "keywords"):
+    for optional in ("year", "venue", "authors", "assignee", "pub_num", "app_num", "pub_kind",
+                     "note", "abstract", "abstract_slice", "keywords",
+                     "fulltext", "fulltext_unavailable", "fulltext_note"):
         if raw.get(optional) not in (None, "", []):
             source[optional] = raw[optional]
+    if source["depth"] not in DEPTHS:
+        raise LedgerError(
+            f"Source '{title}' has unknown depth '{source['depth']}'; use one of: {', '.join(DEPTHS)}"
+        )
+    if source["depth"] == "fulltext":
+        read = source.get("fulltext") or {}
+        if not (isinstance(read, dict) and read.get("url") and read.get("via")):
+            raise LedgerError(
+                f"Source '{title}': depth 'fulltext' needs its url and via; record fulltext reads "
+                "with the fulltext verb (--url --via), not add"
+            )
     return source
 
 
@@ -374,11 +548,17 @@ def _add_sources(
                         existing[field].append(tag)
             if DEPTH_RANK.get(candidate.get("depth", "search"), 0) > DEPTH_RANK.get(existing.get("depth", "search"), 0):
                 existing["depth"] = candidate["depth"]
+                if candidate["depth"] == "fulltext":
+                    # a re-ingested recorded read outranks, and cancels, a recorded downgrade
+                    existing["fulltext"] = candidate["fulltext"]
+                    existing.pop("fulltext_unavailable", None)
+                    existing.pop("fulltext_note", None)
             # A `paper_detail` hit on a source already found by search arrives here
             # as a duplicate. Its abstract is the thing that was paid for, so
             # merge the richer text in rather than discarding it. `note` is the
             # only content a web source has, so it merges the same way.
-            for field in ("authors", "assignee", "abstract", "abstract_slice", "keywords", "year", "venue", "note"):
+            for field in ("authors", "assignee", "abstract", "abstract_slice", "keywords", "year", "venue",
+                          "pub_num", "app_num", "pub_kind", "note"):
                 incoming = candidate.get(field)
                 if not incoming:
                     continue
@@ -426,6 +606,75 @@ def _drop_sources(state: dict[str, Any], numbers: list[int], reason: str) -> dic
             source["drop_reason"] = reason
         dropped.append(n)
     return {"dropped": dropped, "remaining": len(_live_sources(state))}
+
+
+def _mark_fulltext(
+    state: dict[str, Any],
+    number: int,
+    url: str,
+    via: str | None,
+    unavailable: bool,
+    note: str,
+) -> dict[str, Any]:
+    """Record an open-access fulltext read — or why it was not possible.
+
+    AMiner serves no paper or patent bodies, so the deepest read the API can
+    give is the abstract. The host reads the original with its own web tools
+    (arXiv PDF/HTML/TeX, Google Patents, a publisher OA page) and records that
+    read here. ``--unavailable`` records the downgrade — the original is
+    paywalled or has no open copy — so ``check`` can tell "could not" from
+    "did not".
+    """
+    by_number = {source["n"]: source for source in state["sources"]}
+    if number not in by_number:
+        raise LedgerError(f"Unknown source number: {number}")
+    source = by_number[number]
+    if source.get("dropped"):
+        raise LedgerError(
+            f"Source {number} is dropped; re-add it before recording a fulltext read"
+        )
+    if source["kind"] not in ("paper", "patent"):
+        raise LedgerError(
+            f"Source {number} is a {source['kind']}; fulltext applies to paper and patent "
+            "sources (a web source is already a full-page read)"
+        )
+    if unavailable:
+        if url or via:
+            raise LedgerError(
+                "--unavailable takes --note only; --url/--via record a read, not a downgrade"
+            )
+        # A recorded read and a recorded downgrade are mutually exclusive.
+        # Marking unavailable after a read is the correction path when an
+        # "open" copy turns out paywalled: undo the read, restore the depth
+        # the AMiner ladder had given the source before it.
+        prior_read = source.pop("fulltext", None) or {}
+        if source.get("depth") == "fulltext":
+            source["depth"] = prior_read.get("prev_depth") or "detail"
+        source["fulltext_unavailable"] = True
+        if note:
+            source["fulltext_note"] = note
+        return {"source": number, "unavailable": True, "note": note}
+    if not url or not via:
+        raise LedgerError(
+            "Recording a fulltext read needs --url and --via (or --unavailable to "
+            "record why there is no open copy)"
+        )
+    if not url.startswith(("http://", "https://")):
+        raise LedgerError("--url must be the http(s) address the fulltext was fetched from")
+    prev_depth = source.get("depth", "search")
+    if prev_depth == "fulltext":  # re-recording a read: keep the original ladder level
+        prev_depth = (source.get("fulltext") or {}).get("prev_depth", "detail")
+    source["fulltext"] = {
+        "url": url,
+        "via": via,
+        # kept so a later --unavailable can undo this read honestly
+        "prev_depth": prev_depth,
+        **({"note": note} if note else {}),
+    }
+    source["depth"] = "fulltext"
+    source.pop("fulltext_unavailable", None)
+    source.pop("fulltext_note", None)
+    return {"source": number, "depth": "fulltext", "via": via, "url": url}
 
 
 def _live_sources(state: dict[str, Any]) -> list[dict[str, Any]]:
@@ -617,6 +866,14 @@ def _absorb_content(node: dict[str, Any], entry: dict[str, Any]) -> None:
         elif isinstance(holder, str) and holder.strip():
             entry["assignee"] = [holder.strip()]
             break
+    # Patents: the publication/application numbers the raw node carries. AMiner
+    # swaps `pub_num` / `app_num` inconsistently between records, so both are
+    # kept verbatim — the Google Patents slug assembles from the 9-digit one
+    # (`CN{digits}{pub_kind}`), whichever field it landed in.
+    for key in ("pub_num", "app_num", "pub_kind"):
+        number = node.get(key)
+        if isinstance(number, str) and number.strip():
+            entry[key] = number.strip()
 
 
 def _coerce_year(value: Any) -> int | None:
@@ -683,10 +940,20 @@ def _walk(node: Any, via: str, kind: str, found: list[dict[str, Any]], depth: in
 # How deeply a source has actually been read, named after where the data came
 # from. A search result is a title; a `paper_info` slice is a truncated
 # abstract; only `paper_detail` is the whole abstract and keywords. Claims must
-# not rest on the first two.
-DEPTHS = ("search", "slice", "detail")
+# not rest on the first two. `fulltext` sits above the AMiner ladder: the
+# open-access original, fetched with the host's own web tools — AMiner serves
+# no paper or patent bodies — and recorded with `evidence.py fulltext`. When
+# the original is obtainable it must be read; degrading to the abstract is
+# legitimate only when it is not, and the degradation itself is recorded
+# (`fulltext --unavailable`) so `check` can tell "could not" from "did not".
+DEPTHS = ("search", "slice", "detail", "fulltext")
 DEPTH_RANK = {name: i for i, name in enumerate(DEPTHS)}
 DEPTH_BY_API = {"paper_info": "slice", "paper_detail": "detail", "patent_detail": "detail"}
+# Channels an open-access fulltext can arrive through; `fulltext --via` records
+# which one was used, so the appendix can say how the original was obtained.
+FULLTEXT_CHANNELS = (
+    "arxiv-pdf", "arxiv-html", "arxiv-tex", "google-patents", "publisher", "other",
+)
 
 
 def _depth_for_api(api: str) -> str:
@@ -747,6 +1014,7 @@ def _add_claim(state: dict[str, Any], args: argparse.Namespace) -> dict[str, Any
         claim_type=args.type,
         conflict=args.conflict or "",
         allow_unsupported=args.allow_unsupported,
+        evidence=list(getattr(args, "evidence", None) or []),
     )
 
 
@@ -758,6 +1026,7 @@ def _record_claim(
     claim_type: str = "observed",
     conflict: str = "",
     allow_unsupported: bool = False,
+    evidence: list[str] | None = None,
 ) -> dict[str, Any]:
     text = text.strip()
     if not text:
@@ -780,6 +1049,24 @@ def _record_claim(
     }
     if conflict:
         claim["conflict"] = conflict.strip()
+    # Verbatim excerpts the claim rests on. An excerpt must be a substring of
+    # one of the supporting sources' stored text (whitespace-insensitively) —
+    # `check` enforces it and downgrades failures to background info. Quotes
+    # lifted from an open-access original ride in the fulltext read's --note
+    # (the same rule as numbers): the note is what this check searches.
+    # Degenerate excerpts are refused here rather than flagged later: a
+    # single character or a bare number matches almost any source, so a
+    # too-short "quote" is not evidence at all.
+    excerpts = [str(e).strip() for e in (evidence or []) if str(e).strip()]
+    for excerpt in excerpts:
+        if len(_fold_for_match(excerpt)) < EVIDENCE_MIN_CHARS:
+            raise LedgerError(
+                f"Evidence excerpt {excerpt!r} is too short to be evidence (minimum "
+                f"{EVIDENCE_MIN_CHARS} characters after folding) — quote the sentence "
+                "fragment from the source text, not isolated characters or bare numbers"
+            )
+    if excerpts:
+        claim["evidence"] = excerpts
     state["claims"].append(claim)
     return claim
 
@@ -809,6 +1096,7 @@ def _add_claims_batch(state: dict[str, Any], payload: Any) -> dict[str, Any]:
                 claim_type=str(item.get("type") or "observed"),
                 conflict=str(item.get("conflict") or ""),
                 allow_unsupported=bool(item.get("allow_unsupported")),
+                evidence=[str(e) for e in (item.get("evidence") or [])],
             ))
         except (LedgerError, TypeError, ValueError) as exc:
             failed.append({"position": position, "text": str(item.get("text") or "")[:80], "error": str(exc)})
@@ -877,6 +1165,10 @@ def analyze(state: dict[str, Any]) -> dict[str, Any]:
     figures = _live_figures(state)
     fig_sections = _figures_by_section(state)
     known_sections = set(_section_index(state))
+    plans = _live_plans(state)
+    reason_stats = _verify_reason_stats(claims)
+    funnel = _retrieval_funnel(state)
+    targets = _write_targets(state)
 
     return {
         "topic": state.get("topic", ""),
@@ -891,7 +1183,19 @@ def analyze(state: dict[str, Any]) -> dict[str, Any]:
             "probes": len(state["probes"]),
             "cited_sources": len(cited),
             "figures": len(figures),
+            "figure_plans": len(plans),
             "datums": len(_live_datums(state)),
+            "rounds": len(state.get("rounds", [])),
+            "effective_rounds": len(_effective_rounds(state)),
+            "memos": len(state.get("memos", [])),
+            "decisions": len(state.get("decisions", [])),
+            # the report-stage richness funnel: how much retrieval survives to
+            # claim-grounded use (observation only — upstream reports this
+            # pair, it never thresholds it)
+            "sources_with_abstract": funnel["with_abstract"],
+            "sources_with_note": funnel["with_note"],
+            "sources_fulltext": funnel["fulltext"],
+            "cited_share": funnel["cited_share"],
         },
         "sections": [
             {
@@ -941,10 +1245,182 @@ def analyze(state: dict[str, Any]) -> dict[str, Any]:
         "sources_without_probe": [s["n"] for s in sources if not s.get("probes")],
         "cited_sources_without_detail": [
             s["n"] for s in sources
-            if s["n"] in cited and s["kind"] != "web" and s.get("depth") != "detail"
+            if s["n"] in cited and s["kind"] != "web"
+            and DEPTH_RANK.get(s.get("depth", "search"), 0) < DEPTH_RANK["detail"]
+        ],
+        # Fulltext-first: a cited paper or patent the host neither read at
+        # fulltext nor marked `fulltext --unavailable`. An open-access original
+        # (arXiv, Google Patents, publisher OA) must be read before claims lean
+        # on it; only a paywalled or nonexistent copy justifies stopping at the
+        # abstract — and that downgrade has to be recorded, not silent.
+        "cited_sources_without_fulltext": [
+            s["n"] for s in sources
+            if s["n"] in cited and s["kind"] in ("paper", "patent")
+            and DEPTH_RANK.get(s.get("depth", "search"), 0) < DEPTH_RANK["fulltext"]
+            and not s.get("fulltext_unavailable")
         ],
         "single_source_claims": [c["id"] for c in claims if len(c.get("supports", [])) == 1],
+        "claims_weak_patent_sole_support": _claims_weak_patent_sole_support(state),
         "claims_with_unsourced_numbers": _claims_with_unsourced_numbers(state),
+        # ── research-loop economy warnings (DeepDive port) ──
+        # No tier registered means the direction/round clamps never bound —
+        # an unclamped run is the thing the tier exists to prevent.
+        "tier_missing": bool(state["outline"]) and not state.get("tier"),
+        "sections_without_memo": [
+            top["id"] for top in state["outline"]
+            if not any(m.get("section") == top["id"] for m in state.get("memos", []))
+        ],
+        "sections_single_sourced": [
+            d["section"] for d in _direction_source_diversity(state) if d["warning"].startswith("single-source")
+        ],
+        "claims_evidence_not_verbatim": _claims_evidence_not_verbatim(state),
+        "claims_verify_downgraded": [
+            c["id"] for c in claims if c.get("verify_status") == "downgraded"
+        ],
+        "claims_awaiting_verify": [
+            c["id"] for c in claims
+            if c.get("evidence") and not c.get("verified") and not _claim_downgraded(state, c)
+        ],
+        # A memo under the depth floor is a placeholder wearing the slot.
+        "memos_thin": _memos_thin(state),
+        # Controversy-shaped structure with no recorded tension. The
+        # disagreement subsection is where counter-evidence surfaces in the
+        # report, but the *tension itself* lives on the claim (`--conflict`) —
+        # that is what render, check and the report quote. A section whose
+        # counter-evidence subsection carries claims while no claim under it
+        # records a conflict is presenting disagreement as decoration (a rerun
+        # shipped five 风险与争议 subsections and zero conflicts).
+        "disagreements_without_conflict": [
+            top["id"] for top in state["outline"]
+            if any(claims_by.get(kid["id"]) for kid in top["children"]
+                   if kid["kind"] == "disagreement")
+            and not any(c.get("conflict") for c in claims
+                        if str(c.get("section", "")).startswith(f"{top['id']}."))
+        ],
+        # A quantitative plan closed by a from-datums figure while zero datums
+        # were ever tagged to it: the sufficiency countdown never ran, and the
+        # topic closed by assembly rather than by data. Corpus plans closed via
+        # --from-source-metadata and timeline plans are exempt by design.
+        "figure_plans_closed_untagged": [
+            {"plan": p["id"], "topic": p.get("topic", ""), "figure": p.get("figure_id")}
+            for p in plans
+            if p.get("status") == "fulfilled" and p.get("figure_id")
+            and next((f for f in figures if f["id"] == p["figure_id"]), {}).get("from_datums")
+            and not _plan_datums(state, p["id"])
+        ],
+        # Duplicated reason strings covering the verify batch: the form is
+        # satisfied, the checking probably was not. Measured on *any* repeated
+        # reason, not the single top one — splitting one template into two
+        # must not dodge it. Advisory: it makes the rubber-stamp visible, it
+        # cannot force real scrutiny.
+        "verify_reasons_boilerplate": (
+            {key: reason_stats[key] for key in (
+                "distinct_reasons", "duplicated_reason_share",
+                "top_confidence", "top_confidence_share")}
+            if reason_stats.get("verified", 0) >= VERIFY_BOILERPLATE_MIN
+            and reason_stats["duplicated_reason_share"] >= VERIFY_BOILERPLATE_SHARE
+            else None
+        ),
+        # ── report-stage richness warnings (DeepDive port) ──
+        # Upstream's outline carries a writing target per chapter, assigned by
+        # material sufficiency; a section without one gets written to whatever
+        # the floor allows, which is how a 99-source ledger yields a 27-source
+        # report. Observation, not a gate: old outlines stay valid.
+        "sections_without_target_chars": [
+            top["id"] for top in state["outline"] if not top.get("target_chars")
+        ],
+        # Beyond-upstream observation (annotated in the migration doc):
+        # upstream's 5万 ceiling lives in the outline prompt ("最多不超过 5
+        # 万字") with no engine check of its own; we surface a plan that
+        # breaks it rather than police it. The user's registered budget
+        # replaces the default ceiling, same priority as upstream's parse.
+        "write_targets_over_max": (
+            {"total": targets["total"], "max": (
+                targets["budget"] if targets["budget"] else TARGET_TOTAL_SOFT_MAX
+            ), "budget": targets["budget"]}
+            if targets["total"] is not None and targets["total"] > (
+                targets["budget"] if targets["budget"] else TARGET_TOTAL_SOFT_MAX
+            ) else None
+        ),
+        # A section whose target outruns ALL the material it holds (claims,
+        # evidence, abstracts, notes) is a broken coupling made visible —
+        # upstream never creates one, because material sufficiency is the
+        # INPUT to target assignment (按素材充分度), and an insufficient pile
+        # writes to coverage completeness rather than padding (素材不足时以
+        # 覆盖完整为准，不必注水拉长 — prompts/report.py:627). Observation
+        # only: the engine assigns no targets, and length never drives
+        # retrieval upstream (the evaluator sees no length at all).
+        "write_targets_over_material": [
+            {
+                "section": top["id"],
+                "target": top.get("target_chars"),
+                "material_chars": targets["sections"][top["id"]]["material_chars"],
+            }
+            for top in state["outline"]
+            if top.get("target_chars")
+            and top["target_chars"] > targets["sections"][top["id"]]["material_chars"]
+        ],
+        # The mirror image of write_targets_over_material, and the more
+        # damaging one in practice: a target far UNDER the section's material
+        # means the pile was used as an excuse to write thin (material is the
+        # distributor of thickness, never a cap to beat down). Observation
+        # only, beyond upstream (which has no material metric) — declared.
+        "sections_under_targeted_vs_material": [
+            {
+                "section": top["id"],
+                "target": top.get("target_chars"),
+                "material_chars": targets["sections"][top["id"]]["material_chars"],
+            }
+            for top in state["outline"]
+            if top.get("target_chars") and targets["sections"][top["id"]]["material_chars"] > 0
+            and top["target_chars"] < TARGET_MATERIAL_FLOOR_SHARE
+            * targets["sections"][top["id"]]["material_chars"]
+        ],
+        # The persisted write-time length observation (written by
+        # `render --renumber`, mirroring upstream's post-delivery deviation
+        # log). Observation only — never a check key, never a gate: upstream
+        # states 篇幅是目标不是硬约束 and tunes prompts with the deviation
+        # instead of rewriting the prose.
+        "length_report": state.get("length_report") or {},
+        # ── recording-time volume (upstream subagent discipline, enforced) ──
+        # Upstream's finding carries a 300-800-字 review-grade digest and 1-3
+        # verbatim passages of 100-500 字 each (prompts/subagent.py:437-447);
+        # the note and the evidence array are those channels here. Upstream
+        # checks none of it in code — these observations use upstream's own
+        # numbers. A cited source with NO note blocks delivery (the note is
+        # the provenance channel the number checks search); thin notes and
+        # fragment-only evidence warn.
+        "cited_sources_without_note": [
+            s["n"] for s in sources if s["n"] in cited and not (s.get("note") or "").strip()
+        ],
+        "cited_sources_note_thin": [
+            {"n": s["n"], "chars": len(s.get("note") or "")}
+            for s in sources
+            if s["n"] in cited and (s.get("note") or "").strip()
+            and len(s.get("note") or "") < NOTE_MIN_CHARS
+        ],
+        "claims_thin_evidence": [
+            c["id"] for c in _live_claims(state)
+            if c.get("evidence")
+            and all(
+                len(e) < EVIDENCE_PARAGRAPH_CHARS
+                for e in (c["evidence"] if isinstance(c["evidence"], list)
+                          else [c["evidence"]])
+            )
+        ],
+        "rounds_without_yield": _rounds_without_yield(state),
+        # Live-but-undigested: kept sources with no note at all. Upstream's
+        # reader cannot return from a pass without its digests — the record
+        # IS the pass's output — so "retrieved, kept, never written down"
+        # has no upstream equivalent. Here it is spend that never becomes
+        # material (measured: a run kept 28 patent details and wrote 9
+        # notes). Blocking since 2026-08-30 (user decision, zero exemption:
+        # datum carriers and corpus-aggregation sources need a note too) —
+        # read the source or drop it; keeping it unrecorded is not a state.
+        "sources_without_note": [
+            {"n": s["n"], "kind": s.get("kind", ""), "sections": s.get("sections", [])}
+            for s in sources if not (s.get("note") or "").strip()
+        ],
         "figures_with_no_sources": [f["id"] for f in figures if not f.get("source_ids")],
         "figures_unsupported_numbers": _figures_with_unsourced_numbers(state),
         "figures_in_unrendered_section": [
@@ -964,6 +1440,46 @@ def analyze(state: dict[str, Any]) -> dict[str, Any]:
             )
         ),
         "figures_thin_data": _figures_thin_data(state),
+        # Who charted. The engine cannot see whether a chart-topic subagent
+        # was actually dispatched — the ceiling here, as with verify's "who
+        # judges", is forced declaration plus visibility: `figure add` demands
+        # --charted-by (controller mode demands its reason right there), an
+        # undeclared figure (old ledger, hand-edited state) warns, and
+        # Appendix C reports each figure's mode. Advisory by design: it makes
+        # in-session charting by a delegating host visible; it cannot catch
+        # a false declaration.
+        "figures_charting_undeclared": [
+            f["id"] for f in figures if not f.get("charted_by")
+        ],
+        "figures_charted_in_controller": [
+            {"figure": f["id"], "reason": f.get("charted_reason", "")}
+            for f in figures if f.get("charted_by") == "controller"
+        ],
+        # Figure plans: the chart-topic stage. A quantitative plan is the
+        # retrieval obligation "hunt this topic's numbers until >=PLAN_MIN_DATUMS
+        # live datums cite it"; timeline-intent plans close via their figure.
+        "figure_plans_thin": [
+            {
+                "plan": p["id"], "topic": p.get("topic", ""),
+                "datums": len(_plan_datums(state, p["id"])),
+                "minimum_datums": PLAN_MIN_DATUMS,
+            }
+            for p in plans if p.get("status") == "open"
+            and p.get("chart_type", "") != "timeline"
+            and len(_plan_datums(state, p["id"])) < PLAN_MIN_DATUMS
+        ],
+        "figure_plans_unfulfilled": [
+            p["id"] for p in plans if p.get("status") == "open"
+            and p.get("chart_type", "") != "timeline"
+            and len(_plan_datums(state, p["id"])) >= PLAN_MIN_DATUMS
+        ],
+        "figure_plans_abandoned": [
+            {"plan": p["id"], "topic": p.get("topic", ""), "reason": p.get("reason", "")}
+            for p in plans if p.get("status") == "abandoned"
+        ],
+        "figure_plans_industry_expected": (
+            state.get("genre") == "industry" and len(plans) == 0
+        ),
         "sections_over_figure_budget": [
             sid for sid, fids in fig_sections.items() if len(fids) > FIGURE_BUDGET_PER_SECTION
         ],
@@ -1008,12 +1524,27 @@ def _source_text(source: dict[str, Any]) -> str:
     year = source.get("year")
     if year:
         parts.append(str(year))
+    # The fulltext body stays out of the ledger, so numbers lifted from the
+    # original ride in the read's --note; without this the provenance check
+    # would flag every fulltext-derived number as unsourced.
+    read_note = (source.get("fulltext") or {}).get("note")
+    if isinstance(read_note, str):
+        parts.append(read_note)
     return DIGIT_RUN_PATTERN.sub("", " ".join(parts))
 
 
 def _checkable_numbers(text: str) -> list[str]:
     out: list[str] = []
     for match in NUMBER_PATTERN.finditer(text):
+        # A digit run glued to a letter is part of an identifier, not a
+        # figure: TOP500, H800, SW26010, A100. Checking "500" against a
+        # source that names the TOP500 list without the digits glued to
+        # anything is a false positive (a rerun was flagged on exactly that).
+        before = text[match.start() - 1] if match.start() else ""
+        after = text[match.end():match.end() + 1]
+        if (before and before.isascii() and before.isalpha()) or \
+           (after and after.isascii() and after.isalpha()):
+            continue
         normalised = match.group().replace(",", ".")
         digits = normalised.replace(".", "")
         if "." not in normalised and len(digits) < 3:
@@ -1053,6 +1584,102 @@ def _claims_with_unsourced_numbers(state: dict[str, Any]) -> list[dict[str, Any]
     return findings
 
 
+def _patent_tier(source: dict[str, Any]) -> str:
+    """Legal-strength class of a patent, from bibliographic fields already held.
+
+    A granted invention (`pub_kind` ending in B) sat substantive examination;
+    a published application (A) has not yet; a utility model (U) never does.
+    Empty for non-patents and for records that reached the ledger without a
+    `pub_kind` — an unknown kind is not a weak one, and the check stays quiet.
+    """
+    if source.get("kind") != "patent":
+        return ""
+    code = str(source.get("pub_kind") or "").strip().upper()
+    if code.endswith("U"):
+        return "utility"
+    if code.endswith("B"):
+        return "granted"
+    if code.endswith("A"):
+        return "application"
+    return ""
+
+
+SENTENCE_SPLIT = re.compile(r"[。！？!?\n；;]+")
+
+
+def _weak_patent_number_segments(text: str, live: dict[int, dict[str, Any]]) -> list[dict[str, Any]]:
+    """Report numbers whose only citations in a sentence are low-tier patents.
+
+    The claim-level check cannot see these: engineering parameters ride into
+    the ledger inside fulltext notes and are woven into prose at writing time,
+    while the claim above them stays a qualitative multi-source aggregate.
+    Sentence granularity keeps the attribution honest — a number counts as
+    weakly anchored only when every citation in its own sentence is a weak
+    patent; a paper, web page or granted patent alongside it is an anchor.
+    Advisory, not a gate: it surfaces in the renumber payload for the host to
+    weigh, because cross-validation versus an honest "design assertion" label
+    is a judgement call, and the limitation section is a legitimate answer.
+    """
+    findings: list[dict[str, Any]] = []
+    for segment in SENTENCE_SPLIT.split(text):
+        cited = sorted({int(m.group(1)) for m in CITE_TOKEN.finditer(segment)})
+        if not cited:
+            continue
+        numbers = _checkable_numbers(segment)
+        if not numbers:
+            numbers = [m.group() for m in UNIT_SCOPED_NUMBER.finditer(segment)]
+        if not numbers:
+            continue
+        tiers = {n: _patent_tier(live[n]) for n in cited}
+        weak = {
+            n: t for n, t in tiers.items()
+            if t == "utility" or (t == "application" and not live[n].get("assignee"))
+        }
+        if weak and len(weak) == len(cited):
+            findings.append({
+                "sentence": segment.strip()[:120],
+                "numbers": numbers,
+                "sources": [{"n": n, "tier": t} for n, t in weak.items()],
+            })
+    return findings
+
+
+def _claims_weak_patent_sole_support(state: dict[str, Any]) -> list[dict[str, Any]]:
+    """Quantitative claims whose only anchor is a low-tier patent.
+
+    The patent channel cannot sort by quality (papers order by citations or
+    year; `patent_search` returns plain relevance), so quality screening has
+    to happen after ingestion — and this check is its teeth. A number vouched
+    for solely by a utility model, never substantively examined, or by an
+    unassigned published application is a design assertion, not a verified
+    parameter: cross-validate it, or let the report say which it is.
+    """
+    by_number = {source["n"]: source for source in state["sources"]}
+    findings: list[dict[str, Any]] = []
+    for claim in _live_claims(state):
+        supports = claim.get("supports", [])
+        if len(supports) != 1:
+            continue
+        source = by_number.get(supports[0])
+        if not source or source.get("kind") != "patent":
+            continue
+        numbers = _checkable_numbers(claim["text"])
+        units = [m.group() for m in UNIT_SCOPED_NUMBER.finditer(claim["text"])]
+        if not (numbers or units):
+            continue  # a qualitative claim may rest where it likes; a number may not
+        tier = _patent_tier(source)
+        if tier == "utility" or (tier == "application" and not source.get("assignee")):
+            findings.append({
+                "claim": claim["id"],
+                "section": claim.get("section", ""),
+                "source": source["n"],
+                "tier": tier,
+                "assignee": bool(source.get("assignee")),
+                "numbers": numbers or units,
+            })
+    return findings
+
+
 # --------------------------------------------------------------------------- figures
 
 
@@ -1075,9 +1702,26 @@ def _record_figure(
     code_path: str,
     from_datums: bool = False,
     from_metadata: bool = False,
+    plan: str = "",
+    charted_by: str = "",
+    charted_reason: str = "",
 ) -> dict[str, Any]:
     if not title.strip():
         raise LedgerError("A figure needs a non-empty --title")
+    # Who ran this chart's loop. The engine cannot see whether a subagent was
+    # actually dispatched, so the declaration is the ceiling — same shape as
+    # verify's "who judges": forced at entry, reported by Appendix C. The
+    # controller-session form is the exception that must state itself.
+    if charted_by not in ("", "agent", "controller"):
+        raise LedgerError("--charted-by must be 'agent' or 'controller'")
+    if charted_reason and not charted_by:
+        raise LedgerError("--charted-reason needs --charted-by (which mode ran this loop)")
+    if charted_by == "controller" and not charted_reason.strip():
+        raise LedgerError(
+            "Charting in the controller session is the exception, not the default — "
+            "it needs --charted-reason (why no chart-topic subagent ran this plan); "
+            "see references/chart-guide.md §Who charts"
+        )
     section = _require_sections(state, [section])[0]
     numbers = {source["n"] for source in state["sources"]}
     unknown = [n for n in sources if n not in numbers]
@@ -1109,7 +1753,13 @@ def _record_figure(
     }
     if code_path:
         figure["code_path"] = code_path
+    if charted_by:
+        figure["charted_by"] = charted_by
+        if charted_reason.strip():
+            figure["charted_reason"] = charted_reason.strip()
     state["figures"].append(figure)
+    if plan:
+        _link_figure_plan(state, figure, plan)
     return figure
 
 
@@ -1140,6 +1790,14 @@ def _drop_figures(state: dict[str, Any], ids: list[str], reason: str) -> dict[st
         if reason:
             figure["drop_reason"] = reason
         dropped.append(fid)
+        # the plan's data did not vanish with the figure — reopen it so the
+        # topic can be re-charted without re-planning
+        plan_id = figure.get("plan")
+        if plan_id:
+            plan = next((p for p in state.get("figure_plans", []) if p.get("id") == plan_id), None)
+            if plan and plan.get("status") == "fulfilled":
+                plan["status"] = "open"
+                plan["figure_id"] = None
     return {"dropped": dropped, "remaining": len(_live_figures(state))}
 
 
@@ -1178,6 +1836,7 @@ def _record_datum(
     unit: str,
     year: str,
     entity: str,
+    plan: str = "",
 ) -> dict[str, Any]:
     if not metric.strip():
         raise LedgerError("A datum needs a non-empty --metric (what the number measures)")
@@ -1186,6 +1845,14 @@ def _record_datum(
     numbers = {s["n"] for s in state["sources"]}
     if source not in numbers:
         raise LedgerError(f"Unknown source number: {source}")
+    if plan:
+        planned = _require_plan(state, plan)
+        if planned.get("status") == "abandoned":
+            raise LedgerError(
+                f"{plan} is abandoned ({planned.get('reason')}); if this number shows the topic "
+                "is obtainable after all, re-plan the topic (the new plan retires this dead "
+                "record) instead of feeding a dead plan"
+            )
     datum = {
         "id": f"d{len(state.get('datums', [])) + 1}",
         "source": source,
@@ -1195,6 +1862,8 @@ def _record_datum(
         "year": year.strip(),
         "entity": entity.strip(),
     }
+    if plan:
+        datum["plan"] = plan
     state.setdefault("datums", []).append(datum)
     return datum
 
@@ -1214,6 +1883,100 @@ def _drop_datums(state: dict[str, Any], ids: list[str], reason: str) -> dict[str
             datum["drop_reason"] = reason
         dropped.append(did)
     return {"dropped": dropped, "remaining": len(_live_datums(state))}
+
+
+# ── figure plans: the chart-topic stage between outline and retrieval ──
+# The user-facing contract: once the outline is settled, the agent walks it and
+# decides where a figure is needed AND insertable, records one plan per chart
+# topic, then retrieves on that topic until the data is sufficient (or gives up
+# with a recorded reason). Plans make "which numbers to hunt" a ledger-visible
+# obligation instead of an afterthought at figure time.
+
+
+def _live_plans(state: dict[str, Any]) -> list[dict[str, Any]]:
+    return [p for p in state.get("figure_plans", []) if not p.get("dropped")]
+
+
+def _plan_datums(state: dict[str, Any], plan_id: str) -> list[dict[str, Any]]:
+    return [d for d in _live_datums(state) if d.get("plan") == plan_id]
+
+
+def _require_plan(state: dict[str, Any], plan_id: str) -> dict[str, Any]:
+    by_id = {p["id"]: p for p in state.get("figure_plans", []) if p.get("id")}
+    if plan_id not in by_id:
+        raise LedgerError(
+            f"Unknown figure plan id: {plan_id}. Valid: {', '.join(by_id) or 'none'}"
+        )
+    return by_id[plan_id]
+
+
+def _add_figure_plan(
+    state: dict[str, Any], section: str, topic: str, chart_type: str,
+) -> tuple[dict[str, Any], list[str]]:
+    if not topic.strip():
+        raise LedgerError("A figure plan needs a non-empty --topic (the quantitative question the chart answers)")
+    section = _require_sections(state, [section])[0]
+    if chart_type and chart_type not in FIGURE_TYPES:
+        raise LedgerError(f"Unknown chart type '{chart_type}'; use one of: {', '.join(FIGURE_TYPES)}")
+    plan_id = f"fp{len(state.get('figure_plans', [])) + 1}"
+    superseded: list[str] = []
+    for plan in _live_plans(state):
+        if plan.get("topic", "").strip() != topic.strip() or plan.get("section") != section:
+            continue
+        if plan.get("status") != "abandoned":
+            raise LedgerError(
+                f"{plan['id']} already plans '{topic.strip()}' for section {section}"
+            )
+        # An abandoned plan must not block re-planning its own topic: the
+        # datum/figure error texts tell the user to re-plan, so the re-plan
+        # has to work. Retire the dead record (one live plan per topic+
+        # section stays invariant; the retire reason keeps the trail) —
+        # dropped-plan plumbing was already honoured by every consumer,
+        # only the setter was missing.
+        plan["dropped"] = True
+        plan["drop_reason"] = f"superseded by {plan_id} (topic re-planned)"
+        superseded.append(plan["id"])
+    plan = {
+        "id": plan_id,
+        "section": section,
+        "topic": topic.strip(),
+        "chart_type": chart_type,
+        "status": "open",
+        "reason": "",
+        "figure_id": None,
+    }
+    state.setdefault("figure_plans", []).append(plan)
+    return plan, superseded
+
+
+def _abandon_figure_plan(state: dict[str, Any], plan_id: str, reason: str) -> dict[str, Any]:
+    plan = _require_plan(state, plan_id)
+    if not reason.strip():
+        raise LedgerError(
+            "Abandoning a figure plan needs a --reason — an unobtainable topic must be "
+            "recorded, not silently dropped (the report's limitations quote it)"
+        )
+    if plan.get("status") == "fulfilled":
+        raise LedgerError(
+            f"{plan_id} is already fulfilled by {plan.get('figure_id')}; drop that figure "
+            "first if the plan must reopen"
+        )
+    plan["status"] = "abandoned"
+    plan["reason"] = reason.strip()
+    return plan
+
+
+def _link_figure_plan(state: dict[str, Any], figure: dict[str, Any], plan_id: str) -> None:
+    plan = _require_plan(state, plan_id)
+    if plan.get("status") == "abandoned":
+        raise LedgerError(
+            f"{plan_id} is abandoned ({plan.get('reason')}); plan the topic again (the new "
+            "plan retires this dead record) instead of fulfilling a "
+            "recorded-as-unobtainable plan"
+        )
+    figure["plan"] = plan_id
+    plan["status"] = "fulfilled"
+    plan["figure_id"] = figure["id"]
 
 
 def _assemble_figure_data(
@@ -1512,6 +2275,974 @@ def _drifting_probes(state: dict[str, Any]) -> list[dict[str, Any]]:
     return out
 
 
+# ────────────────────────────────────────────────── research-loop telemetry
+# The evaluate half of the DeepDive quality chain, translated to this ledger:
+# judgments are the host's, but every number the host judges against is
+# computed here (`signals`), every stop/continue call is recorded (`decide`),
+# every round ends with a summary (`round`), and the tier the host picks caps
+# directions and rounds by refusal (`tier`). Kernels ported from
+# prompts/evaluate.py keep their thresholds; the read side is adapted to this
+# ledger's collections (top-level sections = directions, claims = findings).
+
+
+def _tier_profile(state: dict[str, Any]) -> dict[str, int] | None:
+    tier = state.get("tier") or ""
+    return TIER_PROFILES.get(tier)
+
+
+def _effective_rounds(state: dict[str, Any]) -> list[dict[str, Any]]:
+    """Rounds that count against the tier caps. A round the host marks wasted
+    (a failed reformulation, an aborted axis) consumed budget but produced
+    nothing — DeepDive's orchestrator likewise does not charge a wasted run
+    against a direction's effective rounds."""
+    return [r for r in state.get("rounds", []) if not r.get("wasted")]
+
+
+def _register_tier(state: dict[str, Any], level: str, reason: str, force: bool) -> dict[str, Any]:
+    """Record the host's complexity judgment. The engine never judges
+    complexity itself — but once the tier is registered, the outline and round
+    clamps bind, which is the orchestrator half of the port. Re-judging is
+    refused without --force: an unbound upgrade would quietly un-clamp a run
+    already in flight. A forced re-judgment is kept in tier_changes for audit."""
+    if level not in TIERS:
+        raise LedgerError(f"Unknown tier '{level}'; use one of: {', '.join(TIERS)}")
+    if not reason.strip():
+        raise LedgerError("Registering a tier needs a --reason — the judgment must be on record")
+    current = state.get("tier") or ""
+    if current and current != level and not force:
+        raise LedgerError(
+            f"Tier already registered as '{current}'; re-judging needs --force "
+            "(the clamps are bound to the registered tier)"
+        )
+    state["tier"] = level
+    state["tier_reason"] = reason.strip()
+    if current and current != level:
+        state.setdefault("tier_changes", []).append({"from": current, "to": level, "reason": reason.strip()})
+    return {"ok": True, "tier": level, "profile": TIER_PROFILES[level]}
+
+
+def _check_direction_cap(state: dict[str, Any], would_be: int) -> None:
+    """The directions clamp: outline top-level sections are the directions,
+    and an outline that exceeds the registered tier's ceiling is refused —
+    the engine equivalent of DeepDive's orchestrator refusing to schedule
+    directions past max_directions. Without a registered tier there is no
+    clamp; `check` warns tier_missing instead."""
+    profile = _tier_profile(state)
+    if profile and would_be > profile["max_directions"]:
+        raise LedgerError(
+            f"Tier '{state.get('tier')}' allows at most {profile['max_directions']} top-level "
+            f"sections (directions); this outline would have {would_be}. Register a higher "
+            f"tier with --force if the question genuinely grew, or merge sections."
+        )
+
+
+def _register_round(
+    state: dict[str, Any],
+    why_stopped: str,
+    next_queries: list[str],
+    directions: list[str],
+    probes: list[str],
+    wasted: bool,
+    note: str,
+) -> dict[str, Any]:
+    """Close a retrieval round with a summary. This is the telemetry that
+    replaces DeepDive's just-completed-run block (stop_reason / tool_stats /
+    new_queries): which sections the round served, which probes ran (their
+    yield is already in the probe records), why the round ended, and what the
+    next round should hunt. The global and per-direction caps refuse a round
+    that would exceed the registered tier — the rounds clamp of the port.
+
+    There is no wall clock and no tool budget in this architecture, so a
+    "forced stop" cannot be observed by the engine; --why-stopped is the
+    self-reported approximation, and a round cut short by circumstances says
+    so there (recorded as a design difference, not faked as a signal)."""
+    why_stopped = why_stopped.strip()
+    if not why_stopped:
+        raise LedgerError(
+            "A round summary needs a non-empty --why-stopped — 'why did this round end' "
+            "is the one signal the engine cannot compute"
+        )
+    tops = {top["id"] for top in state["outline"]}
+    unknown = [d for d in directions if d not in tops]
+    if unknown:
+        raise LedgerError(
+            f"--direction must be top-level section ids (directions): {', '.join(unknown)} "
+            f"is not one. Valid: {', '.join(sorted(tops)) or 'none'}"
+        )
+    probe_ids = {p["id"] for p in state["probes"]}
+    unknown_p = [p for p in probes if p not in probe_ids]
+    if unknown_p:
+        raise LedgerError(f"Unknown probe id(s): {', '.join(unknown_p)}")
+
+    rounds = state.setdefault("rounds", [])
+    effective = _effective_rounds(state)
+    profile = _tier_profile(state)
+    if profile and not wasted:
+        if len(effective) >= profile["max_rounds"]:
+            raise LedgerError(
+                f"Tier '{state.get('tier')}' caps the run at {profile['max_rounds']} effective "
+                f"rounds and {len(effective)} are already registered. Write the report from "
+                f"what the ledger holds (or register a higher tier with --force if the "
+                f"question genuinely grew)."
+            )
+        used_by_direction: dict[str, int] = {}
+        for r in effective:
+            for d in r.get("directions", []):
+                used_by_direction[d] = used_by_direction.get(d, 0) + 1
+        over = [d for d in directions if used_by_direction.get(d, 0) >= profile["max_runs_per_direction"]]
+        if over:
+            raise LedgerError(
+                f"Tier '{state.get('tier')}' caps each direction at "
+                f"{profile['max_runs_per_direction']} effective rounds; exceeded for section(s) "
+                f"{', '.join(over)}. Serve the remaining sections without them, or re-judge "
+                f"the tier with --force."
+            )
+
+    entry = {
+        "n": len(rounds) + 1,
+        "directions": list(dict.fromkeys(directions)),
+        "probes": list(dict.fromkeys(probes)),
+        "why_stopped": why_stopped,
+        "next_queries": [q.strip() for q in next_queries if q.strip()],
+    }
+    if wasted:
+        entry["wasted"] = True
+    if note.strip():
+        entry["note"] = note.strip()
+    rounds.append(entry)
+    return {
+        "ok": True,
+        "round": entry,
+        "effective_rounds": len(_effective_rounds(state)),
+        "rounds_cap": profile["max_rounds"] if profile else None,
+    }
+
+
+def _add_memo(state: dict[str, Any], section: str, text: str) -> dict[str, Any]:
+    """The direction-level depth memo — the slot DeepDive gives its sub-agents
+    so the depth gained by reading the originals survives into evaluation and
+    writing. The engine guarantees the slot and the existence signal
+    (`sections_without_memo`); what goes in it is prompt discipline, stated in
+    research-loop.md: you are the only one who read the originals in full —
+    what you do not write down here is lost at this hop forever."""
+    text = text.strip()
+    if not text:
+        raise LedgerError("A memo needs non-empty --text")
+    top = _find_top(state, section)
+    memo = {
+        "id": f"m{len(state.get('memos', [])) + 1}",
+        "section": top["id"],
+        "text": text,
+    }
+    state.setdefault("memos", []).append(memo)
+    return {"ok": True, "memo": memo}
+
+
+def _record_decision(state: dict[str, Any], action: str, direction: str, reason: str) -> dict[str, Any]:
+    """Log one 'read the signals, then decided' call. The decision is the
+    host's; recording it is what lets the next `signals` replay the last five
+    decisions — the anti-repeat half of the DeepDive evaluation history."""
+    if action not in DECISION_ACTIONS:
+        raise LedgerError(f"Unknown action '{action}'; use one of: {', '.join(DECISION_ACTIONS)}")
+    reason = reason.strip()
+    if not reason:
+        raise LedgerError("A decision needs a non-empty --reason")
+    if direction:
+        _find_top(state, direction)
+    decision = {
+        "n": len(state.get("decisions", [])) + 1,
+        "action": action,
+        "reason": reason,
+    }
+    if direction:
+        decision["direction"] = direction
+    state.setdefault("decisions", []).append(decision)
+    return {"ok": True, "decision": decision}
+
+
+def _apply_verify(state: dict[str, Any], entries: list[dict[str, Any]]) -> dict[str, Any]:
+    """Record citation-faithfulness judgments and execute the gates.
+
+    The judgment is the host's — for each claim, does the evidence actually
+    support the statement (numbers line up, right entity, right time)? The
+    gates are the engine's, ported from verify.py: a "not supported" verdict
+    only downgrades when confidence >= VERIFY_DOWNGRADE_MIN_CONFIDENCE, and a
+    batch never downgrades more than VERIFY_MAX_DOWNGRADE_RATIO of its
+    candidates (floor 1) — beyond the cap only the most confident failures
+    downgrade, the rest fall back to inconclusive (NOT passed: the judge was
+    sure, the backstop spared them). One `verify` call is one batch, the
+    unit the ratio guard sees.
+    """
+    by_id = {claim["id"]: claim for claim in state["claims"]}
+    if not entries:
+        raise LedgerError("verify needs judgments: pass --claim/--supported/--confidence or --batch JSON")
+    checked: list[dict[str, Any]] = []
+    for pos, item in enumerate(entries, start=1):
+        if not isinstance(item, dict):
+            raise LedgerError(f"verify entry {pos} must be a JSON object")
+        cid = str(item.get("claim") or "").strip()
+        claim = by_id.get(cid)
+        if claim is None:
+            raise LedgerError(f"verify entry {pos}: unknown claim '{cid}'. Valid: {', '.join(by_id) or 'none'}")
+        if claim.get("retracted"):
+            raise LedgerError(f"verify entry {pos}: claim {cid} is retracted; verify live claims")
+        supported = bool(item.get("supported"))
+        try:
+            confidence = float(item.get("confidence"))
+        except (TypeError, ValueError):
+            raise LedgerError(
+                f"verify entry {pos} (claim {cid}): confidence must be a number in [0, 1]"
+            ) from None
+        if not 0.0 <= confidence <= 1.0:
+            raise LedgerError(f"verify entry {pos} (claim {cid}): confidence must be in [0, 1]")
+        reason = str(item.get("reason") or "").strip()
+        if not supported and not reason:
+            # A downgrade without a stated why is unauditable — the reader of
+            # the appendix cannot tell a caught hallucination from a grudge.
+            raise LedgerError(
+                f"verify entry {pos} (claim {cid}): an unsupported verdict needs a --reason"
+            )
+        checked.append({
+            "claim": claim,
+            "supported": supported,
+            "confidence": confidence,
+            "reason": reason,
+        })
+
+    # Gate 1 — 疑罪从无: only a confident "not supported" is a downgrade
+    # candidate; a low-confidence False is "not sure" and passes.
+    confident_fail: list[tuple[dict[str, Any], float]] = []
+    stats = {"checked": 0, "passed": 0, "downgraded": 0, "inconclusive": 0}
+    for item in checked:
+        claim = item["claim"]
+        claim["verified"] = True
+        claim["verify_confidence"] = item["confidence"]
+        claim["verify_reason"] = item["reason"]
+        stats["checked"] += 1
+        if item["supported"]:
+            claim["verify_status"] = "passed"
+            stats["passed"] += 1
+        elif item["confidence"] >= VERIFY_DOWNGRADE_MIN_CONFIDENCE:
+            confident_fail.append((claim, item["confidence"]))
+            claim["verify_status"] = "downgraded"  # gate 2 may still spare it
+        else:
+            claim["verify_status"] = "inconclusive"
+            stats["inconclusive"] += 1
+
+    # Gate 2 — the ratio backstop: cap = max(1, floor(ratio × candidates)) so
+    # the reference list is never wiped by a systematically harsh judge, while
+    # a lone confident hallucination still cannot survive.
+    if confident_fail:
+        cap = max(1, int(VERIFY_MAX_DOWNGRADE_RATIO * len(checked)))
+        to_downgrade = confident_fail
+        if len(confident_fail) > cap:
+            ranked = sorted(confident_fail, key=lambda x: x[1], reverse=True)
+            to_downgrade = ranked[:cap]
+            for claim, _conf in ranked[cap:]:
+                claim["verify_status"] = "inconclusive"
+                stats["inconclusive"] += 1
+        for claim, _conf in to_downgrade:
+            stats["downgraded"] += 1
+
+    return {"ok": True, **stats,
+            "gates": {"min_confidence": VERIFY_DOWNGRADE_MIN_CONFIDENCE,
+                      "max_downgrade_ratio": VERIFY_MAX_DOWNGRADE_RATIO}}
+
+
+# ─────────────────────────────────────────────────────── the signals surface
+# `signals` prints the evaluator input surface: every block is computed here,
+# none of it is asserted by the host. Kernels below keep their upstream
+# thresholds and comments (prompts/evaluate.py); what changed is only the
+# collections they read. Blocks whose input was never registered report null
+# — "not recorded", never a misleading 0.
+
+
+def _fold_for_match(text: str) -> str:
+    """Whitespace-insensitive comparison key with typographic variants folded:
+    curly/straight quotes, dashes, ellipses, middle dots, and commas — both
+    widths, both uses ("1,000" ≡ "1000" is a formatting variant, the same rule
+    the number matcher applies; a full-width clause comma ， in the source
+    becoming an ASCII , in a retyped quote is the same class of noise). A
+    quote retyped by the host must still match the source text that paid for
+    it; a run was forced into retracts over exactly these variants."""
+    folded = text.casefold()
+    for src, dst in (("‘", "'"), ("’", "'"), ("“", '"'), ("”", '"'),
+                     ("„", '"'), ("–", "-"), ("—", "-"), ("―", "-"),
+                     ("…", "..."), ("·", "."), ("・", ".")):
+        folded = folded.replace(src, dst)
+    folded = folded.replace(",", "").replace("，", "")
+    return re.sub(r"\s+", "", folded)
+
+
+def _claims_evidence_not_verbatim(state: dict[str, Any]) -> list[dict[str, Any]]:
+    """M2 — claims whose recorded evidence is not a verbatim substring.
+
+    The evidence field is nominally a quote from the source; a paraphrase or
+    a rewrite typed from memory defeats the whole point. Each excerpt must
+    appear (whitespace-insensitively, typographic variants folded) in at
+    least one supporting source's stored text. Failing claims are downgraded
+    to background information — marked in `render --final`, reported by
+    `check`, excluded from the citable counts — not deleted: the judgment is
+    "unusable as evidence", not "false". Computed live, never stored: a
+    re-`add` that merges a richer abstract in can clear it, and the verdict
+    must always reflect the ledger as it stands, not as it was.
+
+    Degenerate excerpts — shorter than EVIDENCE_MIN_CHARS once folded — fail
+    the same way: a one-character "quote" is a substring of nearly everything
+    and proves nothing. Registration refuses them now; this arm catches
+    ledgers written before that floor existed."""
+    by_number = {source["n"]: source for source in state["sources"]}
+    findings: list[dict[str, Any]] = []
+    for claim in _live_claims(state):
+        excerpts = claim.get("evidence") or []
+        if not excerpts:
+            continue
+        supports = [by_number[n] for n in claim.get("supports", []) if n in by_number]
+        haystack = _fold_for_match(" ".join(_source_text(s) for s in supports))
+        failed = [e for e in excerpts if _fold_for_match(e) not in haystack]
+        degenerate = [e for e in excerpts if len(_fold_for_match(e)) < EVIDENCE_MIN_CHARS]
+        if failed or degenerate:
+            findings.append({
+                "claim": claim["id"],
+                "section": claim.get("section", ""),
+                "failed_evidence": [e[:120] for e in failed],
+                "degenerate_evidence": [e[:120] for e in degenerate],
+            })
+    return findings
+
+
+def _citable_scholarly_count(state: dict[str, Any]) -> int:
+    """Scholarly sources that would actually enter the bibliography.
+
+    Ported from _scholarly_citable_count: counting all academic sources
+    over-counts — uncited ones, sources only a downgraded claim leans on, and
+    (upstream) the same paper behind several URLs would all inflate the
+    tally and the evaluator would judge "≥15, stop" early. Here a source
+    counts when a live, non-downgraded claim cites it and it is not web.
+    Dedup by URL is already done at ingestion by _source_key."""
+    scholarly: set[int] = set()
+    for claim in _live_claims(state):
+        if _claim_downgraded(state, claim):
+            continue
+        for n in claim.get("supports", []):
+            source = next((s for s in state["sources"] if s["n"] == n), None)
+            if source and not source.get("dropped") and source.get("kind") != "web":
+                scholarly.add(n)
+    return len(scholarly)
+
+
+def _claim_downgraded(state: dict[str, Any], claim: dict[str, Any]) -> bool:
+    """A claim is background information when the host's verify gate
+    downgraded it, or when its evidence failed the verbatim check — either
+    way it must not carry a citation in the report."""
+    if claim.get("verify_status") == "downgraded":
+        return True
+    if not claim.get("evidence"):
+        return False
+    return any(f["claim"] == claim["id"] for f in _claims_evidence_not_verbatim(state))
+
+
+def _scholarly_ref_directive(state: dict[str, Any]) -> str:
+    """The ≥15 soft target, ported from _scholarly_ref_directive: injected
+    into evaluation while below target to push academic retrieval wider —
+    best-effort, never a gate, never a license to fabricate. Academic genre
+    only: an industry report's spine is the web and does not carry the
+    scholarly target."""
+    if state.get("genre", "academic") != "academic":
+        return ""
+    have = _citable_scholarly_count(state)
+    if have >= SCHOLARLY_MIN_REFS:
+        return ""
+    return (
+        f"Scholarly target for this genre: >= {SCHOLARLY_MIN_REFS} citable scholarly sources, "
+        f"currently {have}. If not yet sufficient, prefer retrieval rounds that add academic "
+        f"sources before judging the evidence sufficient; only wind up when genuinely no more "
+        f"are obtainable (never pad the count with fabricated sources)."
+    )
+
+
+def _source_class(kind: str) -> str:
+    """Upstream sorts sources into peer_reviewed/preprint/blog/web tiers; this
+    ledger has no preprint split (an arXiv paper enters as a paper), so the
+    diversity check works with three classes: academic, web, other. The
+    weak-only rule maps to web-only — the recorded adaptation."""
+    if kind in ("paper", "patent"):
+        return "academic"
+    if kind == "web":
+        return "web"
+    return "other"
+
+
+def _direction_source_diversity(state: dict[str, Any]) -> list[dict[str, Any]]:
+    """Per-direction source diversity, ported from _direction_source_diversity:
+    a direction whose citable claims rest on fewer than
+    SINGLE_SOURCE_MIN_DISTINCT distinct sources, or on weak classes only, is
+    single-source dependent — a restatement, not research. Upstream counts
+    distinct normalized URLs per finding; this ledger already dedupes
+    sources at ingestion (_source_key), so distinct source numbers are the
+    same measure."""
+    by_number = {source["n"]: source for source in state["sources"]}
+    out: list[dict[str, Any]] = []
+    for top in state["outline"]:
+        nums: set[int] = set()
+        n_claims = 0
+        for claim in _live_claims(state):
+            sid = claim.get("section", "")
+            if sid != top["id"] and not sid.startswith(f"{top['id']}."):
+                continue
+            if _claim_downgraded(state, claim):
+                continue
+            n_claims += 1
+            nums.update(n for n in claim.get("supports", []) if n in by_number)
+        classes: dict[str, int] = {}
+        for n in nums:
+            cls = _source_class(by_number[n].get("kind", "paper"))
+            classes[cls] = classes.get(cls, 0) + 1
+        warn = ""
+        # The weak-class arm is academic-genre only. Upstream's weak classes
+        # are preprints and blogs — unreviewed prose; this ledger cannot see
+        # that split, so "web" stands in for it. For an industry report that
+        # stand-in is wrong: institutional pages, rankings and policy texts
+        # are the spine of the genre, not a weakness, and flagging every
+        # market/player/policy section as weak produced warnings a correct
+        # run could only ignore. There, honesty rides on the number checks
+        # (datums, provenance) instead of the class tally.
+        weak_class_applies = state.get("genre", "academic") != "industry"
+        if n_claims:
+            if len(nums) < SINGLE_SOURCE_MIN_DISTINCT:
+                warn = "single-source dependency — hunt independent corroboration or a counter-view, do not stop"
+            elif weak_class_applies and classes and all(c in ("web", "other") for c in classes):
+                warn = "all weak classes (web/other) — cross-validate with academic sources"
+        out.append({
+            "section": top["id"],
+            "title": top["title"],
+            "claims": n_claims,
+            "distinct_sources": len(nums),
+            "source_classes": classes,
+            "warning": warn,
+        })
+    return out
+
+
+def _evidence_quality(state: dict[str, Any]) -> dict[str, Any]:
+    """Ported from _evidence_quality: breadth alone flatters a thin run —
+    these counters let the evaluator judge depth and reliability instead:
+    how many claims carry verbatim evidence, how many carry none, and how
+    many were downgraded by the verify gates (a high downgrade count means
+    statements kept outrunning their evidence)."""
+    claims = _live_claims(state)
+    sourced = [c for c in claims if c.get("supports")]
+    with_ev = [c for c in sourced if c.get("evidence")]
+    total_ev = sum(len(c.get("evidence") or []) for c in sourced)
+    downgraded = [c for c in claims if _claim_downgraded(state, c)]
+    return {
+        "claims": len(claims),
+        "sourced": len(sourced),
+        "with_verbatim_evidence": len(with_ev),
+        "without_verbatim_evidence": len(sourced) - len(with_ev),
+        "avg_evidence_per_claim": round(total_ev / len(sourced), 1) if sourced else 0.0,
+        "downgraded": len(downgraded),
+    }
+
+
+def _evaluation_history_view(state: dict[str, Any]) -> list[dict[str, Any]]:
+    """The last five decisions, ported from _evaluation_history's window of 5:
+    replaying them keeps the host from re-issuing a direction or a
+    near-identical instruction that already failed."""
+    decisions = state.get("decisions", [])
+    return [
+        {
+            "n": d.get("n"),
+            "action": d.get("action"),
+            "direction": d.get("direction"),
+            "sufficient": d.get("action") == "stop",
+            "reason": (d.get("reason") or "")[:80],
+        }
+        for d in decisions[-5:]
+    ]
+
+
+def _verify_reason_stats(claims: list[dict[str, Any]]) -> dict[str, Any]:
+    """Observation stats over verify reasons and confidences. Real per-claim
+    checking produces varied reasons — claims fail in different ways. The
+    rubber-stamp signature is *duplicated* reasons, not the single top one:
+    a host that learns the top-reason warning exists just splits one template
+    into two (a rerun did exactly that: ×14 '数字…锚定' + ×14 '证据摘录…锚定',
+    top share 0.47, duplicated share 0.93). Confidence uniformity — every
+    judgment at the same value — is the same signature on a second axis."""
+    verified = [c for c in claims if c.get("verified")]
+    if not verified:
+        return {"verified": 0}
+    counts: dict[str, int] = {}
+    for c in verified:
+        reason = c.get("verify_reason") or ""
+        counts[reason] = counts.get(reason, 0) + 1
+    duplicated = sum(n for n in counts.values() if n >= 2)
+    conf_counts: dict[float, int] = {}
+    for c in verified:
+        conf = round(float(c.get("verify_confidence") or 0.0), 2)
+        conf_counts[conf] = conf_counts.get(conf, 0) + 1
+    top_conf, top_conf_n = max(conf_counts.items(), key=lambda kv: kv[1])
+    return {
+        "verified": len(verified),
+        "distinct_reasons": len(counts),
+        "duplicated_reason_share": round(duplicated / len(verified), 3),
+        "top_reason_share": round(max(counts.values()) / len(verified), 3),
+        "top_confidence": top_conf,
+        "top_confidence_share": round(top_conf_n / len(verified), 3),
+    }
+
+
+def _memos_thin(state: dict[str, Any]) -> list[dict[str, Any]]:
+    """Directions whose latest memo is under the depth floor. The memo slot
+    is structural; the discipline asks 600–1200 chars of mechanism, setups,
+    numbers. A 400-char memo passes the existence check and still carries no
+    depth — the same blind spot the prose floor closed for report bodies, so
+    it closes the same way: the engine observes, `check` warns."""
+    latest: dict[str, dict[str, Any]] = {}
+    for memo in state.get("memos", []):
+        latest[memo.get("section", "")] = memo
+    return [
+        {"section": sid, "memo": m.get("id"), "chars": len(m.get("text") or "")}
+        for sid, m in latest.items()
+        if len(m.get("text") or "") < MEMO_MIN_CHARS
+    ]
+
+
+def _signals(state: dict[str, Any]) -> dict[str, Any]:
+    """The evaluator input surface — what the host reads before deciding
+    whether to stop, rerun a section, or add one. Every number is computed
+    here; blocks whose input was never registered are null ("not recorded"),
+    never 0. Two upstream blocks are absent by design and say so: the user
+    template outline (not yet a ledger concept) and mid-run user guidance
+    (this architecture covers it natively — the user interjects, the host
+    re-evaluates)."""
+    profile = _tier_profile(state)
+    effective = _effective_rounds(state)
+    rounds = state.get("rounds", [])
+    last_round = rounds[-1] if rounds else None
+
+    claims = _live_claims(state)
+    shown = claims[-SIGNALS_CLAIMS_SHOWN:]
+    digest = []
+    for claim in shown:
+        digest.append({
+            "id": claim["id"],
+            "section": claim.get("section", ""),
+            "text": (claim["text"][:100] + "…") if len(claim["text"]) > 100 else claim["text"],
+            "supports": len(claim.get("supports", [])),
+            "single_source": len(claim.get("supports", [])) == 1,
+            "evidence": len(claim.get("evidence") or []),
+            "downgraded": _claim_downgraded(state, claim),
+        })
+
+    tops = [top["id"] for top in state["outline"]]
+    latest_memo: dict[str, dict[str, Any]] = {}
+    for memo in state.get("memos", []):
+        latest_memo[memo.get("section", "")] = memo  # reruns deepen; latest wins
+    memos_view = [
+        {
+            "section": sid,
+            "chars": len(m["text"]),
+            "thin": len(m["text"]) < MEMO_MIN_CHARS,
+            "text": (m["text"][:MEMO_MAX_CHARS] + "…") if len(m["text"]) > MEMO_MAX_CHARS else m["text"],
+            "truncated": len(m["text"]) > MEMO_MAX_CHARS,
+        }
+        for sid, m in latest_memo.items()
+    ]
+
+    used_by_direction: dict[str, int] = {}
+    for r in effective:
+        for d in r.get("directions", []):
+            used_by_direction[d] = used_by_direction.get(d, 0) + 1
+
+    return {
+        "ok": True,
+        "topic": state.get("topic", ""),
+        "genre": state.get("genre", "academic"),
+        "tier": {
+            "level": state.get("tier") or None,
+            "profile": profile,
+            "reason": state.get("tier_reason") or None,
+        },
+        "directions": _direction_source_diversity(state),
+        "rounds": {
+            "registered": len(rounds),
+            "effective": len(effective),
+            "wasted": len(rounds) - len(effective),
+            "cap": profile["max_rounds"] if profile else None,
+            "by_direction": {d: used_by_direction.get(d, 0) for d in tops},
+            "per_direction_cap": profile["max_runs_per_direction"] if profile else None,
+            "last": last_round,
+        },
+        "claims_digest": {
+            "shown": digest,
+            "omitted_older": max(0, len(claims) - len(shown)),
+        },
+        "memos": {
+            "by_direction": memos_view,
+            "without_memo": [d for d in tops if d not in latest_memo],
+        },
+        "source_distribution": {
+            "academic": sum(1 for s in _live_sources(state) if _source_class(s.get("kind", "paper")) == "academic"),
+            "web": sum(1 for s in _live_sources(state) if s.get("kind") == "web"),
+            "other": sum(1 for s in _live_sources(state) if _source_class(s.get("kind", "paper")) == "other"),
+            "unsupported_claims": sum(1 for c in claims if not c.get("supports")),
+            # the citable count is the anti-overcounting view: live,
+            # non-downgraded claims only, scholarly kinds only
+            "citable_scholarly": _citable_scholarly_count(state),
+        },
+        "scholarly_ref_directive": _scholarly_ref_directive(state),
+        # The report-stage funnel: how much of retrieval survives to
+        # claim-grounded use. Numbers only, no threshold — the decision it
+        # feeds is "write from the 74% the ledger holds but the claims never
+        # reached", and that is a writing-stage call, not a retrieval one.
+        "retrieval_funnel": _retrieval_funnel(state),
+        # The writing plan the report stage will be held to (per-section
+        # targets and the user budget, if registered).
+        "write_targets": _write_targets(state),
+        "evidence_quality": _evidence_quality(state),
+        "evaluation_history": _evaluation_history_view(state),
+        "unresolved_conflicts": [
+            {"claim": c["id"], "conflict": c["conflict"]} for c in claims if c.get("conflict")
+        ],
+        "verbatim_check": _claims_evidence_not_verbatim(state),
+        "verify_stats": {
+            "checked": sum(1 for c in claims if c.get("verified")),
+            "passed": sum(1 for c in claims if c.get("verify_status") == "passed"),
+            "downgraded": sum(1 for c in claims if c.get("verify_status") == "downgraded"),
+            "inconclusive": sum(1 for c in claims if c.get("verify_status") == "inconclusive"),
+            "awaiting_verify": sum(
+                1 for c in claims if c.get("evidence") and not c.get("verified")
+                and not _claim_downgraded(state, c)
+            ),
+            # Reason diversity is the visible trace of real per-claim
+            # checking: one template string across the batch is a signature
+            # of rubber-stamping, and it shows up here either way.
+            **_verify_reason_stats(claims),
+        },
+        "spend_total_cny": _spend_total(state),
+        "not_recorded": [
+            *([] if state.get("tier") else ["tier"]),
+            *([] if rounds else ["rounds"]),
+            *([] if state.get("decisions") else ["decisions"]),
+            *(["memos"] if not state.get("memos") else []),
+            *(["write_targets"] if _write_targets(state)["total"] is None else []),
+        ],
+        "absent_by_design": [
+            "user template outline (outline registration is a later migration batch)",
+            "mid-run user guidance (the user interjects natively in this architecture)",
+        ],
+    }
+
+
+# ------------------------------------------------- report-stage richness helpers
+# The three pieces below are one port: DeepDive's report stage gets its length
+# from mechanisms this ledger lacked — per-chapter writing targets, a write-time
+# deviation observation, and a material/read-back surface that hands the writer
+# substance (claim evidence, source notes, and a ranked list of originals to
+# re-read) instead of one-line claims. Selection rules and constants come from
+# the source verbatim; what cannot port (the engine holds no document bodies, so
+# it lists originals for the host to re-open rather than injecting fulltexts) is
+# the already-recorded architectural difference.
+
+_CITE_MARK = re.compile(r"\[@\d+\]|\[\d+\]|\[\[\d+\]\([^)]*\)\]|\[\[\d+\]\]")
+_BARE_URL = re.compile(r"https?://\S+")
+_ASCII_WORD = re.compile(r"[A-Za-z0-9][A-Za-z0-9'\-]*")
+_CJK_CHAR = re.compile(r"[㐀-䶿一-鿿぀-ヿ가-힯]")
+
+
+def _cjk_equivalent_len(text: str) -> int:
+    """Report length in Chinese-character equivalents — the口径 upstream uses
+    for every length decision (utils.cjk_equivalent_len). CJK characters count
+    1 each, ASCII words × LENGTH_WORD_TO_CJK, punctuation and whitespace count
+    nothing, and citation marks / bare URLs are stripped first: they are
+    markup, and counting them fattens citation-dense prose without adding a
+    word of substance. (A different unit from `_prose_units`, which floors
+    subsections at word-granularity; targets and deviations are 当量.)"""
+    if not text:
+        return 0
+    cleaned = _BARE_URL.sub(" ", _CITE_MARK.sub(" ", text))
+    cjk = len(_CJK_CHAR.findall(cleaned))
+    words = len(_ASCII_WORD.findall(cleaned))
+    return int(round(cjk + words * LENGTH_WORD_TO_CJK))
+
+
+def _retrieval_funnel(state: dict[str, Any]) -> dict[str, Any]:
+    """How much of what retrieval brought survives to claim-grounded use.
+    Upstream reports exactly this pair (telemetry.py: candidate sources
+    "含未进入最终参考文献的来源，故与 cited 可以不等") and never thresholds it —
+    observation only, no warning, no genre-specific reference floor (the one
+    soft target that exists upstream is scholarly-only, already ported as
+    `scholarly_ref_directive`). The report-side count lands in the renumber
+    citation map; this is the ledger-side funnel."""
+    sources = _live_sources(state)
+    cited = set()
+    for claim in _live_claims(state):
+        cited.update(claim.get("supports", []))
+    total = len(sources)
+    return {
+        "sources_total": total,
+        "with_abstract": sum(1 for s in sources if s.get("abstract")),
+        "with_note": sum(1 for s in sources if s.get("note")),
+        "fulltext": sum(1 for s in sources if s.get("depth") == "fulltext"),
+        "cited_by_live_claims": len(cited & {s["n"] for s in sources}),
+        "cited_share": round(len(cited & {s["n"] for s in sources}) / total, 3) if total else None,
+    }
+
+
+def _rounds_without_yield(state: dict[str, Any]) -> list[dict[str, Any]]:
+    """Effective rounds whose probes hold no live source — the observable
+    shadow of upstream's forced `needs_more` (a pass with empty findings or
+    all-unsourced ones must not report sufficient, prompts/subagent.py:428).
+    The engine cannot see a round's findings, but it can see that every probe
+    the round served kept nothing: that round's --why-stopped owes the run an
+    honest 'nothing landed' and the next decide owes it a retry, not a wrap."""
+    probes_with_sources = {
+        p for s in _live_sources(state) for p in (s.get("probes") or [])
+    }
+    return [
+        {"round": r["n"], "probes": r["probes"]}
+        for r in _effective_rounds(state)
+        if r.get("probes") and not (set(r["probes"]) & probes_with_sources)
+    ]
+
+
+def _section_material_volume(state: dict[str, Any], top: dict[str, Any]) -> int:
+    """Everything the section's writing can draw on, in characters: its live
+    claims' text and verbatim evidence, plus the abstracts and notes of the
+    sources tagged to it. This is the number '素材充分度' refers to — upstream
+    assigns each chapter's target BY this sufficiency, so the coupling between
+    a target and the material behind it is part of the mechanism, not an
+    afterthought. A raw-character approximation of 字当量 (CJK ≈ 1), good
+    enough to see a target that outruns its entire material."""
+    section_ids = {top["id"], *(kid["id"] for kid in top["children"])}
+    volume = 0
+    for claim in _live_claims(state):
+        if claim.get("section", "") in section_ids:
+            volume += len(claim.get("text", ""))
+            volume += sum(len(e) for e in claim.get("evidence") or [])
+    for source in _live_sources(state):
+        if set(source.get("sections", [])) & section_ids:
+            volume += len(source.get("abstract") or "")
+            volume += len(source.get("note") or "")
+    return volume
+
+
+def _write_targets(state: dict[str, Any]) -> dict[str, Any]:
+    """The registered writing plan: per-section target lengths (each shown next
+    to the material the section actually holds — the target/material pairing IS
+    the mechanism upstream calls 按素材充分度分配) and the user's overall
+    budget, if any."""
+    sections: dict[str, dict[str, Any]] = {}
+    for top in state["outline"]:
+        sections[top["id"]] = {
+            "target": top.get("target_chars"),
+            "material_chars": _section_material_volume(state, top),
+        }
+    registered = [s["target"] for s in sections.values() if s["target"]]
+    return {
+        "budget": state.get("length_budget") or None,
+        "sections": sections,
+        "total": sum(registered) if registered else None,
+    }
+
+
+def _section_readback(state: dict[str, Any]) -> dict[str, Any]:
+    """Rank the core originals each section should re-read before writing —
+    the port of _select_chapter_raw_docs. Hits are claim citations within the
+    section; a source already listed for an earlier section keeps its slot at
+    half weight (same original again beats none, but new originals rank first).
+    Scholarly genre (upstream review/proposal): citable academic originals get
+    priority into the limited slots and non-academic ones carry the
+    background-only tag, so high-hit web pages cannot crowd out the only
+    citable paper. Industry genre ranks by hits alone — web evidence is
+    first-class there."""
+    claims_by_section: dict[str, list[dict[str, Any]]] = {}
+    for claim in _live_claims(state):
+        claims_by_section.setdefault(claim.get("section", ""), []).append(claim)
+    scholarly = state.get("genre", "academic") != "industry"
+    listed: set[int] = set()
+    per_section: dict[str, list[dict[str, Any]]] = {}
+    for top in state["outline"]:
+        section_claims = list(claims_by_section.get(top["id"], []))
+        for kid in top["children"]:
+            section_claims += claims_by_section.get(kid["id"], [])
+        hits: dict[int, float] = {}
+        for claim in section_claims:
+            for n in claim.get("supports", []):
+                hits[n] = hits.get(n, 0.0) + (0.5 if n in listed else 1.0)
+        live = {s["n"]: s for s in _live_sources(state)}
+        # A claim may still name a source that was dropped later; a dead source
+        # must not consume a slot, so live membership filters before the rank.
+        hits = {n: w for n, w in hits.items() if n in live}
+        ranked = sorted(
+            hits,
+            key=lambda n: (
+                1 if scholarly and _source_class(live[n].get("kind", "paper")) == "academic" else 0,
+                hits[n],
+            ),
+            reverse=True,
+        )[:READBACK_PER_SECTION_MAX]
+        picked = []
+        for n in ranked:
+            picked.append({
+                "n": n,
+                "hits": hits[n],
+                "reused": n in listed,
+                "background": scholarly and _source_class(live[n].get("kind", "paper")) != "academic",
+            })
+            listed.add(n)
+        per_section[top["id"]] = picked
+    return {
+        "per_section": per_section,
+        "distinct": sorted(listed),
+        "global_cap": READBACK_GLOBAL_MAX,
+        "over_global_cap": len(listed) > READBACK_GLOBAL_MAX,
+    }
+
+
+def _material_markdown(state: dict[str, Any], lang: str = "auto") -> str:
+    """The writing-preparation surface — what the host reads before writing
+    each section, the port of DeepDive's chapter material assembly. Upstream
+    renders each finding as a material block (citation mark + full detail +
+    evidence excerpt) and injects ranked core originals per chapter; the
+    writer composes from material, not from one-line claims. Here the same
+    block is claim text + `[@n]` marks + verbatim evidence + the source's
+    note (the detail channel of this ledger), and the originals the engine
+    cannot inject are a ranked re-read list instead — the host re-opens them
+    with its own tools. Per-section writing targets head each section so the
+    target is on the desk before the first sentence."""
+    lab = _labels(state, lang)
+    live = {s["n"]: s for s in _live_sources(state)}
+    claims_by_section: dict[str, list[dict[str, Any]]] = {}
+    for claim in _live_claims(state):
+        claims_by_section.setdefault(claim.get("section", ""), []).append(claim)
+    latest_memo: dict[str, dict[str, Any]] = {}
+    for memo in state.get("memos", []):
+        latest_memo[memo.get("section", "")] = memo
+    readback = _section_readback(state)
+    targets = _write_targets(state)
+    lines: list[str] = []
+
+    for top in state["outline"]:
+        target = top.get("target_chars")
+        head = lab["m_target"].format(n=target) if target else lab["m_no_target"]
+        # The material volume prints with or without a target: upstream
+        # assigns targets at report time BY material sufficiency, so the
+        # volume is the input the targets are assigned from — it must be
+        # on the desk before any target exists. Once a target is set, the
+        # pairing is the mechanism, and a target that outruns its material
+        # is a broken coupling — the target follows the material, it is not
+        # an instruction to retrieve for a length.
+        material_chars = _section_material_volume(state, top)
+        head += f" · {lab['m_material'].format(n=material_chars)}"
+        lines += [f"## {top['id']}. {top['title']} — {head}", ""]
+
+        section_claims = list(claims_by_section.get(top["id"], []))
+        for kid in top["children"]:
+            section_claims += claims_by_section.get(kid["id"], [])
+        lines += [lab["m_blocks"], ""]
+        if not section_claims:
+            lines += [lab["no_claims"], ""]
+        for claim in section_claims:
+            marks = " ".join(f"[@{n}]" for n in claim.get("supports", []))
+            marker = lab["downgraded"] if _claim_downgraded(state, claim) else ""
+            lines.append(f"- [{claim['id']}] {claim['text']}{(' ' + marks) if marks else ''}{marker}")
+            for excerpt in claim.get("evidence") or []:
+                lines.append(f"  - {lab['m_evidence']}\"{excerpt}\"")
+            for n in claim.get("supports", []):
+                note = (live.get(n) or {}).get("note")
+                if note:
+                    lines.append(f"  - {lab['m_note'].format(n=n)}{note}")
+        lines.append("")
+
+        lines += [lab["m_readback"], ""]
+        picked = readback["per_section"].get(top["id"], [])
+        if not picked:
+            lines += [lab["m_no_readback"], ""]
+        for entry in picked:
+            src = live[entry["n"]]
+            flags = ""
+            if entry["reused"]:
+                flags += lab["m_reused"]
+            if entry["background"]:
+                flags += lab["m_background"]
+            hits_text = lab["m_hits"].format(n=f"{entry['hits']:g}")
+            lines.append(
+                f"- [@{entry['n']}] {src.get('title', '')} — {src.get('url', '')} "
+                f"({hits_text}{flags})"
+            )
+        lines.append("")
+
+        # The uncited pool — the port of upstream's 全局参考文献清单: its
+        # writer gets a numbered list of EVERY retrieved source (built from
+        # state.sources, unfiltered), so a source no finding leaned on is still
+        # on the desk. Here the equivalent is per-section: sources tagged to
+        # this section that no claim of this section cites. They are invisible
+        # in the blocks above and rank last-never in the read-back list (zero
+        # hits); without this pool a run's citations collapse to its claim set
+        # exactly (measured twice: 26 == 26, 27 == 27).
+        section_cited: set[int] = set()
+        for claim in section_claims:
+            section_cited.update(claim.get("supports", []))
+        section_ids = {top["id"], *(kid["id"] for kid in top["children"])}
+        pool = [
+            s for s in live.values()
+            if set(s.get("sections", [])) & section_ids and s["n"] not in section_cited
+        ]
+        lines += [lab["m_uncited"], ""]
+        if not pool:
+            lines += [lab["m_uncited_none"], ""]
+        for s in sorted(pool, key=lambda s: s["n"]):
+            abstract = s.get("abstract") or ""
+            snippet = (abstract[:120] + "…") if len(abstract) > 120 else abstract
+            lines.append(f"- [@{s['n']}] {s.get('title', '')} — {s.get('url', '')}")
+            if snippet:
+                lines.append(f"  {snippet}")
+        lines.append("")
+
+        memo = latest_memo.get(top["id"])
+        lines += [lab["m_memo"], ""]
+        lines += [memo["text"] if memo else lab["m_no_memo"], ""]
+
+    datums = _live_datums(state)
+    lines += [lab["m_datums"], ""]
+    if not datums:
+        lines += [lab["m_no_datums"], ""]
+    for d in datums:
+        lines.append(
+            f"- {d['id']} · {d.get('entity', '')} / {d.get('metric', '')} = "
+            f"{d.get('value', '')}{d.get('unit', '')}"
+            f"{(' (' + str(d['year']) + ')') if d.get('year') else ''} [@{d.get('source')}]"
+        )
+    lines.append("")
+
+    distinct = len(readback["distinct"])
+    lines.append(
+        lab["m_global"].format(x=distinct, cap=READBACK_GLOBAL_MAX)
+    )
+    # Sources that never got a section tag sit outside every pool above; the
+    # desk stays complete only if they are named too.
+    untagged = [s for s in live.values() if not s.get("sections")]
+    if untagged:
+        lines += ["", lab["m_untagged"].format(n=len(untagged)), ""]
+        lines += [f"- [@{s['n']}] {s.get('title', '')}" for s in sorted(untagged, key=lambda s: s["n"])]
+    if readback["over_global_cap"]:
+        total_hits: dict[int, int] = {}
+        for claim in _live_claims(state):
+            for n in claim.get("supports", []):
+                if n in live:
+                    total_hits[n] = total_hits.get(n, 0) + 1
+        slate = sorted(total_hits, key=lambda n: total_hits[n], reverse=True)[:READBACK_GLOBAL_MAX]
+        lines += ["", lab["m_over_cap"].format(cap=READBACK_GLOBAL_MAX), ""]
+        lines += [
+            f"- [@{n}] {live[n].get('title', '')} ({lab['m_hits'].format(n=total_hits[n])})"
+            for n in slate
+        ]
+    return "\n".join(lines) + "\n"
+
+
 # --------------------------------------------------------------- render labels
 
 # The report follows the user's language, so the renderer has to as well: a
@@ -1529,6 +3260,8 @@ _LABELS_EN = {
     "sources_none": "none",
     "disagreement": " _(disagreement)_",
     "interpretation": " _(interpretation)_",
+    "downgraded": " _(verify-downgraded — background info, do not cite)_",
+    "not_verbatim": " _(evidence not verbatim — background info, do not cite)_",
     "conflict": "conflict: ",
     "unsupported": "[unsupported]",
     "no_outline": "_No outline: run the Round 0 scout, then `evidence.py outline set`._",
@@ -1564,13 +3297,36 @@ _LABELS_EN = {
     "c_conflicts": "Claims carrying a recorded conflict",
     "c_coverage": "Top-level sections / subsections",
     "c_figures": "Figures recorded",
-    "c_depth_names": {"detail": "full abstract", "slice": "abstract slice", "search": "title only"},
+    "c_tier": "Complexity tier (directions × reruns × rounds)",
+    "c_tier_missing": "not registered",
+    "c_rounds": "Research rounds (effective + wasted)",
+    "c_verify": "Citation faithfulness (passed / downgraded / inconclusive)",
+    "c_verify_missing": "not verified",
+    "c_depth_names": {
+        "fulltext": "open-access full text",
+        "detail": "full abstract",
+        "slice": "abstract slice",
+        "search": "title only",
+    },
     "appendix_c_figures": "### Figures",
-    "appendix_c_figures_head": "| Figure | Type | Sources | Rendered by |",
+    "appendix_c_figures_head": "| Figure | Type | Sources | Rendered by | Charted by |",
+    "c_chart_agent": "chart-topic subagent",
+    "c_chart_controller": "controller session",
+    "c_chart_undeclared": "undeclared",
+    "appendix_c_plans": "### Figure plans (chart topics)",
+    "appendix_c_plans_head": "| Plan | Topic | Section | Intended | Status | Datums | Figure |",
+    "c_plan_status": {
+        "open": "open — retrieving",
+        "fulfilled": "fulfilled",
+        "abandoned": "abandoned",
+    },
+    "c_plan_no_type": "—",
+    "c_plan_none": "—",
     "c_prose_todo": (
         "_Add below, in prose: inclusion and exclusion criteria, the retrieval time "
-        "window and year filter, the language strategy, and the evidence level "
-        "(abstract-level, not full text). The ledger cannot know these._"
+        "window and year filter, the language strategy, and the evidence level — "
+        "how many sources were read at open-access full text (the row above) and "
+        "what the rest degraded to. The ledger cannot know the rest._"
     ),
     "pointer": (
         "Appendices are written to `{path}`: Appendix A records each search's axis, "
@@ -1593,6 +3349,27 @@ _LABELS_EN = {
         "screening counts, reading-depth distribution and coverage statistics; "
         "Appendix D maps the report's citation numbers to ledger source numbers."
     ),
+    # --material: the writing-preparation surface
+    "m_target": "target {n} 字当量",
+    "m_no_target": "no writing target registered",
+    "m_blocks": "### Material blocks — write from these, not from memory",
+    "m_evidence": "evidence: ",
+    "m_note": "note [@{n}]: ",
+    "m_readback": "### Re-read before writing — ranked by this section's claim citations; already-listed originals carry half weight",
+    "m_no_readback": "_No claim-grounded originals in this section — nothing to rank._",
+    "m_hits": "cited by {n} claim(s)",
+    "m_reused": "; listed for an earlier section",
+    "m_background": "; background only — context, never a citation",
+    "m_memo": "### Memo (latest for this direction)",
+    "m_no_memo": "_No memo recorded for this section._",
+    "m_datums": "### Data material (datums, report-wide)",
+    "m_no_datums": "_No datums recorded._",
+    "m_global": "Distinct originals listed for re-read: {x}/{cap} (whole-report cap).",
+    "m_over_cap": "One-shot writing slate — the global top {cap} by total claim citations:",
+    "m_material": "material on file ~{n} chars",
+    "m_uncited": "### Uncited pool — tagged to this section, cited by none of its claims; read before citing, or drop",
+    "m_uncited_none": "_Nothing tagged here is uncited — every retrieved source in this section carries a claim._",
+    "m_untagged": "### Untagged live sources ({n}) — outside every section pool; tag or drop",
 }
 
 _LABELS_ZH = {
@@ -1600,6 +3377,8 @@ _LABELS_ZH = {
     "sources_none": "无",
     "disagreement": " _（分歧）_",
     "interpretation": " _（解读）_",
+    "downgraded": " _（核验降级——背景信息，不得引用）_",
+    "not_verbatim": " _（证据非逐字——背景信息，不得引用）_",
     "conflict": "冲突：",
     "unsupported": "[无来源]",
     "no_outline": "_尚无大纲：先做第 0 轮扫描，再执行 `evidence.py outline set`。_",
@@ -1630,12 +3409,34 @@ _LABELS_ZH = {
     "c_conflicts": "记录了冲突的论断",
     "c_coverage": "一级章节 / 子节",
     "c_figures": "已记录图表",
-    "c_depth_names": {"detail": "完整摘要", "slice": "摘要片段", "search": "仅题目"},
+    "c_tier": "复杂度档位（方向 × 补轮 × 总轮）",
+    "c_tier_missing": "未登记",
+    "c_rounds": "研究轮次（有效 + 浪费）",
+    "c_verify": "引证核验（通过 / 降级 / 未定论）",
+    "c_verify_missing": "未核验",
+    "c_depth_names": {
+        "fulltext": "开放获取全文",
+        "detail": "完整摘要",
+        "slice": "摘要片段",
+        "search": "仅题目",
+    },
     "appendix_c_figures": "### 图表",
-    "appendix_c_figures_head": "| 图表 | 类型 | 来源 | 渲染方式 |",
+    "appendix_c_figures_head": "| 图表 | 类型 | 来源 | 渲染方式 | 作图形态 |",
+    "c_chart_agent": "图表子代理",
+    "c_chart_controller": "主会话",
+    "c_chart_undeclared": "未声明",
+    "appendix_c_plans": "### 图表规划（图表主题）",
+    "appendix_c_plans_head": "| 规划 | 主题 | 节 | 意向图型 | 状态 | 数据点 | 成图 |",
+    "c_plan_status": {
+        "open": "进行中——检索中",
+        "fulfilled": "已成图",
+        "abandoned": "已放弃",
+    },
+    "c_plan_no_type": "—",
+    "c_plan_none": "—",
     "c_prose_todo": (
         "_请在下方以散文补足台账无法知道的部分：纳入与排除标准、检索时间窗与年份过滤、"
-        "语言策略，以及证据层级（摘要级而非全文级）。_"
+        "语言策略，以及证据层级——多少来源读了开放获取全文（上表行）、其余降级到了哪一档。_"
     ),
     "pointer": (
         "附录已写入 `{path}`：附录 A 记录每次检索的检索轴、查询与返回／保留／丢弃条数"
@@ -1654,6 +3455,27 @@ _LABELS_ZH = {
         "及丢弃原因，附录 B 记录各接口的调用次数与费用小计，附录 C 记录筛查计数、"
         "证据读取深度分布与覆盖统计，附录 D 给出报告引用号与台账编号的对照。"
     ),
+    # --material：写作准备面
+    "m_target": "写作目标 {n} 字当量",
+    "m_no_target": "未登记写作目标",
+    "m_blocks": "### 素材块——从这些出发写作，不凭记忆",
+    "m_evidence": "证据：",
+    "m_note": "笔记 [@{n}]：",
+    "m_readback": "### 写前回读清单——按本节 claim 引用次数排序；前节已列的原文半权",
+    "m_no_readback": "_本节没有 claim 支撑的原文——无可排序。_",
+    "m_hits": "被 {n} 条 claim 引用",
+    "m_reused": "；前节已列",
+    "m_background": "；仅作背景——只供语境，不得引用",
+    "m_memo": "### 备忘录（本方向最新）",
+    "m_no_memo": "_本节无备忘录。_",
+    "m_datums": "### 数据素材（datums，全报告）",
+    "m_no_datums": "_无 datum 记录。_",
+    "m_global": "回读清单去重原文共 {x}/{cap}（全稿上限）。",
+    "m_over_cap": "一次成稿优先名单——按全稿 claim 引用次数取全局前 {cap}：",
+    "m_material": "现有素材 ~{n} 字",
+    "m_uncited": "### 未引用池——挂在本节、本节论断均未引用；要用先读，不用就 drop",
+    "m_uncited_none": "_本节没有未引用来源——挂节来源全部有论断承载。_",
+    "m_untagged": "### 未挂节来源（{n} 个）——不在任何节的池里；挂节或 drop",
 }
 
 
@@ -1694,6 +3516,45 @@ def _bibliography_line(source: dict[str, Any], number: int) -> str:
 
 CITE_TOKEN = re.compile(r"\[@(\d+)\]")
 REFERENCES_PLACEHOLDER = "{{references}}"
+# Adjacent citations must read spaced ([3] [7], report-format.md §citations),
+# never glued ([3][7] — a reading defect). Drafts glue [@n] tokens freely; the
+# delivered file normalizes the seam between two citation-shaped brackets.
+GLUED_CITES = re.compile(r"(\[\d+\])(?=\[)")
+# The delivered report is substance, not claim restatement. Figures have a
+# whole sufficiency machinery (plans, budgets, `check` warnings); prose had
+# none, and a report measured only on its charts grows five figures over
+# three sentences. `render --renumber` is the one engine pass that reads the
+# draft, so the floor lives here: a subsection under this many prose units
+# (CJK characters or Latin words, citations and structural lines excluded)
+# never reaches the page.
+MIN_SUBSECTION_PROSE = 300
+
+
+def _prose_units(text: str) -> int:
+    body = re.sub(r"\[@\d+\]|\[\d+\]", " ", text)
+    cjk = len(re.findall(r"[㐀-鿿]", body))
+    words = len(re.findall(r"[A-Za-z][A-Za-z'-]*", body))
+    return cjk + words
+
+
+def _subsection_prose(text: str) -> list[tuple[str, int]]:
+    """Prose volume of each `###` subsection, headings/images/tables/quotes
+    and the reference block excluded — the unit `render --renumber` floors."""
+    units: list[tuple[str, int]] = []
+    current: str | None = None
+    buf: list[str] = []
+    for line in text.splitlines():
+        if line.startswith("#"):
+            if current is not None:
+                units.append((current, _prose_units("\n".join(buf))))
+            current = line[4:].strip() if line.startswith("### ") else None
+            buf = []
+            continue
+        if current is not None and not line.lstrip().startswith(("!", "|", ">")):
+            buf.append(line)
+    if current is not None:
+        units.append((current, _prose_units("\n".join(buf))))
+    return units
 
 
 def _renumber_draft(state: dict[str, Any], draft: Path, out: Path, lang: str = "auto",
@@ -1732,6 +3593,67 @@ def _renumber_draft(state: dict[str, Any], draft: Path, out: Path, lang: str = "
             )
         raise LedgerError("; ".join(parts) + ". Fix the draft; the ledger is not edited here.")
 
+    thin = [(title, n) for title, n in _subsection_prose(text) if n < MIN_SUBSECTION_PROSE]
+    if thin:
+        detail = "; ".join(f"'{title}' has {n}" for title, n in thin)
+        raise LedgerError(
+            f"Report is substance, not claim restatement — thin subsection(s): {detail} prose "
+            f"units (CJK characters or Latin words; citations, headings, images and tables "
+            f"excluded), minimum {MIN_SUBSECTION_PROSE}. Develop each subsection's claims in "
+            "full paragraphs drawing on the abstracts and fulltext notes already in the "
+            "ledger; a report measured only on its charts grows figures over sentences."
+        )
+
+    # Write-time length observation (the _log_length_deviation port): the
+    # registered targets are goals, not constraints — deviation is recorded in
+    # both directions and the prose is never rewritten for length. Denominator
+    # is the body only: the generated references block (and the heading the
+    # host may have put above the placeholder) is markup, not what the reader
+    # asked for. No targets registered → the block reports the length alone,
+    # so old ledgers lose nothing.
+    body_end = text.find(REFERENCES_PLACEHOLDER)
+    if body_end != -1:
+        # Cut at a *references* heading directly above the placeholder —
+        # never at "the last heading before it": a draft may place the
+        # placeholder without any heading, and cutting at the last heading
+        # swallowed a whole final section (measured: an entire 局限性
+        # section vanished from the length block of a real run).
+        head = re.search(
+            r"^(#{1,6}[ \t]*(?:references|bibliography|参考文献|引用文献|参考资料)[^\n]*)\n\s*$",
+            text[:body_end], flags=re.M | re.I,
+        )
+        body_end = head.start() if head else body_end
+    body_for_length = text[:body_end] if body_end != -1 else text
+    body_chars = _cjk_equivalent_len(body_for_length)
+    targets = _write_targets(state)
+    length_block: dict[str, Any] = {"body_chars": body_chars}
+    # Per-`##`-section lengths, so the continue-writing loop can aim at the
+    # thin section instead of the total: a -51% total hides a section that
+    # wrote 43% of its target next to one that wrote 90%. The engine measures
+    # and names headings; the draft's author is the one who knows which
+    # heading belongs to which outline section.
+    section_chunks = re.split(r"^## ", body_for_length, flags=re.M)
+    length_block["sections"] = [
+        {
+            "heading": chunk.split("\n", 1)[0].strip(),
+            "chars": _cjk_equivalent_len(chunk),
+        }
+        for chunk in section_chunks[1:]
+    ]
+    if targets["total"] is not None:
+        deviation = (body_chars - targets["total"]) / targets["total"]
+        length_block.update({
+            "target_total": targets["total"],
+            "deviation": round(deviation, 3),
+            "within_tolerance": abs(deviation) <= LENGTH_TOLERANCE,
+            "direction": "short" if deviation < 0 else "long",
+        })
+    if targets["budget"]:
+        length_block["budget"] = targets["budget"]
+        length_block["over_budget"] = body_chars > targets["budget"]
+
+    weak_numbers = _weak_patent_number_segments(text, live)
+
     order: list[int] = []
     seen: set[int] = set()
     for match in CITE_TOKEN.finditer(text):
@@ -1741,7 +3663,7 @@ def _renumber_draft(state: dict[str, Any], draft: Path, out: Path, lang: str = "
             order.append(n)
     external = {n: i for i, n in enumerate(order, start=1)}
 
-    replaced = CITE_TOKEN.sub(lambda m: f"[{external[int(m.group(1))]}]", text)
+    replaced = GLUED_CITES.sub(r"\1 ", CITE_TOKEN.sub(lambda m: f"[{external[int(m.group(1))]}]", text))
     if REFERENCES_PLACEHOLDER not in replaced:
         raise LedgerError(
             "Draft has no {{references}} placeholder under its references heading. "
@@ -1754,12 +3676,21 @@ def _renumber_draft(state: dict[str, Any], draft: Path, out: Path, lang: str = "
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(replaced if replaced.endswith("\n") else replaced + "\n", encoding="utf-8")
 
+    # Upstream logs its length deviation after delivery and tunes prompts with
+    # it (_log_length_deviation, report.py:810-841 — 只观测、不重写). The ledger
+    # is this fork's log: persist the observation so post-run review and the
+    # next run's target-setting can read it. It never gates delivery.
+    state["length_report"] = {**length_block, "report": out.as_posix()}
+    if ledger:
+        save_state(Path(ledger), state)
+
     map_path = out.with_name(f"{out.stem}-citation-map.json")
     payload = {
         "version": 1,
         "ledger": ledger,
         "report": out.as_posix(),
         "cited": len(order),
+        "length": length_block,
         "external_to_ledger": {str(i): n for n, i in external.items()},
         "ledger_to_external": {str(n): i for n, i in external.items()},
     }
@@ -1771,6 +3702,10 @@ def _renumber_draft(state: dict[str, Any], draft: Path, out: Path, lang: str = "
         "cited": len(order),
         "entries": len(entries),
         "first_five": [f"[{external[n]}]={n}" for n in order[:5]],
+        "weak_patent_numbers": weak_numbers,
+        # Record-only: the target was a goal; rewriting for length would pad
+        # prose and cut arguments (upstream's stated reason for log-only).
+        "length": length_block,
     }
 
 
@@ -1867,13 +3802,32 @@ def _appendix_c_lines(state: dict[str, Any], lab: dict[str, Any],
         depths[source.get("depth", "search")] = depths.get(source.get("depth", "search"), 0) + 1
     names = lab["c_depth_names"]
     depth_text = ", ".join(
-        f"{names.get(d, d)} {depths[d]}" for d in ("detail", "slice", "search") if depths.get(d)
+        f"{names.get(d, d)} {depths[d]}"
+        for d in ("fulltext", "detail", "slice", "search") if depths.get(d)
     ) or "—"
 
     web = sum(1 for s in live if s.get("kind") == "web")
     interpretations = sum(1 for c in claims if c.get("type") == "interpretation")
     conflicts = sum(1 for c in claims if c.get("conflict"))
     subs = sum(len(top["children"]) for top in state["outline"])
+
+    profile = _tier_profile(state)
+    tier_text = (
+        f"{state.get('tier')} ({profile['max_directions']} × {profile['max_runs_per_direction']} × "
+        f"{profile['max_rounds']})" if profile else lab["c_tier_missing"]
+    )
+    rounds_all = state.get("rounds", [])
+    rounds_text = (
+        f"{len(_effective_rounds(state))} + {len(rounds_all) - len(_effective_rounds(state))}"
+        if rounds_all else "0"
+    )
+    verified = [c for c in claims if c.get("verified")]
+    verify_text = (
+        f"{sum(1 for c in verified if c.get('verify_status') == 'passed')} / "
+        f"{sum(1 for c in verified if c.get('verify_status') == 'downgraded')} / "
+        f"{sum(1 for c in verified if c.get('verify_status') == 'inconclusive')}"
+        if verified else lab["c_verify_missing"]
+    )
 
     rows = [
         (lab["c_searches"], lab["c_searches_fmt"].format(n=len(state["probes"]), axes=axis_text)),
@@ -1884,12 +3838,16 @@ def _appendix_c_lines(state: dict[str, Any], lab: dict[str, Any],
         (lab["c_conflicts"], str(conflicts)),
         (lab["c_coverage"], f"{len(state['outline'])} / {subs}"),
         (lab["c_figures"], str(len(_live_figures(state)))),
+        (lab["c_tier"], tier_text),
+        (lab["c_rounds"], rounds_text),
+        (lab["c_verify"], verify_text),
     ]
     lines = [lab["appendix_c"], "", lab["appendix_c_head"], "| --- | --- |"]
     lines += [f"| {item} | {value} |" for item, value in rows]
     figures = _live_figures(state)
     if figures:
-        lines += ["", lab["appendix_c_figures"], "", lab["appendix_c_figures_head"], "| --- | --- | --- | --- |"]
+        lines += ["", lab["appendix_c_figures"], "", lab["appendix_c_figures_head"],
+                  "| --- | --- | --- | --- | --- |"]
         ext = citation_map["ledger_to_external"] if citation_map else None
         for f in figures:
             ftype = f.get("chart_type") or "—"
@@ -1900,7 +3858,30 @@ def _appendix_c_lines(state: dict[str, Any], lab: dict[str, Any],
             else:
                 fsrc = ", ".join(str(n) for n in nums) or "—"
             fby = f.get("rendered_by") or "—"
-            lines.append(f"| {f['id']} | {ftype} | {fsrc} | {fby} |")
+            if f.get("charted_by") == "agent":
+                fmode = lab["c_chart_agent"]
+            elif f.get("charted_by") == "controller":
+                fmode = lab["c_chart_controller"]
+                if f.get("charted_reason"):
+                    fmode = f"{fmode} — {f['charted_reason']}"
+            else:
+                fmode = lab["c_chart_undeclared"]
+            lines.append(f"| {f['id']} | {ftype} | {fsrc} | {fby} | {fmode} |")
+    plans = _live_plans(state)
+    if plans:
+        st = lab["c_plan_status"]
+        lines += ["", lab["appendix_c_plans"], "", lab["appendix_c_plans_head"],
+                  "| --- | --- | --- | --- | --- | --- | --- |"]
+        for p in plans:
+            status = st.get(p.get("status", "open"), p.get("status", "open"))
+            if p.get("status") == "abandoned" and p.get("reason"):
+                status = f"{status} — {p['reason']}"
+            lines.append(
+                f"| {p['id']} | {p.get('topic', '')} | {p.get('section', '')} "
+                f"| {p.get('chart_type') or lab['c_plan_no_type']} | {status} "
+                f"| {len(_plan_datums(state, p['id']))} "
+                f"| {p.get('figure_id') or lab['c_plan_none']} |"
+            )
     return lines + ["", lab["c_prose_todo"], ""]
 
 
@@ -1920,10 +3901,19 @@ def render_markdown(state: dict[str, Any], final: bool = False, lang: str = "aut
     fig_by_id = {f["id"]: f for f in state["figures"]}
     figures_by = _figures_by_section(state)
 
+    # Downgraded claims (verify gate, or evidence that failed the verbatim
+    # check) stay in the ledger as background information — marked here so
+    # the host drafting prose knows not to lean a citation on them.
+    not_verbatim_ids = {f["claim"] for f in _claims_evidence_not_verbatim(state)}
+
     def claim_bullet(claim_id: str) -> list[str]:
         claim = by_id[claim_id]
         refs = " ".join(f"[{n}]" for n in claim["supports"]) or lab["unsupported"]
         marker = "" if claim["type"] == "observed" else lab["interpretation"]
+        if claim.get("verify_status") == "downgraded":
+            marker += lab["downgraded"]
+        elif claim_id in not_verbatim_ids:
+            marker += lab["not_verbatim"]
         out = [f"- **{claim['id']}**{marker} {claim['text']} {refs}"]
         if claim.get("conflict"):
             out.append(f"  - {lab['conflict']}{claim['conflict']}")
@@ -2052,11 +4042,24 @@ def build_parser() -> argparse.ArgumentParser:
     outline_set.add_argument("--force", action="store_true", help="Replace an existing outline")
     outline_set.add_argument("--allow-unscouted", action="store_true",
                              help="Build the outline without probes; the report must disclose it")
+    outline_set.add_argument("--length-budget", type=int, default=0,
+                             help="User-stated total length budget in 字当量 (Chinese-character "
+                                  "equivalents); hard-capped at 80000 like upstream. The outline's "
+                                  "per-section target_chars should sum near it")
 
     outline_add = outline_sub.add_parser("add-sub", help="Append a subsection to a top-level section")
     outline_add.add_argument("--parent", required=True)
     outline_add.add_argument("--title", required=True)
     outline_add.add_argument("--kind", choices=SECTION_KINDS, default="topic")
+
+    outline_add_top = outline_sub.add_parser(
+        "add-top", help="Add a top-level section mid-run (a new direction); capped by the registered tier")
+    outline_add_top.add_argument("--title", required=True)
+    outline_add_top.add_argument("--from-probes", nargs="*", default=[])
+    outline_add_top.add_argument("--disagreement", default="",
+                                 help="Title of the mandatory disagreement child (default: Disagreement and counter-evidence)")
+    outline_add_top.add_argument("--target-chars", type=int, default=0,
+                                 help="Writing target for this section in 字当量, assigned by material sufficiency")
 
     outline_retitle = outline_sub.add_parser("retitle", help="Rename a section without changing its id")
     outline_retitle.add_argument("--section", required=True)
@@ -2079,8 +4082,12 @@ def build_parser() -> argparse.ArgumentParser:
     claim.add_argument("--type", choices=CLAIM_TYPES, default="observed")
     claim.add_argument("--conflict", default="", help="Describe an unresolved disagreement between sources")
     claim.add_argument("--allow-unsupported", action="store_true", help="Record an open question with no source")
+    claim.add_argument("--evidence", action="append", default=[],
+                       help="Verbatim excerpt from a supporting source's stored text; repeatable. "
+                            "check verifies a whitespace-insensitive substring match and downgrades failures "
+                            "to background info")
     claim.add_argument("--batch", action="store_true",
-                       help="Read a JSON array of {section,text,supports,type?,conflict?} from --json or stdin")
+                       help="Read a JSON array of {section,text,supports,type?,conflict?,evidence?} from --json or stdin")
     claim.add_argument("--json", help="Inline JSON for --batch instead of stdin")
 
     source = sub.add_parser("source", help="Inspect one source's stored text")
@@ -2097,6 +4104,18 @@ def build_parser() -> argparse.ArgumentParser:
     drop.add_argument("--source", nargs="+", type=int, required=True, help="Source numbers to drop")
     drop.add_argument("--reason", default="")
 
+    fulltext = sub.add_parser(
+        "fulltext",
+        help="Record an open-access fulltext read (arXiv, Google Patents, publisher OA), or why none exists",
+    )
+    fulltext.add_argument("--source", type=int, required=True, help="Source number")
+    fulltext.add_argument("--url", help="http(s) address the fulltext was fetched from")
+    fulltext.add_argument("--via", choices=FULLTEXT_CHANNELS,
+                          help="Channel the fulltext came through")
+    fulltext.add_argument("--unavailable", action="store_true",
+                          help="No open fulltext exists (paywalled); record the downgrade to abstract-level")
+    fulltext.add_argument("--note", default="")
+
     untag = sub.add_parser("untag", help="Remove one section tag from sources a bulk add over-tagged")
     untag.add_argument("--source", nargs="+", type=int, required=True)
     untag.add_argument("--section", required=True)
@@ -2104,6 +4123,59 @@ def build_parser() -> argparse.ArgumentParser:
     retract = sub.add_parser("retract", help="Withdraw a mis-recorded claim; record the corrected one after")
     retract.add_argument("--claim", nargs="+", required=True)
     retract.add_argument("--reason", default="")
+
+    tier = sub.add_parser(
+        "tier", help="Register the complexity tier (host-judged); the engine then caps directions "
+                     "(top-level sections) and rounds by refusing over-quota registrations")
+    tier.add_argument("--level", required=True, choices=TIERS)
+    tier.add_argument("--reason", required=True, help="Why this tier — the judgment goes on record")
+    tier.add_argument("--force", action="store_true",
+                      help="Re-judge an already-registered tier (the change is recorded)")
+
+    round_p = sub.add_parser(
+        "round", help="Close a retrieval round: which directions it served, why it stopped, "
+                      "what the next round should hunt")
+    round_p.add_argument("--why-stopped", required=True,
+                         help="Why the round ended — the one signal the engine cannot compute")
+    round_p.add_argument("--next-query", action="append", default=[],
+                         help="Gap the next round should hunt (progressive deepening reuses these); repeatable")
+    round_p.add_argument("--direction", action="append", default=[],
+                         help="Top-level section id(s) this round served; repeatable — counts against each one's rerun cap")
+    round_p.add_argument("--probe", action="append", default=[], help="Probes that ran this round; repeatable")
+    round_p.add_argument("--wasted", action="store_true",
+                         help="The round produced nothing; recorded but not charged against tier caps")
+    round_p.add_argument("--note", default="")
+
+    memo = sub.add_parser(
+        "memo", help="Record the direction-level depth memo (per top-level section; the latest one is what "
+                     "evaluation and writing read)")
+    memo.add_argument("--section", required=True, help="Top-level section id")
+    memo.add_argument("--text", required=True,
+                      help="The depth narrative: mechanisms, setups, numbers — what only a full read of the "
+                           "originals knows")
+
+    decide = sub.add_parser(
+        "decide", help="Record one read-the-signals-then-decided call; signals replays the last five")
+    decide.add_argument("--action", required=True, choices=DECISION_ACTIONS,
+                        help="stop / continue / add_section / rerun / patch")
+    decide.add_argument("--reason", required=True)
+    decide.add_argument("--direction", default="", help="Top-level section id, for add_section / rerun / patch")
+
+    verify = sub.add_parser(
+        "verify", help="Record citation-faithfulness judgments (supported? confidence?) per claim; "
+                       "the engine applies the gates: confidence floor, downgrade-ratio cap")
+    verify.add_argument("--claim", help="Single form: claim id")
+    verdict = verify.add_mutually_exclusive_group()
+    verdict.add_argument("--supported", action="store_true")
+    verdict.add_argument("--unsupported", action="store_true")
+    verify.add_argument("--confidence", type=float, help="0.0–1.0, how sure the evidence supports the claim")
+    verify.add_argument("--reason", default="")
+    verify.add_argument("--batch", action="store_true",
+                        help="Read a JSON array of {claim,supported,confidence,reason} from --json or stdin")
+    verify.add_argument("--json", help="Inline JSON for --batch instead of stdin")
+
+    sub.add_parser("signals", help="Print the evaluator input surface — every number computed by the engine, "
+                                   "unrecorded inputs reported as not-recorded, never 0")
 
     figure = sub.add_parser("figure", help="Record a chart that visualizes ledger claims, then render it")
     figure_sub = figure.add_subparsers(dest="figure_command", required=True)
@@ -2127,6 +4199,15 @@ def build_parser() -> argparse.ArgumentParser:
                                  "(--field year/venue/assignee/kind); bar/hbar/pie; counts are source-verified by construction")
     figure_add.add_argument("--field", default="",
                             help="Metadata field to aggregate --from-source-metadata by: year, venue, assignee, kind")
+    figure_add.add_argument("--plan", default="",
+                            help="Figure plan id (fpN) this chart fulfills; closes the plan")
+    figure_add.add_argument("--charted-by", choices=("agent", "controller"), default="",
+                            help="Who ran this chart's loop: 'agent' (a chart-topic subagent, the "
+                                 "default for hosts that can spawn them) or 'controller' (in-session, "
+                                 "the exception — requires --charted-reason)")
+    figure_add.add_argument("--charted-reason", default="",
+                            help="With --charted-by controller (required there): why no chart-topic "
+                                 "subagent ran this plan")
 
     figure_mark = figure_sub.add_parser("mark-rendered", help="Record that chartrender.py produced the PNG")
     figure_mark.add_argument("--id", required=True)
@@ -2139,6 +4220,20 @@ def build_parser() -> argparse.ArgumentParser:
     figure_drop.add_argument("--id", nargs="+", required=True)
     figure_drop.add_argument("--reason", default="")
 
+    figure_plan = figure_sub.add_parser(
+        "plan",
+        help="Plan a chart topic after the outline settles: what the figure should answer, "
+             "and where; retrieval then hunts that topic's numbers until sufficient")
+    figure_plan.add_argument("--section", default="", help="Outline section id the figure would live in")
+    figure_plan.add_argument("--topic", default="",
+                             help="The quantitative question the chart answers (not its title)")
+    figure_plan.add_argument("--type", choices=FIGURE_TYPES, default="",
+                             help="Intended shape; timeline plans are exempt from datum sufficiency")
+    figure_plan.add_argument("--abandon", default="",
+                             help="Plan id to give up on instead of creating one")
+    figure_plan.add_argument("--reason", default="",
+                             help="With --abandon (required): why no obtainable data exists")
+
     datum = sub.add_parser("datum", help="Record a number extracted from a source — the data point a figure plots")
     datum_sub = datum.add_subparsers(dest="datum_command", required=True)
     datum_add = datum_sub.add_parser("add", help="Capture one extracted number against a source")
@@ -2148,6 +4243,7 @@ def build_parser() -> argparse.ArgumentParser:
     datum_add.add_argument("--unit", default="", help="Unit (亿元, %, 亿美元)")
     datum_add.add_argument("--year", default="", help="Year or date the value applies to")
     datum_add.add_argument("--entity", default="", help="Entity the value is about (company, model, region)")
+    datum_add.add_argument("--plan", default="", help="Figure plan id (fpN) this number feeds")
     datum_sub.add_parser("list", help="Print captured datums")
     datum_drop = datum_sub.add_parser("drop", help="Retire a mis-captured datum")
     datum_drop.add_argument("--id", nargs="+", required=True)
@@ -2160,6 +4256,12 @@ def build_parser() -> argparse.ArgumentParser:
     render.add_argument("--final", action="store_true",
                        help="Academic bibliography form; the content reference to write prose against "
                             "(numbers are stable ledger numbers)")
+    render.add_argument("--material", action="store_true",
+                       help="The writing-preparation surface: per section — writing target, material "
+                            "blocks (claims with [@n] marks, verbatim evidence, source notes), a "
+                            "ranked re-read list of core originals (per-section cap 5, half weight if "
+                            "already listed for an earlier section), and the latest memo. Run this "
+                            "before writing; compose from material, not from one-line claims")
     render.add_argument("--appendix", action="store_true",
                        help="Print Appendix A (retrieval log), B (calls and cost) and C (data and methods) instead")
     render.add_argument("--renumber", action="store_true",
@@ -2193,9 +4295,57 @@ def _run_outline(state: dict[str, Any], args: argparse.Namespace) -> dict[str, A
         state["outline"] = _assign_outline(
             nodes, set(_probe_index(state)), require_probes=not args.allow_unscouted
         )
+        # Top-level sections are the run's directions; a registered tier
+        # caps how many may exist.
+        _check_direction_cap(state, len(state["outline"]))
         if args.allow_unscouted:
             state["unscouted"] = True
-        return {"ok": True, "outline": state["outline"], "unscouted": bool(state.get("unscouted"))}
+        response: dict[str, Any] = {"ok": True, "outline": state["outline"],
+                                    "unscouted": bool(state.get("unscouted"))}
+        # A user-stated length budget (字当量). Upstream hard-caps the parsed
+        # budget at 8万 ("超过 8 万字按 8 万算" — clamped, not refused); same here.
+        if args.length_budget:
+            budget = int(args.length_budget)
+            if budget <= 0:
+                raise LedgerError("--length-budget must be a positive integer (字当量)")
+            if budget > LENGTH_BUDGET_HARD_MAX:
+                budget = LENGTH_BUDGET_HARD_MAX
+            state["length_budget"] = budget
+            response["length_budget"] = budget
+        targets = _write_targets(state)
+        if targets["total"] is not None:
+            response["target_total"] = targets["total"]
+        return response
+
+    if args.outline_command == "add-top":
+        # Mid-run direction addition (DeepDive's add_direction lands here).
+        # A new top-level section carries the disagreement child every
+        # top-level section carries — same shape the v1 upgrade builds.
+        title = args.title.strip()
+        if not title:
+            raise LedgerError("A top-level section needs a non-empty --title")
+        from_probes = [str(p) for p in (args.from_probes or [])]
+        unknown = [p for p in from_probes if p not in _probe_index(state)]
+        if unknown:
+            raise LedgerError(f"Section cites unknown probe(s): {', '.join(unknown)}")
+        _check_direction_cap(state, len(state["outline"]) + 1)
+        top = {
+            "id": str(len(state["outline"]) + 1),
+            "title": title,
+            "from_probes": from_probes,
+            "children": [{
+                "id": f"{len(state['outline']) + 1}.1",
+                "title": args.disagreement.strip() or "Disagreement and counter-evidence",
+                "kind": "disagreement",
+                "from_probes": [],
+            }],
+        }
+        if args.target_chars:
+            if args.target_chars <= 0:
+                raise LedgerError("--target-chars must be positive (字当量)")
+            top["target_chars"] = args.target_chars
+        state["outline"].append(top)
+        return {"ok": True, "section": top}
 
     if args.outline_command == "add-sub":
         top = _find_top(state, args.parent)
@@ -2230,12 +4380,43 @@ def _public_figure(figure: dict[str, Any]) -> dict[str, Any]:
         key: figure[key] for key in (
             "id", "section", "chart_type", "title", "source_ids", "claim_ids",
             "rendered", "rendered_by", "render_path", "code_path", "from_datums",
-            "from_metadata",
+            "from_metadata", "plan", "charted_by", "charted_reason",
         ) if key in figure
     }
 
 
 def _run_figure(state: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
+    if args.figure_command == "plan":
+        if args.abandon:
+            plan = _abandon_figure_plan(state, args.abandon, args.reason.strip())
+            return {"ok": True, "plan": plan}
+        if not args.section or not args.topic:
+            raise LedgerError(
+                "A figure plan needs --section and --topic (or --abandon <id> --reason …)"
+            )
+        plan, superseded = _add_figure_plan(state, args.section, args.topic, args.type or "")
+        return {
+            "ok": True,
+            "plan": plan,
+            "superseded": superseded,
+            "needs_datums": (
+                PLAN_MIN_DATUMS if (args.type or "") != "timeline" else None
+            ),
+            # The dispatch moment is plan time, not chart time — say so where
+            # the controller is looking right now (references/chart-guide.md
+            # §Who charts).
+            "dispatch": (
+                "one chart-topic subagent per open plan, now — a host that can "
+                "spawn subagents delegates the plan's research loop; the "
+                "subagent delivers record JSON (brief in, records out, never "
+                "touching the ledger) and the controller, the only writer, "
+                "enters it (datum add --plan, figure add --charted-by agent) "
+                "and runs the render chain (chartrender, mark-rendered). The "
+                "controller researches in-session only when it cannot spawn "
+                "subagents (figure add --charted-by controller "
+                "--charted-reason …)"
+            ),
+        }
     if args.figure_command == "add":
         from_datums = list(args.from_datums or [])
         from_metadata = bool(args.from_source_metadata)
@@ -2275,6 +4456,9 @@ def _run_figure(state: dict[str, Any], args: argparse.Namespace) -> dict[str, An
             code_path=args.code or "",
             from_datums=bool(from_datums),
             from_metadata=from_metadata,
+            plan=(args.plan or "").strip(),
+            charted_by=(args.charted_by or "").strip(),
+            charted_reason=(args.charted_reason or "").strip(),
         )
         return {"ok": True, "figure": _public_figure(figure)}
     if args.figure_command == "mark-rendered":
@@ -2283,13 +4467,18 @@ def _run_figure(state: dict[str, Any], args: argparse.Namespace) -> dict[str, An
     if args.figure_command == "drop":
         result = _drop_figures(state, list(args.id), args.reason.strip())
         return {"ok": True, **result}
-    return {"ok": True, "figures": [_public_figure(f) for f in _live_figures(state)]}
+    return {
+        "ok": True,
+        "figures": [_public_figure(f) for f in _live_figures(state)],
+        "figure_plans": [dict(p) for p in _live_plans(state)],
+    }
 
 
 def _run_datum(state: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
     if args.datum_command == "add":
         datum = _record_datum(
             state, args.source, args.metric, args.value, args.unit, args.year, args.entity,
+            plan=(args.plan or "").strip(),
         )
         return {"ok": True, "datum": _public_datum(datum)}
     if args.datum_command == "drop":
@@ -2377,7 +4566,9 @@ def run(args: argparse.Namespace) -> tuple[Any, int]:
             shown.append({
                 key: source[key] for key in (
                     "n", "kind", "id", "title", "url", "year", "venue", "authors", "assignee",
-                    "keywords", "abstract", "abstract_slice", "note", "depth", "sections",
+                    "pub_num", "app_num", "pub_kind",
+                    "keywords", "abstract", "abstract_slice", "note", "depth", "fulltext",
+                    "fulltext_unavailable", "fulltext_note", "sections",
                     "probes", "via", "dropped", "drop_reason",
                 ) if key in source
             })
@@ -2393,6 +4584,15 @@ def run(args: argparse.Namespace) -> tuple[Any, int]:
         save_state(path, state)
         return {"ok": True, **result}, 0
 
+    if args.command == "fulltext":
+        result = _mark_fulltext(
+            state, args.source,
+            url=(args.url or "").strip(), via=args.via,
+            unavailable=args.unavailable, note=args.note.strip(),
+        )
+        save_state(path, state)
+        return {"ok": True, **result}, 0
+
     if args.command == "untag":
         result = _untag_sources(state, args.source, args.section)
         save_state(path, state)
@@ -2402,6 +4602,54 @@ def run(args: argparse.Namespace) -> tuple[Any, int]:
         result = _retract_claims(state, args.claim, args.reason.strip())
         save_state(path, state)
         return {"ok": True, **result}, 0
+
+    if args.command == "tier":
+        result = _register_tier(state, args.level, args.reason.strip(), args.force)
+        save_state(path, state)
+        return result, 0
+
+    if args.command == "round":
+        result = _register_round(
+            state, args.why_stopped, list(args.next_query), list(args.direction),
+            list(args.probe), args.wasted, args.note,
+        )
+        save_state(path, state)
+        return result, 0
+
+    if args.command == "memo":
+        result = _add_memo(state, args.section, args.text)
+        save_state(path, state)
+        return result, 0
+
+    if args.command == "decide":
+        result = _record_decision(state, args.action, args.direction.strip(), args.reason)
+        save_state(path, state)
+        return result, 0
+
+    if args.command == "verify":
+        if args.batch:
+            entries = _read_payload(args)
+            if isinstance(entries, dict):
+                entries = [entries]
+        else:
+            if not args.claim or args.confidence is None or not (args.supported or args.unsupported):
+                raise LedgerError(
+                    "verify needs --claim, --supported|--unsupported and --confidence "
+                    "(or --batch with a JSON array of judgments)"
+                )
+            entries = [{
+                "claim": args.claim,
+                "supported": bool(args.supported),
+                "confidence": args.confidence,
+                "reason": args.reason,
+            }]
+        result = _apply_verify(state, entries)
+        save_state(path, state)
+        return result, 0
+
+    if args.command == "signals":
+        # Read-only: the evaluator input surface never mutates the ledger.
+        return _signals(state), 0
 
     if args.command == "figure":
         payload = _run_figure(state, args)
@@ -2431,6 +4679,19 @@ def run(args: argparse.Namespace) -> tuple[Any, int]:
             "spend_over_hard_limit": report["spend_over_hard_limit"],
             "figures_with_no_sources": report["figures_with_no_sources"],
             "figures_in_unrendered_section": report["figures_in_unrendered_section"],
+            # A cited source with no note at all: the note is the digest the
+            # material surface serves and the channel the number-provenance
+            # checks search — a citation leaning on an unrecorded read is a
+            # claim the ledger cannot vouch for. Binary and unambiguous, so
+            # it blocks; thin notes only warn.
+            "cited_sources_without_note": report["cited_sources_without_note"],
+            # L3 (user decision 2026-08-30, zero exemption): a live keeper
+            # nobody wrote a word about is retrieval spend that never became
+            # material — read it (note) or drop it; datum carriers and
+            # corpus-aggregation sources get no carve-out. Upstream has this
+            # by construction (its reader's output schema IS the record);
+            # here the check is the construction.
+            "sources_without_note": report["sources_without_note"],
         }
         failed = (
             any(blocking.values())
@@ -2450,14 +4711,39 @@ def run(args: argparse.Namespace) -> tuple[Any, int]:
                 "untagged_sources",
                 "sources_without_probe",
                 "cited_sources_without_detail",
+                "cited_sources_without_fulltext",
                 "single_source_claims",
+                "claims_weak_patent_sole_support",
                 "claims_with_unsourced_numbers",
+                "tier_missing",
+                "sections_without_memo",
+                "sections_single_sourced",
+                "claims_evidence_not_verbatim",
+                "claims_verify_downgraded",
+                "claims_awaiting_verify",
+                "memos_thin",
+                "verify_reasons_boilerplate",
+                "disagreements_without_conflict",
+                "figure_plans_closed_untagged",
+                "sections_without_target_chars",
+                "write_targets_over_max",
+                "write_targets_over_material",
+                "sections_under_targeted_vs_material",
+                "cited_sources_note_thin",
+                "claims_thin_evidence",
+                "rounds_without_yield",
                 "figures_unsupported_numbers",
                 "figures_without_render",
                 "figures_over_budget",
                 "figures_industry_expected",
                 "figures_industry_quantitative_expected",
                 "figures_thin_data",
+                "figures_charting_undeclared",
+                "figures_charted_in_controller",
+                "figure_plans_thin",
+                "figure_plans_unfulfilled",
+                "figure_plans_abandoned",
+                "figure_plans_industry_expected",
                 "sections_over_figure_budget",
                 "figure_code_divergence",
                 "uncited_sources",
@@ -2471,8 +4757,16 @@ def run(args: argparse.Namespace) -> tuple[Any, int]:
 
     if args.command == "render":
         if args.renumber:
+            if args.final or args.appendix or args.material:
+                raise LedgerError("--renumber cannot be combined with --final, --appendix or --material")
+            if not args.draft or not args.out:
+                raise LedgerError("render --renumber needs --draft <path> and --out <path>")
+            return _renumber_draft(state, Path(args.draft), Path(args.out), args.lang,
+                                   ledger=path.as_posix()), 0
+        if args.material:
             if args.final or args.appendix:
-                raise LedgerError("--renumber cannot be combined with --final or --appendix")
+                raise LedgerError("--material cannot be combined with --final or --appendix")
+            return _material_markdown(state, args.lang), 0
             if not args.draft or not args.out:
                 raise LedgerError("render --renumber needs --draft <path> and --out <path>")
             return _renumber_draft(state, Path(args.draft), Path(args.out), args.lang,

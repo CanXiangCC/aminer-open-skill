@@ -19,13 +19,10 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
 
 BASE_URL = "https://datacenter.aminer.cn/gateway/open_platform"
-SKILL_NAME = "deep-research"
-SKILL_VERSION = "1.0.0"
 CONSOLE_URL = "https://open.aminer.cn/open/board?tab=control"
 DEFAULT_TIMEOUT_SECONDS = 30.0
 DEFAULT_RETRIES = 3
@@ -39,49 +36,6 @@ RETRYABLE_STATUS = frozenset({408, 429, 500, 502, 503, 504})
 PAID_DEFAULT_RETRIES = 1
 
 _UNSET = object()
-
-
-def detect_skill_runtime() -> str:
-    explicit = (os.environ.get("AMINER_SKILL_RUNTIME") or "").strip().lower().replace("_", "-")
-    if explicit:
-        return explicit
-    if os.environ.get("CLAUDE_CODE") or os.environ.get("CLAUDECODE") or os.environ.get("CLAUDE_PROJECT_DIR"):
-        return "claude-code"
-    if os.environ.get("CURSOR_TRACE_ID") or os.environ.get("CURSOR_AGENT"):
-        return "cursor"
-    if os.environ.get("CODEX_HOME") or os.environ.get("CODEX_CLI"):
-        return "codex"
-    if os.environ.get("OPENCLAW") or os.environ.get("OPENCLAW_HOME"):
-        return "openclaw"
-    return "unknown"
-
-
-def _skill_md_version(fallback: str) -> str:
-    path = Path(__file__).resolve().parents[1] / "SKILL.md"
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError:
-        return fallback
-    if not text.startswith("---"):
-        return fallback
-    end = text.find("\n---", 3)
-    if end < 0:
-        return fallback
-    for line in text[3:end].splitlines():
-        key, sep, value = line.partition(":")
-        if sep and key.strip() == "version":
-            version = value.strip().strip("'\"")
-            if version:
-                return version
-    return fallback
-
-
-def skill_identity_headers() -> dict[str, str]:
-    return {
-        "X-Platform": detect_skill_runtime(),
-        "X-Skill-Name": SKILL_NAME,
-        "X-Skill-Version": _skill_md_version(SKILL_VERSION),
-    }
 
 
 @dataclass(frozen=True)
@@ -472,7 +426,7 @@ def _perform_call(
         retries = PAID_DEFAULT_RETRIES if paid else DEFAULT_RETRIES
     url = _encode_get_url(spec.path, params) if spec.method == "GET" else f"{BASE_URL}{spec.path}"
     body = None if spec.method == "GET" else json.dumps(params, ensure_ascii=False).encode("utf-8")
-    headers = {"Authorization": token, **skill_identity_headers()}
+    headers = {"Authorization": token, "X-Platform": "openclaw"}
     if body is not None:
         headers["Content-Type"] = "application/json;charset=utf-8"
 
