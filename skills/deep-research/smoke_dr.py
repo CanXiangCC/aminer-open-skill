@@ -74,6 +74,11 @@ def fixture_mode() -> int:
     render --final emits report sections. The fixture is a minimal shape demo,
     not a gold-standard ledger — check may legitimately flag it; we assert the
     engine *runs cleanly and emits a verdict*, not that ok == True.
+
+    A second stage copies the fixture to a temp dir (the sample is read-only
+    source) and walks the research-loop telemetry offline: tier → outline
+    clamp → round → memo → decide → claim with verbatim evidence → M2
+    verbatim check → verify gates → signals.
     """
     ledger_path = SKILL_DIR / "samples" / "patchtst_v3_ledger.json"
     assert ledger_path.exists(), f"fixture missing: {ledger_path}"
@@ -100,9 +105,247 @@ def fixture_mode() -> int:
     assert sections, "render produced no sections"
     print(f"[fixture] render --final OK ({len(sections)} sections)")
 
-    print("\n[PASS] fixture smoke — skill pipeline (check→render) runs cleanly "
-          "(no key needed).")
+    telemetry_smoke()
+    figure_plan_smoke()
+    print("\n[PASS] fixture smoke — skill pipeline (check→render→telemetry→figure plans) "
+          "runs cleanly (no key needed).")
     return 0
+
+
+def telemetry_smoke() -> None:
+    """Offline walk of the research-loop telemetry on a copy of the fixture:
+    the tier clamps the outline and the rounds, a claim's verbatim evidence is
+    engine-checked, the verify gates execute, and signals prints the evaluator
+    surface. Nothing here needs a key or a network."""
+
+    def run_or_fail(args, expect_ok=True):
+        p = subprocess.run([sys.executable, str(EVIDENCE), *args],
+                           capture_output=True, text=True, encoding="utf-8")
+        if expect_ok:
+            assert p.returncode == 0, f"{args} failed: {p.stderr or p.stdout}"
+            return json.loads(p.stdout) if p.stdout.strip() else {}
+        assert p.returncode == 2, f"{args} should have been refused: {p.stdout}"
+        return json.loads(p.stdout)
+
+    with tempfile.TemporaryDirectory(prefix="dr_tel_") as work:
+        ledger = Path(work) / "ledger.json"
+        ledger.write_text((SKILL_DIR / "samples" / "patchtst_v3_ledger.json")
+                          .read_text(encoding="utf-8"), encoding="utf-8")
+        st = ["--state", str(ledger)]
+
+        # tier: registers, then clamps — a second registration is refused.
+        out = run_or_fail(st + ["tier", "--level", "simple",
+                                "--reason", "single-paper fixture, single direction"])
+        assert out["tier"] == "simple" and out["profile"]["max_directions"] == 2
+        run_or_fail(st + ["tier", "--level", "complex", "--reason", "try to unclamp"],
+                    expect_ok=False)
+
+        # the material volume prints BEFORE any target exists: upstream
+        # assigns chapter targets at writing time, over the full material
+        # pile — the volume is the input targets are assigned from
+        mat0 = subprocess.run([sys.executable, str(EVIDENCE), *st, "render",
+                               "--material"], capture_output=True, text=True,
+                              encoding="utf-8")
+        assert mat0.returncode == 0, mat0.stderr
+        assert "no writing target" in mat0.stdout and "material on file" in mat0.stdout, \
+            "material view must show volumes with no target registered"
+
+        # report-stage richness: writing targets ride the outline (DeepDive
+        # assigns each chapter a target_chars by material sufficiency). The
+        # fixture ledger already sits at the simple tier's 2-section cap, so
+        # the targets go in through a --force re-set that keeps both ids.
+        out = run_or_fail(st + ["outline", "set", "--force", "--allow-unscouted",
+                                "--length-budget", "999999", "--json", json.dumps([
+            {"title": "Fixture direction one", "target_chars": 2500,
+             "children": [{"title": "Disagreement and open issues", "kind": "disagreement"}]},
+            {"title": "Fixture direction two",
+             "children": [{"title": "Disagreement and open issues", "kind": "disagreement"}]},
+        ])])
+        assert out["outline"][0]["target_chars"] == 2500 and out["target_total"] == 2500, out
+        # a user budget is hard-capped at 80000 — clamped, not refused
+        assert out["length_budget"] == 80000, out
+
+        # round summaries: the why-stopped field is mandatory telemetry.
+        run_or_fail(st + ["round", "--why-stopped", "fixture round closed",
+                          "--direction", "1", "--note", "smoke"])
+        run_or_fail(st + ["round", "--why-stopped", ""], expect_ok=False)
+
+        # memo + decide: the depth slot and the decision record. The memo is
+        # deliberately short — the smoke asserts the depth floor fires on it.
+        run_or_fail(st + ["memo", "--section", "1", "--text", "fixture memo: mechanism, setup, numbers"])
+        run_or_fail(st + ["decide", "--action", "continue", "--reason", "fixture decision"])
+
+        # claim with verbatim evidence: the excerpt must be a substring of the
+        # source's stored text — the fixture's first live source title is a
+        # safe haystack for the smoke. A degenerate excerpt (single character)
+        # is refused outright: it would match almost any haystack.
+        state = json.loads(ledger.read_text(encoding="utf-8"))
+        src = next(s for s in state["sources"] if not s.get("dropped"))
+        section = state["outline"][0]["children"][0]["id"] if state["outline"][0]["children"] \
+            else state["outline"][0]["id"]
+        run_or_fail(st + ["claim", "--section", section, "--supports", str(src["n"]),
+                          "--text", "fixture verbatim-evidence claim",
+                          "--evidence", src["title"]])
+        run_or_fail(st + ["claim", "--section", section, "--supports", str(src["n"]),
+                          "--text", "degenerate excerpt claim", "--evidence", "算"],
+                    expect_ok=False)
+        gaps = run_or_fail(st + ["gaps"])
+        thin = gaps["memos_thin"]
+        assert any(t["section"] == "1" for t in thin), f"42-char memo must trip memos_thin, got {thin}"
+        # the two discipline-drift observations exist on the warning surface
+        for key in ("disagreements_without_conflict", "figure_plans_closed_untagged"):
+            assert key in gaps, f"gaps missing observation key: {key}"
+        gaps = run_or_fail(st + ["gaps"])
+        new_claim_id = json.loads(ledger.read_text(encoding="utf-8"))["claims"][-1]["id"]
+        flagged = {f["claim"] for f in gaps["claims_evidence_not_verbatim"]}
+        assert new_claim_id not in flagged, \
+            f"verbatim excerpt of the source title must pass M2, got {flagged}"
+
+        # verify: judgments in, four states out, gates applied.
+        out = run_or_fail(st + ["verify", "--claim", new_claim_id,
+                                "--supported", "--confidence", "0.9"])
+        assert out["passed"] == 1 and out["downgraded"] == 0, out
+
+        # material view: targets vs material volume, material blocks with [@n]
+        # marks, re-read list, and the uncited pool (the citable pool is the
+        # whole ledger, not the claim set).
+        mat = subprocess.run([sys.executable, str(EVIDENCE), *st, "render", "--material"],
+                             capture_output=True, text=True, encoding="utf-8")
+        assert mat.returncode == 0, mat.stderr
+        assert "2500" in mat.stdout and "re-read" in mat.stdout.lower(), \
+            "material view must carry the writing target and the re-read list"
+        assert "uncited pool" in mat.stdout.lower(), "material view must show the uncited pool"
+        assert f"[@{src['n']}]" in mat.stdout, "material blocks must cite ledger numbers"
+
+        # renumber: the delivered report and the record-only length deviation
+        # against the registered target (2500) — recorded, never a rewrite.
+        para = ("The fixture report body carries enough prose units to clear the "
+                "subsection floor so the renumber pass reaches its length block. ") * 20
+        draft = Path(work) / "draft.md"
+        draft.write_text(
+            f"# Fixture report\n\n## 1. Body\n\n### 1.1 Point\n\n{para} [@{src['n']}]\n\n"
+            "## References\n\n{{references}}\n", encoding="utf-8")
+        ren = run_or_fail(st + ["render", "--renumber", "--draft", str(draft),
+                                "--out", str(Path(work) / "out.md")])
+        assert ren["length"]["target_total"] == 2500, ren["length"]
+        assert ren["length"]["direction"] == "short" and ren["length"]["deviation"] < 0, ren["length"]
+        # per-section lengths — the continue-writing loop aims at the thin
+        # section, not the total
+        assert any(s["heading"] == "1. Body" for s in ren["length"]["sections"]), ren["length"]
+        # a draft may place the {{references}} placeholder without a heading
+        # above it — the length cut must swallow only a *references* heading,
+        # never the last body section (regression: an entire final section
+        # vanished from a real run's length block)
+        headless = Path(work) / "draft_headless.md"
+        headless.write_text(
+            f"# Fixture report\n\n## 1. Body\n\n### 1.1 Point\n\n{para} [@{src['n']}]\n\n---\n\n"
+            "{{references}}\n", encoding="utf-8")
+        ren2 = run_or_fail(st + ["render", "--renumber", "--draft", str(headless),
+                                 "--out", str(Path(work) / "out2.md")])
+        assert ren2["length"]["body_chars"] == ren["length"]["body_chars"], \
+            (ren["length"], ren2["length"])
+        assert any(s["heading"] == "1. Body" for s in ren2["length"]["sections"]), ren2["length"]
+
+        # the write-time length observation persists into the ledger (upstream
+        # logs its deviation post-delivery; the ledger is this fork's log) and
+        # gaps echoes it — but check never gates on it (篇幅是目标不是硬约束)
+        ledger_state = json.loads(ledger.read_text(encoding="utf-8"))
+        assert ledger_state["length_report"]["body_chars"] == ren2["length"]["body_chars"]
+        assert "length_report" in run_or_fail(st + ["gaps"])
+        chk_probe = json.loads(subprocess.run(
+            [sys.executable, str(EVIDENCE), *st, "check"],
+            capture_output=True, text=True, encoding="utf-8").stdout)
+        assert "length_report" not in chk_probe.get("blocking", {}) and \
+            "length_report" not in chk_probe.get("warnings", {})
+
+        # signals: the evaluator surface prints, unrecorded inputs say so.
+        sig = run_or_fail(st + ["signals"])
+        for key in ("tier", "directions", "rounds", "claims_digest", "memos",
+                    "source_distribution", "retrieval_funnel", "write_targets",
+                    "evidence_quality", "evaluation_history",
+                    "verify_stats", "not_recorded", "absent_by_design"):
+            assert key in sig, f"signals missing block: {key}"
+        assert sig["retrieval_funnel"]["cited_by_live_claims"] >= 1, sig["retrieval_funnel"]
+        # target/material pairing: section 1's entry carries both numbers, and
+        # a target above its material surfaces as a check warning.
+        assert sig["write_targets"]["sections"]["1"]["target"] == 2500, sig["write_targets"]
+        assert sig["write_targets"]["sections"]["1"]["material_chars"] >= 0
+        for key in ("write_targets_over_material", "sections_under_targeted_vs_material"):
+            assert key in run_or_fail(st + ["gaps"]), f"gaps missing observation key: {key}"
+
+        # recording-time volume checks: a cited source with no note blocks
+        # delivery, thin notes / fragment-only evidence / yield-less rounds
+        # warn (upstream's own numbers: 300-800-字 digest, 100-500-字
+        # passages, forced needs_more on an empty pass)
+        for key in ("cited_sources_note_thin", "claims_thin_evidence",
+                    "rounds_without_yield", "sources_without_note"):
+            assert key in run_or_fail(st + ["gaps"]), f"gaps missing observation key: {key}"
+        chk = subprocess.run([sys.executable, str(EVIDENCE), *st, "check"],
+                             capture_output=True, text=True, encoding="utf-8")
+        assert chk.returncode in (0, 1), chk.stderr
+        verdict = json.loads(chk.stdout)
+        assert "cited_sources_without_note" in verdict["blocking"], verdict
+        # L3: any live source with no note blocks (zero exemption)
+        assert "sources_without_note" in verdict["blocking"], verdict
+
+        print("[fixture] telemetry smoke OK (tier clamp → round → memo → decide → "
+              "evidence → verify gates → material view → length deviation → signals)")
+
+
+def figure_plan_smoke() -> None:
+    """Offline walk of the figure-plan lifecycle: an abandoned plan must not
+    block re-planning its own topic (the datum/figure error texts say
+    "re-plan it"), the re-plan retires the dead record (one live plan per
+    topic+section stays invariant), and the open/fulfilled duplicate guards
+    keep refusing."""
+
+    def run_or_fail(args, expect_ok=True):
+        p = subprocess.run([sys.executable, str(EVIDENCE), *args],
+                           capture_output=True, text=True, encoding="utf-8")
+        if expect_ok:
+            assert p.returncode == 0, f"{args} failed: {p.stderr or p.stdout}"
+            return json.loads(p.stdout) if p.stdout.strip() else {}
+        assert p.returncode == 2, f"{args} should have been refused: {p.stdout}"
+        return json.loads(p.stdout)
+
+    with tempfile.TemporaryDirectory(prefix="dr_fig_") as work:
+        ledger = Path(work) / "ledger.json"
+        ledger.write_text((SKILL_DIR / "samples" / "patchtst_v3_ledger.json")
+                          .read_text(encoding="utf-8"), encoding="utf-8")
+        st = ["--state", str(ledger)]
+        topic = "how does accuracy scale with horizon"
+
+        # plan → duplicate open refused (the guard's real job) → abandon
+        run_or_fail(st + ["figure", "plan", "--section", "1", "--topic", topic])
+        run_or_fail(st + ["figure", "plan", "--section", "1", "--topic", topic],
+                    expect_ok=False)
+        run_or_fail(st + ["figure", "plan", "--abandon", "fp1",
+                          "--reason", "no public benchmark numbers"])
+
+        # re-planning the abandoned topic succeeds and retires fp1
+        out = run_or_fail(st + ["figure", "plan", "--section", "1", "--topic", topic])
+        assert out["superseded"] == ["fp1"] and out["plan"]["id"] == "fp2", out
+        state = json.loads(ledger.read_text(encoding="utf-8"))
+        fp1 = next(p for p in state["figure_plans"] if p["id"] == "fp1")
+        assert fp1.get("dropped") and "fp2" in fp1.get("drop_reason", ""), fp1
+        # the retired record left the abandoned list (no stale limitation quote)
+        gaps = run_or_fail(st + ["gaps"])
+        assert not any(a["plan"] == "fp1" for a in gaps["figure_plans_abandoned"]), gaps
+
+        # the re-planned topic walks to fulfillment; a fulfilled plan still
+        # blocks same-topic re-planning (drop the figure to redo)
+        for i, v in enumerate(["62.3", "58.1", "54.9"]):
+            run_or_fail(st + ["datum", "add", "--source", "1", "--plan", "fp2",
+                              "--metric", "MASE", "--value", v,
+                              "--unit", "ratio", "--year", str(2020 + i)])
+        run_or_fail(st + ["figure", "add", "--section", "1", "--type", "bar",
+                          "--title", "Accuracy vs horizon",
+                          "--from-datums", "d1", "d2", "d3", "--plan", "fp2"])
+        run_or_fail(st + ["figure", "plan", "--section", "1", "--topic", topic],
+                    expect_ok=False)
+
+        print("[fixture] figure-plan smoke OK (plan → duplicate guard → abandon → "
+              "re-plan supersedes → datums → figure closes plan)")
 
 
 def live_mode(question: str) -> int:
