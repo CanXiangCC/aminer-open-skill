@@ -47,6 +47,7 @@ A typical workflow moves from finding literature, to understanding a paper's sou
 | Skill | Use it when you want to | Token | Guide |
 | --- | --- | --- | --- |
 | `pdf-citation-verifier` | Check whether the references listed in a paper PDF actually exist | Required | [SKILL.md](skills/pdf-citation-verifier/SKILL.md) |
+| `structured-reference-audit` | Build a GROBID-backed reference ledger, then conservatively resolve each parsed entry through AMiner | Required for AMiner resolution; GROBID or TEI required | [SKILL.md](skills/structured-reference-audit/SKILL.md) |
 | `citation-faithfulness` | Check whether in-text citations accurately represent what the cited sources say | No AMiner token required; web access is required | [SKILL.md](skills/citation-faithfulness/SKILL.md) |
 
 ## Quick Start
@@ -117,6 +118,7 @@ The following prompts can be used directly after the corresponding Skill is inst
 | Parse a PDF and extract experiments | "OCR this paper PDF, convert it to Markdown, and extract the experiment methods, datasets, and metrics as JSON." | `aminer-pdf-ocr` |
 | Extract experiments from Markdown | "Read this paper's Markdown file and extract the experiment methods, datasets, metrics, and key results as one JSON file." | `aminer-exp-extraction` |
 | Detect fabricated references | "Check every reference in this paper PDF and flag entries that are missing, suspicious, or need manual review." | `pdf-citation-verifier` |
+| Audit parsed bibliography entries conservatively | "Parse this PDF into a reference ledger, then resolve each eligible reference through AMiner without treating an unresolved match as fabrication." | `structured-reference-audit` |
 | Check citation faithfulness | "For each in-text citation in this paper, retrieve the cited source and determine whether the surrounding claim is supported by the original text." | `citation-faithfulness` |
 
 ## Notes

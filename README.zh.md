@@ -47,6 +47,7 @@
 | Skill | 适合完成的任务 | Token 要求 | 使用说明 |
 | --- | --- | --- | --- |
 | `pdf-citation-verifier` | 核验论文 PDF 所列参考文献是否真实存在 | 必须配置 | [SKILL.zh.md](skills/pdf-citation-verifier/SKILL.zh.md) |
+| `structured-reference-audit` | 用 GROBID 建立可追溯参考文献账本，再逐条通过 AMiner 保守解析 | AMiner 解析需 token；需 GROBID 或已有 TEI | [SKILL.zh.md](skills/structured-reference-audit/SKILL.zh.md) |
 | `citation-faithfulness` | 核查正文引用是否准确表达了被引来源的原意 | 不需要 AMiner Token，但需要联网 | [SKILL.zh.md](skills/citation-faithfulness/SKILL.zh.md) |
 
 ## 快速开始
@@ -117,6 +118,7 @@ openclaw config set env.vars.AMINER_API_KEY "<YOUR_TOKEN>"
 | 解析 PDF 并抽取实验 | “把这篇论文 PDF 转成 Markdown，并抽取实验方法、数据集和指标的 JSON。” | `aminer-pdf-ocr` |
 | 从 Markdown 抽取实验 | “读取这篇论文的 Markdown 文件，抽取实验方法、数据集、指标和关键结果，输出为一个 JSON 文件。” | `aminer-exp-extraction` |
 | 识别虚假参考文献 | “核验这篇论文 PDF 中的所有参考文献，标出不存在、可疑或需要人工复核的条目。” | `pdf-citation-verifier` |
+| 保守核验结构化参考文献 | “将这篇 PDF 拆成参考文献账本，再逐条通过 AMiner 解析；未命中不能直接当作伪造。” | `structured-reference-audit` |
 | 核查引用忠实性 | “逐条检查这篇论文的正文引用，获取被引来源，并判断上下文中的论断是否得到原文支持。” | `citation-faithfulness` |
 
 ## 注意事项
