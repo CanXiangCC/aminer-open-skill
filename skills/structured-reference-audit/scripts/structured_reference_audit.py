@@ -20,6 +20,8 @@ import requests
 
 
 AMINER_BASE_URL = "https://datacenter.aminer.cn/gateway/open_platform"
+SKILL_NAME = "structured-reference-audit"
+SKILL_VERSION = "0.1.0"
 DOI = re.compile(r"\b10\.\d{4,9}/[-._;()/:a-z0-9]+", re.IGNORECASE)
 ARXIV = re.compile(r"\b(?:arxiv\s*:\s*|arxiv\.org/(?:abs|pdf)/)(\d{4}\.\d{4,5}(?:v\d+)?)", re.IGNORECASE)
 URL = re.compile(r"https?://[^\s<>\"']+", re.IGNORECASE)
@@ -35,6 +37,50 @@ def _normal_title(value: str) -> str:
 
 def _similarity(left: str, right: str) -> float:
     return SequenceMatcher(None, _normal_title(left), _normal_title(right)).ratio()
+
+
+def detect_skill_runtime() -> str:
+    """Identify the host for gateway usage attribution."""
+    explicit = (os.environ.get("AMINER_SKILL_RUNTIME") or "").strip().lower().replace("_", "-")
+    if explicit:
+        return explicit
+    if os.environ.get("CLAUDE_CODE") or os.environ.get("CLAUDECODE") or os.environ.get("CLAUDE_PROJECT_DIR"):
+        return "claude-code"
+    if os.environ.get("CURSOR_TRACE_ID") or os.environ.get("CURSOR_AGENT"):
+        return "cursor"
+    if os.environ.get("CODEX_HOME") or os.environ.get("CODEX_CLI"):
+        return "codex"
+    if os.environ.get("OPENCLAW") or os.environ.get("OPENCLAW_HOME"):
+        return "openclaw"
+    return "unknown"
+
+
+def _skill_md_version(fallback: str) -> str:
+    path = Path(__file__).resolve().parents[1] / "SKILL.md"
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return fallback
+    if not text.startswith("---"):
+        return fallback
+    end = text.find("\n---", 3)
+    if end < 0:
+        return fallback
+    for line in text[3:end].splitlines():
+        key, separator, value = line.partition(":")
+        if separator and key.strip() == "version":
+            version = value.strip().strip("'\"")
+            if version:
+                return version
+    return fallback
+
+
+def skill_identity_headers() -> dict[str, str]:
+    return {
+        "X-Platform": detect_skill_runtime(),
+        "X-Skill-Name": SKILL_NAME,
+        "X-Skill-Version": _skill_md_version(SKILL_VERSION),
+    }
 
 
 def _pages(node: etree.Element) -> list[int]:
@@ -158,7 +204,7 @@ def _first_author(row: dict[str, Any]) -> str | None:
 
 
 def resolve_records(ledger: dict[str, Any], token: str, timeout: int) -> None:
-    headers = {"Authorization": token, "X-Platform": "openclaw"}
+    headers = {"Authorization": token, **skill_identity_headers()}
     for record in ledger["records"]:
         if not record["resolution_eligible"]:
             record["status"] = "needs_human_review"

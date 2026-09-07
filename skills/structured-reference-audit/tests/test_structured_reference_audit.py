@@ -55,6 +55,26 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(ledger["records"][1]["status"], "needs_human_review")
         self.assertNotIn("FAKE", str(ledger))
 
+    def test_aminer_requests_include_skill_identity_headers(self):
+        ledger = {"records": [{"resolution_eligible": True, "candidate_title": "Attention Is All You Need"}]}
+
+        class Response:
+            def raise_for_status(self):
+                return None
+
+            def json(self):
+                return {"data": []}
+
+        with patch.dict(MODULE.os.environ, {"AMINER_SKILL_RUNTIME": "codex"}, clear=False):
+            with patch.object(MODULE.requests, "get", return_value=Response()) as request:
+                MODULE.resolve_records(ledger, "test-token", 1)
+
+        headers = request.call_args.kwargs["headers"]
+        self.assertEqual(headers["Authorization"], "test-token")
+        self.assertEqual(headers["X-Platform"], "codex")
+        self.assertEqual(headers["X-Skill-Name"], "structured-reference-audit")
+        self.assertEqual(headers["X-Skill-Version"], "0.1.0")
+
 
 if __name__ == "__main__":
     unittest.main()
