@@ -58,6 +58,12 @@
       "strict": false
     },
     {
+      "name": "structured-reference-audit",
+      "description": "结构化参考文献核验：使用 GROBID 建立可追溯条目账本，再逐条通过 AMiner 解析；将解析不确定性与文献存在性分开呈现",
+      "source": "./skills/structured-reference-audit",
+      "strict": false
+    },
+    {
       "name": "citation-faithfulness",
       "description": "引用忠实性核查：读取论文 PDF，抽取每处正文引用及其声称，联网检索被引原文，判定引用是否忠于原文（支持/部分支持/曲解/查无此说/无法核实），免 key",
       "source": "./skills/citation-faithfulness",
